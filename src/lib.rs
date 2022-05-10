@@ -18,7 +18,7 @@ pub struct AnyVec {
     capacity: usize,        // in elements
     len: usize,             // in elements
     element_size: usize,    // aligned
-    type_id: TypeId,       // purely for safety checks
+    type_id: TypeId,        // purely for safety checks
     drop_fn: fn(ptr: *mut u8, len: usize)
 }
 
@@ -74,7 +74,7 @@ impl AnyVec {
     /// This is highly unsafe, due to the number of invariants that aren’t checked:
     /// * returned byte slice must be written with actual Element bytes.
     /// * Element bytes must be aligned.
-    /// * Element must be "forgot".
+    /// * Element must be "forgotten".
     #[inline]
     pub unsafe fn push_uninit(&mut self) -> &mut[u8] {
         if self.len == self.capacity{
@@ -168,11 +168,10 @@ impl AnyVec {
         }
     }
 
-    /// Same as [`swap_remove`], but copy removed element as bytes to `out`.
+    /// Same as [`swap_take`], but copy removed element as bytes to `out`.
     ///
     /// # Safety
-    /// * It is your responsibility to properly drop element.
-    /// * `out` must have at least [`size_of_element`] bytes.
+    /// * It is your responsibility to properly drop `out` element.
     ///
     /// # Panics
     /// * Panics if index out of bounds.
