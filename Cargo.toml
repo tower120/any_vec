@@ -1,9 +1,13 @@
 [package]
 name = "any_vec"
+authors = ["Andrey Diduh <tower120@gmail.com>"]
+license = "MIT OR Apache-2.0"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Type erased vector. Almost any operation can be done without type knowledge. Mostly zero overhead."
+repository = "https://github.com/tower120/any_vec"
+keywords = ["vec", "any"]
+categories = ["data-structures"]
 
 [dev-dependencies]
 itertools = "0.10.3"
