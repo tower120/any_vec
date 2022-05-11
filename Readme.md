@@ -1,3 +1,6 @@
+[![crates.io](https://img.shields.io/crates/v/any_vec.svg)](https://crates.io/crates/any_vec)
+[![Docs](https://docs.rs/any_vec/badge.svg)](https://docs.rs/any_vec)
+
 Type erased vector. All elements have the same type.
 
 Designed to be type-erased as far as possible - most of the operations does not know about concrete type.

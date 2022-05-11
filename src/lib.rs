@@ -7,6 +7,9 @@ use std::ptr::{null_mut};
 
 const MIN_CAPACITY: usize = 2;
 
+// Never touched
+static mut ZST_ARRAY: [u8;1] = [0];
+
 /// Type erased vec-like container.
 /// All elements have the same type.
 ///
@@ -17,21 +20,28 @@ pub struct AnyVec {
     mem: *mut u8,
     capacity: usize,        // in elements
     len: usize,             // in elements
-    element_size: usize,    // aligned
+    element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
     drop_fn: fn(ptr: *mut u8, len: usize)
 }
 
 impl AnyVec {
-    #[inline]
     pub fn new<T:'static>() -> Self {
+        let element_layout = Layout::new::<T>();
+        let mem = unsafe {
+            if element_layout.size() != 0 {
+                alloc(Layout::from_size_align_unchecked(
+                    element_layout.size() * MIN_CAPACITY, element_layout.align()
+                ))
+            } else {
+                &mut ZST_ARRAY as *mut u8
+            }
+        };
         Self{
-            mem: unsafe{alloc(Layout::from_size_align_unchecked(
-                size_of::<T>() * MIN_CAPACITY, 1
-            ))},
+            mem,
             capacity: MIN_CAPACITY,
             len: 0,
-            element_size: size_of::<T>(),   // aligned!
+            element_layout,
             type_id: TypeId::of::<T>(),
             drop_fn: |mut ptr: *mut u8, len: usize|{
                 // compile time check
@@ -50,14 +60,19 @@ impl AnyVec {
     }
 
     fn set_capacity(&mut self, mut new_capacity: usize){
-        assert!(self.len <= new_capacity);
+        // Never cut
+        debug_assert!(self.len <= new_capacity);
+
         new_capacity = max(MIN_CAPACITY, new_capacity);
         unsafe{
-            let new_mem = realloc(self.mem, Layout::from_size_align_unchecked(
-                self.element_size * self.capacity, 1
-            ),  self.element_size * new_capacity);
-
-            self.mem = new_mem;
+            if self.element_layout.size() != 0 {
+                let mem_layout = Layout::from_size_align_unchecked(
+                    self.element_layout.size() * self.capacity, self.element_layout.align()
+                );
+                // mul carefully, to prevent overflow.
+                let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
+                self.mem = realloc(self.mem, mem_layout,new_mem_size);
+            }
             self.capacity = new_capacity;
         }
     }
@@ -81,12 +96,12 @@ impl AnyVec {
             self.grow();
         }
 
-        let new_element = self.mem.add(self.element_size * self.len);
+        let new_element = self.mem.add(self.element_layout.size() * self.len);
         self.len += 1;
 
         std::slice::from_raw_parts_mut(
             new_element,
-            self.element_size,
+            self.element_layout.size(),
         )
     }
 
@@ -107,6 +122,7 @@ impl AnyVec {
     }
 */
 
+    // TODO: Is this justified? Benchmark against "push".
     /// # Safety
     ///
     /// Unsafe, because type not checked.
@@ -121,7 +137,7 @@ impl AnyVec {
         ptr::copy_nonoverlapping(
             bytes.as_ptr(),
             self.push_uninit().as_mut_ptr(),
-            self.element_size);
+            self.element_layout.size());
     }
 
     /// # Panics
@@ -141,9 +157,9 @@ impl AnyVec {
         assert!(index < self.len);
 
         // 1. drop element at index
-        let element = self.mem.add(self.element_size * index);
+        let element = self.mem.add(self.element_layout.size() * index);
         if !out.is_null() {
-            ptr::copy_nonoverlapping(element, out, self.element_size);
+            ptr::copy_nonoverlapping(element, out, self.element_layout.size());
         } else {
             (self.drop_fn)(element, 1);
         }
@@ -151,8 +167,8 @@ impl AnyVec {
         // 2. move element
         let last_index = self.len - 1;
         if index != last_index {
-            let last_element = self.mem.add(self.element_size * last_index);
-            ptr::copy_nonoverlapping(last_element, element, self.element_size);
+            let last_element = self.mem.add(self.element_layout.size() * last_index);
+            ptr::copy_nonoverlapping(last_element, element, self.element_layout.size());
         }
 
         // 3. shrink len
@@ -180,7 +196,7 @@ impl AnyVec {
     /// [`swap_remove`]: Self::swap_remove
     /// [`size_of_element`]: Self::size_of_element
     pub unsafe fn swap_take_bytes_into(&mut self, index: usize, out: &mut[u8]){
-        assert_eq!(out.len(), self.element_size);
+        assert_eq!(out.len(), self.element_layout.size());
         self.swap_take_bytes_impl(index, out.as_mut_ptr());
     }
 
@@ -245,13 +261,14 @@ impl AnyVec {
         }
     }
 
-    pub fn type_id(&self) -> TypeId{
+    /// Element TypeId
+    pub fn element_typeid(&self) -> TypeId{
         self.type_id
     }
 
-    /// In bytes. Aligned. `size_of::<T>()`
-    pub fn size_of_element(&self) -> usize {
-        self.element_size
+    /// Element Layout
+    pub fn element_layout(&self) -> Layout {
+        self.element_layout
     }
 
     pub fn len(&self) -> usize {
@@ -266,9 +283,11 @@ impl AnyVec {
 impl Drop for AnyVec {
     fn drop(&mut self) {
         self.clear();
-        unsafe{
-            dealloc(self.mem, Layout::from_size_align_unchecked(
-                self.element_size * self.capacity, 1))
+        if self.element_layout.size() != 0 {
+            unsafe{
+                dealloc(self.mem, Layout::from_size_align_unchecked(
+                    self.element_layout.size() * self.capacity, self.element_layout.align()))
+            }
         }
     }
 }
@@ -338,6 +357,12 @@ mod tests {
             raw_vec.push_unchecked(Empty{});
             raw_vec.push_unchecked(Empty{});
         }
+
+        let mut i = 1;
+        for _ in raw_vec.as_mut_slice::<Empty>(){
+            i += 1;
+        }
+        assert_eq!(i, 3);
     }
 
     #[test]
