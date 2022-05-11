@@ -171,7 +171,7 @@ impl AnyVec {
         }
     }
 
-    /// Same as [`swap_take`], but copy removed element as bytes to `out`.
+    /// Same as [`swap_remove`], but copy removed element as bytes to `out`.
     ///
     /// # Safety
     /// * It is your responsibility to properly drop `out` element.
@@ -181,7 +181,6 @@ impl AnyVec {
     /// * Panics if out len does not match element size.
     ///
     /// [`swap_remove`]: Self::swap_remove
-    /// [`size_of_element`]: Self::size_of_element
     pub unsafe fn swap_take_bytes_into(&mut self, index: usize, out: &mut[u8]){
         assert_eq!(out.len(), self.element_layout.size());
         self.swap_take_bytes_impl(index, out.as_mut_ptr());
