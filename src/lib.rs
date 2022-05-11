@@ -211,7 +211,7 @@ impl AnyVec {
         // won't be able to access the dropped values.
         self.len = 0;
 
-        (self.drop_fn)(self.mem.as_ptr(), self.len);
+        (self.drop_fn)(self.mem.as_ptr(), len);
     }
 
     #[inline]
