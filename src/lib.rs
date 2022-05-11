@@ -229,7 +229,7 @@ impl AnyVec {
     }
 
     #[inline]
-    pub unsafe fn as_mut_slice_unchecked<T:'static>(&self) -> &mut[T]{
+    pub unsafe fn as_mut_slice_unchecked<T:'static>(&mut self) -> &mut[T]{
         std::slice::from_raw_parts_mut(
             self.mem as *mut T,
             self.len,
@@ -240,7 +240,7 @@ impl AnyVec {
     ///
     /// Panics if type mismatch.
     #[inline]
-    pub fn as_mut_slice<T:'static>(&self) -> &mut[T]{
+    pub fn as_mut_slice<T:'static>(&mut self) -> &mut[T]{
         assert_eq!(TypeId::of::<T>(), self.type_id);
         unsafe{
             self.as_mut_slice_unchecked::<T>()
