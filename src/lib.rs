@@ -39,7 +39,7 @@ impl AnyVec {
                 let ptr = alloc(layout);
                 NonNull::new(ptr).unwrap_or_else(|| handle_alloc_error(layout))
             } else {
-                <NonNull<T>>::dangling().cast::<u8>()
+                NonNull::<T>::dangling().cast::<u8>()
             }
         };
         Self{
@@ -67,20 +67,23 @@ impl AnyVec {
     fn set_capacity(&mut self, mut new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);
-
         new_capacity = max(MIN_CAPACITY, new_capacity);
-        unsafe{
-            if self.element_layout.size() != 0 {
+
+        if self.element_layout.size() != 0 {
+            unsafe{
                 let mem_layout = Layout::from_size_align_unchecked(
                     self.element_layout.size() * self.capacity, self.element_layout.align()
                 );
                 // mul carefully, to prevent overflow.
                 let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
-                self.mem = NonNull::new(realloc(self.mem.as_ptr(), mem_layout,new_mem_size))
-                    .unwrap_or_else(|| handle_alloc_error(mem_layout));
+                self.mem = NonNull::new(
+                    realloc(self.mem.as_ptr(), mem_layout,new_mem_size)
+                ).unwrap_or_else(||{
+                    handle_alloc_error(mem_layout)
+                });
             }
-            self.capacity = new_capacity;
         }
+        self.capacity = new_capacity;
     }
 
     #[cold]
@@ -253,19 +256,23 @@ impl AnyVec {
     }
 
     /// Element TypeId
+    #[inline]
     pub fn element_typeid(&self) -> TypeId{
         self.type_id
     }
 
     /// Element Layout
+    #[inline]
     pub fn element_layout(&self) -> Layout {
         self.element_layout
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity
     }
@@ -275,10 +282,13 @@ impl Drop for AnyVec {
     fn drop(&mut self) {
         self.clear();
         if self.element_layout.size() != 0 {
-            unsafe{
-                dealloc(self.mem.as_ptr(), Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.capacity, self.element_layout.align()))
-            }
+            unsafe{ dealloc(
+                self.mem.as_ptr(),
+                Layout::from_size_align_unchecked(
+                    self.element_layout.size() * self.capacity,
+                    self.element_layout.align()
+                )
+            )}
         }
     }
 }
