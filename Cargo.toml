@@ -11,3 +11,8 @@ categories = ["data-structures"]
 
 [dev-dependencies]
 itertools = "0.10.3"
+criterion = "0.3.5"
+
+[[bench]]
+name = "push"
+harness = false

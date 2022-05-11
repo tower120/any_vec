@@ -27,11 +27,17 @@ pub struct AnyVec {
 
 impl AnyVec {
     pub fn new<T:'static>() -> Self {
+        Self::with_capacity::<T>(MIN_CAPACITY)
+    }
+
+    pub fn with_capacity<T:'static>(mut capacity: usize) -> Self {
+        capacity = max(capacity, MIN_CAPACITY);
+
         let element_layout = Layout::new::<T>();
         let mem = unsafe {
             if element_layout.size() != 0 {
                 alloc(Layout::from_size_align_unchecked(
-                    element_layout.size() * MIN_CAPACITY, element_layout.align()
+                    element_layout.size() * capacity, element_layout.align()
                 ))
             } else {
                 &mut ZST_ARRAY as *mut u8
@@ -39,7 +45,7 @@ impl AnyVec {
         };
         Self{
             mem,
-            capacity: MIN_CAPACITY,
+            capacity,
             len: 0,
             element_layout,
             type_id: TypeId::of::<T>(),
@@ -77,6 +83,8 @@ impl AnyVec {
         }
     }
 
+    #[cold]
+    #[inline(never)]
     fn grow(&mut self){
         self.set_capacity(self.capacity * 2);
     }
@@ -105,41 +113,20 @@ impl AnyVec {
         )
     }
 
-/*
-    /// Pushes one element represented as byte slice.
+    /// Marginally faster [`push`] version. *(See benches/push)*
     ///
-    /// # Safety
-    /// This is highly unsafe, due to the number of invariants that aren’t checked:
-    /// * element_bytes must belong to Element.
-    /// * element_bytes must be aligned.
-    /// * Element must be "forgot".
-    #[inline]
-    pub unsafe fn push_bytes(&mut self, element_bytes: &[u8]){
-        debug_assert!(element_bytes.len() == self.element_size);
-
-        let new_element = self.push_uninit();
-        ptr::copy_nonoverlapping(element_bytes.as_ptr(), new_element.as_mut_ptr(), self.element_size);
-    }
-*/
-
-    // TODO: Is this justified? Benchmark against "push".
+    /// [`push`]: Self::push
+    ///
     /// # Safety
     ///
     /// Unsafe, because type not checked.
     #[inline]
     pub unsafe fn push_unchecked<T>(&mut self, value: T){
-        let bytes = std::slice::from_raw_parts(
-            (&value as *const T) as *const u8,
-            std::mem::size_of::<T>(),
-        );
-        mem::forget(value);
-
-        ptr::copy_nonoverlapping(
-            bytes.as_ptr(),
-            self.push_uninit().as_mut_ptr(),
-            self.element_layout.size());
+        ptr::write(self.push_uninit().as_mut_ptr() as *mut T, value);
     }
 
+    /// Appends an element to the back of a collection.
+    ///
     /// # Panics
     ///
     /// Panics if type mismatch.
@@ -346,6 +333,17 @@ mod tests {
         unsafe{
             assert_equal(raw_vec.as_slice_unchecked::<String>(), ["Hello", " to ", "world"]);
         }
+    }
+
+    #[test]
+    pub fn push_with_capacity_test(){
+        const SIZE: usize = 10000;
+        let mut vec = AnyVec::with_capacity::<usize>(SIZE);
+        for i in 0..SIZE{
+            vec.push(i);
+        }
+
+        assert_equal(vec.as_slice::<usize>().iter().copied(), 0..SIZE);
     }
 
     #[test]
