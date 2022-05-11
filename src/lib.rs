@@ -1,14 +1,11 @@
 use std::{mem, ptr};
-use std::alloc::{alloc, dealloc, Layout, realloc};
+use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
 use std::cmp::max;
 use std::mem::{MaybeUninit};
-use std::ptr::{null_mut};
+use std::ptr::{NonNull, null_mut};
 
 const MIN_CAPACITY: usize = 2;
-
-// Never touched
-static mut ZST_ARRAY: [u8;1] = [0];
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -17,7 +14,7 @@ static mut ZST_ARRAY: [u8;1] = [0];
 ///
 /// *`T:'static` due to TypeId requirements*
 pub struct AnyVec {
-    mem: *mut u8,
+    mem: NonNull<u8>,
     capacity: usize,        // in elements
     len: usize,             // in elements
     element_layout: Layout, // size is aligned
@@ -36,11 +33,13 @@ impl AnyVec {
         let element_layout = Layout::new::<T>();
         let mem = unsafe {
             if element_layout.size() != 0 {
-                alloc(Layout::from_size_align_unchecked(
+                let layout = Layout::from_size_align_unchecked(
                     element_layout.size() * capacity, element_layout.align()
-                ))
+                );
+                let ptr = alloc(layout);
+                NonNull::new(ptr).unwrap_or_else(|| handle_alloc_error(layout))
             } else {
-                &mut ZST_ARRAY as *mut u8
+                <NonNull<T>>::dangling().cast::<u8>()
             }
         };
         Self{
@@ -77,7 +76,8 @@ impl AnyVec {
                 );
                 // mul carefully, to prevent overflow.
                 let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
-                self.mem = realloc(self.mem, mem_layout,new_mem_size);
+                self.mem = NonNull::new(realloc(self.mem.as_ptr(), mem_layout,new_mem_size))
+                    .unwrap_or_else(|| handle_alloc_error(mem_layout));
             }
             self.capacity = new_capacity;
         }
@@ -104,7 +104,7 @@ impl AnyVec {
             self.grow();
         }
 
-        let new_element = self.mem.add(self.element_layout.size() * self.len);
+        let new_element = self.mem.as_ptr().add(self.element_layout.size() * self.len);
         self.len += 1;
 
         std::slice::from_raw_parts_mut(
@@ -144,7 +144,7 @@ impl AnyVec {
         assert!(index < self.len);
 
         // 1. drop element at index
-        let element = self.mem.add(self.element_layout.size() * index);
+        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
         if !out.is_null() {
             ptr::copy_nonoverlapping(element, out, self.element_layout.size());
         } else {
@@ -154,7 +154,7 @@ impl AnyVec {
         // 2. move element
         let last_index = self.len - 1;
         if index != last_index {
-            let last_element = self.mem.add(self.element_layout.size() * last_index);
+            let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
             ptr::copy_nonoverlapping(last_element, element, self.element_layout.size());
         }
 
@@ -211,13 +211,13 @@ impl AnyVec {
         // won't be able to access the dropped values.
         self.len = 0;
 
-        (self.drop_fn)(self.mem, len);
+        (self.drop_fn)(self.mem.as_ptr(), self.len);
     }
 
     #[inline]
     pub unsafe fn as_slice_unchecked<T>(&self) -> &[T]{
         std::slice::from_raw_parts(
-            self.mem as *const T,
+            self.mem.as_ptr().cast::<T>(),
             self.len,
         )
     }
@@ -236,7 +236,7 @@ impl AnyVec {
     #[inline]
     pub unsafe fn as_mut_slice_unchecked<T:'static>(&mut self) -> &mut[T]{
         std::slice::from_raw_parts_mut(
-            self.mem as *mut T,
+            self.mem.as_ptr().cast::<T>(),
             self.len,
         )
     }
@@ -276,7 +276,7 @@ impl Drop for AnyVec {
         self.clear();
         if self.element_layout.size() != 0 {
             unsafe{
-                dealloc(self.mem, Layout::from_size_align_unchecked(
+                dealloc(self.mem.as_ptr(), Layout::from_size_align_unchecked(
                     self.element_layout.size() * self.capacity, self.element_layout.align()))
             }
         }
