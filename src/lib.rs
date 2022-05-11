@@ -205,8 +205,13 @@ impl AnyVec {
 
     #[inline]
     pub fn clear(&mut self){
-        (self.drop_fn)(self.mem, self.len);
+        let len = self.len;
+
+        // Prematurely set the length to zero so that even if dropping the values panics users
+        // won't be able to access the dropped values.
         self.len = 0;
+
+        (self.drop_fn)(self.mem, len);
     }
 
     #[inline]
