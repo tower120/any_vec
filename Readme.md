@@ -1,5 +1,6 @@
 [![crates.io](https://img.shields.io/crates/v/any_vec.svg)](https://crates.io/crates/any_vec)
 [![Docs](https://docs.rs/any_vec/badge.svg)](https://docs.rs/any_vec)
+[![CI](https://github.com/tower120/any_vec/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tower120/any_vec/actions/workflows/ci.yml)
 
 Type erased vector. All elements have the same type.
 

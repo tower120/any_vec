@@ -358,7 +358,7 @@ mod tests {
             raw_vec.push_unchecked(Empty{});
         }
 
-        let mut i = 1;
+        let mut i = 0;
         for _ in raw_vec.as_mut_slice::<Empty>(){
             i += 1;
         }
