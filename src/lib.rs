@@ -2,7 +2,7 @@ use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc};
 use std::any::TypeId;
 use std::cmp::max;
-use std::mem::{MaybeUninit, size_of};
+use std::mem::{MaybeUninit};
 use std::ptr::{null_mut};
 
 const MIN_CAPACITY: usize = 2;
