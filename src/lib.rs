@@ -1,7 +1,6 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::cmp::max;
 use std::mem::{MaybeUninit};
 use std::ptr::{NonNull, null_mut};
 
@@ -26,24 +25,11 @@ impl AnyVec {
     }
 
     pub fn with_capacity<T:'static>(capacity: usize) -> Self {
-        let element_layout = Layout::new::<T>();
-        let mem = unsafe {
-            let mem_size = element_layout.size() * capacity;
-            if mem_size != 0 {
-                let layout = Layout::from_size_align_unchecked(
-                    mem_size, element_layout.align()
-                );
-                NonNull::new(alloc(layout))
-                    .unwrap_or_else(|| handle_alloc_error(layout))
-            } else {
-                NonNull::<u8>::dangling()
-            }
-        };
-        Self{
-            mem,
-            capacity,
+        let mut this = Self{
+            mem: NonNull::<u8>::dangling(),
+            capacity: 0,
             len: 0,
-            element_layout,
+            element_layout: Layout::new::<T>(),
             type_id: TypeId::of::<T>(),
             drop_fn: |mut ptr: *mut u8, len: usize|{
                 // compile time check
@@ -58,10 +44,12 @@ impl AnyVec {
                     }
                 }
             }
-        }
+        };
+        this.set_capacity(capacity);
+        this
     }
 
-    fn set_capacity(&mut self, mut new_capacity: usize){
+    fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);
 
@@ -82,19 +70,20 @@ impl AnyVec {
                     } else {
                         // mul carefully, to prevent overflow.
                         let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
+                        let new_mem_layout = Layout::from_size_align_unchecked(
+                            new_mem_size, self.element_layout.align()
+                        );
 
-                        if self.capacity == 0{
+                        if self.capacity == 0 {
                             // allocate
-                            NonNull::new(alloc(Layout::from_size_align_unchecked(
-                                new_mem_size, self.element_layout.align()
-                            )))
+                            NonNull::new(alloc(new_mem_layout))
                         } else {
                             // reallocate
                             NonNull::new(realloc(
                                 self.mem.as_ptr(), mem_layout,new_mem_size
                             ))
                         }
-                        .unwrap_or_else(|| handle_alloc_error(mem_layout))
+                        .unwrap_or_else(|| handle_alloc_error(new_mem_layout))
                     }
             }
         }
@@ -300,15 +289,6 @@ impl AnyVec {
 impl Drop for AnyVec {
     fn drop(&mut self) {
         self.clear();
-/*        if self.element_layout.size() != 0 {
-            unsafe{ dealloc(
-                self.mem.as_ptr(),
-                Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.capacity,
-                    self.element_layout.align()
-                )
-            )}
-        }*/
         self.set_capacity(0);
     }
 }
