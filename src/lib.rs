@@ -24,7 +24,7 @@ pub struct AnyVec {
     len: usize,             // in elements
     element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
-    drop_fn: fn(ptr: *mut u8, len: usize)
+    drop_fn: Option<fn(ptr: *mut u8, len: usize)>
 }
 
 impl AnyVec {
@@ -39,19 +39,19 @@ impl AnyVec {
             len: 0,
             element_layout: Layout::new::<T>(),
             type_id: TypeId::of::<T>(),
-            drop_fn: |mut ptr: *mut u8, len: usize|{
-                // compile time check
+            drop_fn:
                 if !mem::needs_drop::<T>(){
-                    return;
+                    None
+                } else{
+                    Some(|mut ptr: *mut u8, len: usize|{
+                        for _ in 0..len{
+                            unsafe{
+                                ptr::drop_in_place(ptr as *mut T);
+                                ptr = ptr.add(mem::size_of::<T>());
+                            }
+                        }
+                    })
                 }
-
-                for _ in 0..len{
-                    unsafe{
-                        ptr::drop_in_place(ptr as *mut T);
-                        ptr = ptr.add(mem::size_of::<T>());
-                    }
-                }
-            }
         };
         this.set_capacity(capacity);
         this
@@ -155,6 +155,13 @@ impl AnyVec {
         }
     }
 
+    #[inline]
+    fn drop_element(&mut self, ptr: *mut u8, len: usize){
+        if let Some(drop_fn) = self.drop_fn{
+            (drop_fn)(ptr, len);
+        }
+    }
+
     /// drop element, if out is null.
     #[inline]
     unsafe fn swap_take_bytes_impl(&mut self, index: usize, out: *mut u8) {
@@ -165,7 +172,7 @@ impl AnyVec {
         if !out.is_null() {
             ptr::copy_nonoverlapping(element, out, self.element_layout.size());
         } else {
-            (self.drop_fn)(element, 1);
+            self.drop_element(element, 1);
         }
 
         // 2. move element
@@ -234,7 +241,7 @@ impl AnyVec {
         // won't be able to access the dropped values.
         self.len = 0;
 
-        (self.drop_fn)(self.mem.as_ptr(), len);
+        self.drop_element(self.mem.as_ptr(), len);
     }
 
     #[inline]
