@@ -1,11 +1,8 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::cmp::max;
 use std::mem::{MaybeUninit};
 use std::ptr::{NonNull, null_mut};
-
-const MIN_CAPACITY: usize = 2;
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -24,29 +21,15 @@ pub struct AnyVec {
 
 impl AnyVec {
     pub fn new<T:'static>() -> Self {
-        Self::with_capacity::<T>(MIN_CAPACITY)
+        Self::with_capacity::<T>(0)
     }
 
-    pub fn with_capacity<T:'static>(mut capacity: usize) -> Self {
-        capacity = max(capacity, MIN_CAPACITY);
-
-        let element_layout = Layout::new::<T>();
-        let mem = unsafe {
-            if element_layout.size() != 0 {
-                let layout = Layout::from_size_align_unchecked(
-                    element_layout.size() * capacity, element_layout.align()
-                );
-                let ptr = alloc(layout);
-                NonNull::new(ptr).unwrap_or_else(|| handle_alloc_error(layout))
-            } else {
-                NonNull::<T>::dangling().cast::<u8>()
-            }
-        };
-        Self{
-            mem,
-            capacity,
+    pub fn with_capacity<T:'static>(capacity: usize) -> Self {
+        let mut this = Self{
+            mem: NonNull::<u8>::dangling(),
+            capacity: 0,
             len: 0,
-            element_layout,
+            element_layout: Layout::new::<T>(),
             type_id: TypeId::of::<T>(),
             drop_fn: |mut ptr: *mut u8, len: usize|{
                 // compile time check
@@ -61,26 +44,47 @@ impl AnyVec {
                     }
                 }
             }
-        }
+        };
+        this.set_capacity(capacity);
+        this
     }
 
-    fn set_capacity(&mut self, mut new_capacity: usize){
+    fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);
-        new_capacity = max(MIN_CAPACITY, new_capacity);
+
+        if self.capacity == new_capacity {
+            return;
+        }
 
         if self.element_layout.size() != 0 {
             unsafe{
                 let mem_layout = Layout::from_size_align_unchecked(
                     self.element_layout.size() * self.capacity, self.element_layout.align()
                 );
-                // mul carefully, to prevent overflow.
-                let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
-                self.mem = NonNull::new(
-                    realloc(self.mem.as_ptr(), mem_layout,new_mem_size)
-                ).unwrap_or_else(||{
-                    handle_alloc_error(mem_layout)
-                });
+
+                self.mem =
+                    if new_capacity == 0 {
+                        dealloc(self.mem.as_ptr(), mem_layout);
+                        NonNull::<u8>::dangling()
+                    } else {
+                        // mul carefully, to prevent overflow.
+                        let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
+                        let new_mem_layout = Layout::from_size_align_unchecked(
+                            new_mem_size, self.element_layout.align()
+                        );
+
+                        if self.capacity == 0 {
+                            // allocate
+                            NonNull::new(alloc(new_mem_layout))
+                        } else {
+                            // reallocate
+                            NonNull::new(realloc(
+                                self.mem.as_ptr(), mem_layout,new_mem_size
+                            ))
+                        }
+                        .unwrap_or_else(|| handle_alloc_error(new_mem_layout))
+                    }
             }
         }
         self.capacity = new_capacity;
@@ -89,7 +93,9 @@ impl AnyVec {
     #[cold]
     #[inline(never)]
     fn grow(&mut self){
-        self.set_capacity(self.capacity * 2);
+        self.set_capacity(
+             if self.capacity == 0 {2} else {self.capacity * 2}
+        );
     }
 
     /// Pushes one element without actually writing anything.
@@ -165,9 +171,11 @@ impl AnyVec {
         self.len -= 1;
     }
 
+    /// Type erased version of [`Vec::swap_remove`]. Due to this, does not return element.
+    ///
     /// # Panics
     ///
-    /// Panics if index out of bounds.
+    /// Panics if index is out of bounds.
     pub fn swap_remove(&mut self, index: usize) {
         unsafe{
             self.swap_take_bytes_impl(index, null_mut());
@@ -281,15 +289,7 @@ impl AnyVec {
 impl Drop for AnyVec {
     fn drop(&mut self) {
         self.clear();
-        if self.element_layout.size() != 0 {
-            unsafe{ dealloc(
-                self.mem.as_ptr(),
-                Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.capacity,
-                    self.element_layout.align()
-                )
-            )}
-        }
+        self.set_capacity(0);
     }
 }
 
