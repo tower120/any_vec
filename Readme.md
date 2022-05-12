@@ -1,4 +1,5 @@
 [![crates.io](https://img.shields.io/crates/v/any_vec.svg)](https://crates.io/crates/any_vec)
+[![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
 [![Docs](https://docs.rs/any_vec/badge.svg)](https://docs.rs/any_vec)
 [![CI](https://github.com/tower120/any_vec/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tower120/any_vec/actions/workflows/ci.yml)
 
