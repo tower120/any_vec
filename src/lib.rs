@@ -397,14 +397,18 @@ mod tests {
             ]);
         }
 
-        {
-            raw_vec.swap_remove(2);
-            assert_equal(raw_vec.as_slice::<String>(), &[
-                String::from("0"),
-                String::from("4"),
-                String::from("3"),
-            ]);
-        }
+        raw_vec.swap_remove(2);
+        assert_equal(raw_vec.as_slice::<String>(), &[
+            String::from("0"),
+            String::from("4"),
+            String::from("3"),
+        ]);
+
+        raw_vec.swap_remove(2);
+        assert_equal(raw_vec.as_slice::<String>(), &[
+            String::from("0"),
+            String::from("4"),
+        ]);
     }
 
     #[test]
