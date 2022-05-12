@@ -4,9 +4,16 @@ use std::any::TypeId;
 use std::mem::{MaybeUninit};
 use std::ptr::{NonNull, null_mut};
 
-// This is faster then ptr::copy_nonoverlapping, when count is runtime-time value
+// This is faster then ptr::copy_nonoverlapping,
+// when count is runtime value, and count is small.
 #[inline]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+    // MIRI hack
+    if cfg!(miri) {
+        ptr::copy_nonoverlapping(src, dst, count);
+        return;
+    }
+
     for i in 0..count{
         *dst.add(i) = *src.add(i);
     }
