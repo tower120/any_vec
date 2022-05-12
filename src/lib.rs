@@ -4,6 +4,14 @@ use std::any::TypeId;
 use std::mem::{MaybeUninit};
 use std::ptr::{NonNull, null_mut};
 
+// This is faster then ptr::copy_nonoverlapping, when count is runtime-time value
+#[inline]
+unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+    for i in 0..count{
+        *dst.add(i) = *src.add(i);
+    }
+}
+
 /// Type erased vec-like container.
 /// All elements have the same type.
 ///
@@ -164,7 +172,8 @@ impl AnyVec {
         let last_index = self.len - 1;
         if index != last_index {
             let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-            ptr::copy_nonoverlapping(last_element, element, self.element_layout.size());
+            //ptr::copy_nonoverlapping(last_element, element, self.element_layout.size());
+            copy_bytes(last_element, element, self.element_layout.size());
         }
 
         // 3. shrink len
@@ -176,6 +185,7 @@ impl AnyVec {
     /// # Panics
     ///
     /// Panics if index is out of bounds.
+    #[inline]
     pub fn swap_remove(&mut self, index: usize) {
         unsafe{
             self.swap_take_bytes_impl(index, null_mut());
@@ -192,6 +202,7 @@ impl AnyVec {
     /// * Panics if out len does not match element size.
     ///
     /// [`swap_remove`]: Self::swap_remove
+    #[inline]
     pub unsafe fn swap_take_bytes_into(&mut self, index: usize, out: &mut[u8]){
         assert_eq!(out.len(), self.element_layout.size());
         self.swap_take_bytes_impl(index, out.as_mut_ptr());
@@ -204,6 +215,7 @@ impl AnyVec {
     /// # Panics
     /// Panics if index out of bounds.
     /// Panics if type mismatch.
+    #[inline]
     pub fn swap_take<T:'static>(&mut self, index: usize) -> T {
         assert_eq!(TypeId::of::<T>(), self.type_id);
 
