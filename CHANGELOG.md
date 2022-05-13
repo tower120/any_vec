@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+### Optimized
+- `swap_remove` further optimized. 
+- `swap_take` on par with `Vec::swap_remove` now.
+
+### Fixed
+- Fixed UB in `swap_remove` that happens if dropping panics.
+
 ## 0.2.1
 ### Optimized
 - All remove operations become faster. Destructor function is not 
