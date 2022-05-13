@@ -1,8 +1,8 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::mem::{MaybeUninit, size_of, swap};
-use std::ptr::{NonNull, null_mut};
+use std::mem::{MaybeUninit, size_of};
+use std::ptr::{NonNull};
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
