@@ -8,12 +8,6 @@ use std::ptr::{NonNull};
 // when count is runtime value, and count is small.
 #[inline]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
-    // MIRI hack
-    if cfg!(miri) {
-        ptr::copy_nonoverlapping(src, dst, count);
-        return;
-    }
-
     for i in 0..count{
         *dst.add(i) = *src.add(i);
     }
@@ -24,7 +18,16 @@ unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
 unsafe fn swap_bytes(src: *mut u8, dst: *mut u8, count: usize){
     // MIRI hack
     if cfg!(miri) {
-        ptr::swap_nonoverlapping(src, dst, count);
+        let mut tmp = Vec::<u8>::new();
+        tmp.resize(count, 0);
+
+        // src -> tmp
+        ptr::copy_nonoverlapping(src, tmp.as_mut_ptr(), count);
+        // dst -> src
+        ptr::copy_nonoverlapping(dst, src, count);
+        // tmp -> dst
+        ptr::copy_nonoverlapping(tmp.as_ptr(), dst, count);
+
         return;
     }
 
