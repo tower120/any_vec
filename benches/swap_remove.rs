@@ -50,9 +50,9 @@ fn any_vec_swap_take() -> Duration {
 }
 
 fn any_vec_swap_take_bytes_into() -> Duration {
-    let mut vec = AnyVec::new::<usize>();
+    let mut vec = AnyVec::new::<Element>();
     for _ in 0..SIZE{
-        vec.push(0 as usize);
+        vec.push(VALUE.clone());
     }
 
     let start = Instant::now();

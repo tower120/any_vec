@@ -6,7 +6,7 @@
 - `swap_take` on par with `Vec::swap_remove` now.
 
 ### Fixed
-- Fixed UB in `swap_remove` that happens if dropping panics.
+- Fixed UB in `swap_remove` that happens if element destructor panics.
 
 ## 0.2.1
 ### Optimized
