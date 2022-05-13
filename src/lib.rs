@@ -1,23 +1,46 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::mem::{MaybeUninit};
-use std::ptr::{NonNull, null_mut};
+use std::mem::{MaybeUninit, size_of};
+use std::ptr::{NonNull};
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
 #[inline]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
-    // MIRI hack
-    if cfg!(miri) {
-        ptr::copy_nonoverlapping(src, dst, count);
-        return;
-    }
-
     for i in 0..count{
         *dst.add(i) = *src.add(i);
     }
 }
+
+// same as copy_bytes but for swap_nonoverlapping.
+#[inline]
+unsafe fn swap_bytes(src: *mut u8, dst: *mut u8, count: usize){
+    // MIRI hack
+    if cfg!(miri) {
+        let mut tmp = Vec::<u8>::new();
+        tmp.resize(count, 0);
+
+        // src -> tmp
+        ptr::copy_nonoverlapping(src, tmp.as_mut_ptr(), count);
+        // dst -> src
+        ptr::copy_nonoverlapping(dst, src, count);
+        // tmp -> dst
+        ptr::copy_nonoverlapping(tmp.as_ptr(), dst, count);
+
+        return;
+    }
+
+    for i in 0..count{
+        let src_pos = src.add(i);
+        let dst_pos = dst.add(i);
+
+        let tmp = *src_pos;
+        *src_pos = *dst_pos;
+        *dst_pos = tmp;
+    }
+}
+
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -169,31 +192,6 @@ impl AnyVec {
         }
     }
 
-    /// drop element, if out is null.
-    #[inline]
-    unsafe fn swap_take_bytes_impl(&mut self, index: usize, out: *mut u8) {
-        assert!(index < self.len);
-
-        // 1. drop element at index
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-        if !out.is_null() {
-            ptr::copy_nonoverlapping(element, out, self.element_layout.size());
-        } else {
-            self.drop_element(element, 1);
-        }
-
-        // 2. move element
-        let last_index = self.len - 1;
-        if index != last_index {
-            let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-            //ptr::copy_nonoverlapping(last_element, element, self.element_layout.size());
-            copy_bytes(last_element, element, self.element_layout.size());
-        }
-
-        // 3. shrink len
-        self.len -= 1;
-    }
-
     /// Type erased version of [`Vec::swap_remove`]. Due to this, does not return element.
     ///
     /// # Panics
@@ -201,9 +199,50 @@ impl AnyVec {
     /// Panics if index is out of bounds.
     #[inline]
     pub fn swap_remove(&mut self, index: usize) {
-        unsafe{
-            self.swap_take_bytes_impl(index, null_mut());
+    unsafe{
+        assert!(index < self.len);
+
+        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
+
+        // 1. swap elements
+        let last_index = self.len - 1;
+        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
+        if index != last_index {
+            if self.drop_fn.is_none(){
+                copy_bytes(last_element, element, self.element_layout.size());
+            } else {
+                swap_bytes(last_element, element, self.element_layout.size());
+            }
         }
+
+        // 2. shrink len
+        self.len -= 1;
+
+        // 3. drop last
+        self.drop_element(last_element, 1);
+    }
+    }
+
+    /// drop element, if out is null.
+    /// element_size as parameter - because it possible can be known at compile time
+    #[inline]
+    unsafe fn swap_take_bytes_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
+    {
+        assert!(index < self.len);
+
+        // 1. move out element at index
+        let element = self.mem.as_ptr().add(element_size * index);
+        ptr::copy_nonoverlapping(element, out, element_size);
+
+        // 2. move element
+        let last_index = self.len - 1;
+        if index != last_index {
+            let last_element = self.mem.as_ptr().add(element_size * last_index);
+            ptr::copy_nonoverlapping(last_element, element, element_size);
+        }
+
+        // 3. shrink len
+        self.len -= 1;
     }
 
     /// Same as [`swap_remove`], but copy removed element as bytes to `out`.
@@ -218,8 +257,8 @@ impl AnyVec {
     /// [`swap_remove`]: Self::swap_remove
     #[inline]
     pub unsafe fn swap_take_bytes_into(&mut self, index: usize, out: &mut[u8]){
-        assert_eq!(out.len(), self.element_layout.size());
-        self.swap_take_bytes_impl(index, out.as_mut_ptr());
+        assert_eq!(out.len(), self.element_layout.size());  // This allows compile time optimization!
+        self.swap_take_bytes_impl(index, self.element_layout.size(), out.as_mut_ptr());
     }
 
     /// Same as [`swap_remove`], but return removed element.
@@ -235,7 +274,7 @@ impl AnyVec {
 
         let mut out = MaybeUninit::<T>::uninit();
         unsafe{
-            self.swap_take_bytes_impl(index, out.as_mut_ptr() as *mut u8);
+            self.swap_take_bytes_impl(index, size_of::<T>(), out.as_mut_ptr() as *mut u8);
             out.assume_init()
         }
     }
