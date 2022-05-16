@@ -9,7 +9,7 @@ use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes, swap_bytes};
 ///
 /// Only destruct operations have indirect call overhead.
 ///
-/// *`T:'static` due to TypeId requirements*
+/// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec {
     mem: NonNull<u8>,
     capacity: usize,        // in elements
@@ -20,26 +20,26 @@ pub struct AnyVec {
 }
 
 impl AnyVec {
-    pub fn new<T:'static>() -> Self {
-        Self::with_capacity::<T>(0)
+    pub fn new<Element: 'static>() -> Self {
+        Self::with_capacity::<Element>(0)
     }
 
-    pub fn with_capacity<T:'static>(capacity: usize) -> Self {
+    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self {
         let mut this = Self{
             mem: NonNull::<u8>::dangling(),
             capacity: 0,
             len: 0,
-            element_layout: Layout::new::<T>(),
-            type_id: TypeId::of::<T>(),
+            element_layout: Layout::new::<Element>(),
+            type_id: TypeId::of::<Element>(),
             drop_fn:
-                if !mem::needs_drop::<T>(){
+                if !mem::needs_drop::<Element>(){
                     None
                 } else{
                     Some(|mut ptr: *mut u8, len: usize|{
                         for _ in 0..len{
                             unsafe{
-                                ptr::drop_in_place(ptr as *mut T);
-                                ptr = ptr.add(mem::size_of::<T>());
+                                ptr::drop_in_place(ptr as *mut Element);
+                                ptr = ptr.add(mem::size_of::<Element>());
                             }
                         }
                     })
@@ -50,8 +50,8 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn downcast_ref<T:'static>(&self) -> Option<AnyVecRef<T>> {
-        if self.type_id == TypeId::of::<T>() {
+    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
+        if self.type_id == TypeId::of::<Element>() {
             unsafe{ Some(self.downcast_ref_unchecked()) }
         } else {
             None
@@ -59,7 +59,7 @@ impl AnyVec {
     }
 
     #[inline]
-    pub unsafe fn downcast_ref_unchecked<T:'static>(&self) -> AnyVecRef<T> {
+    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
         AnyVecRef{
             any_vec_typed: (AnyVecTyped::new(
                 NonNull::new_unchecked(self as *const _ as *mut _)
@@ -68,8 +68,8 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn downcast_mut<T:'static>(&mut self) -> Option<AnyVecMut<T>> {
-        if self.type_id == TypeId::of::<T>() {
+    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element>> {
+        if self.type_id == TypeId::of::<Element>() {
             unsafe{ Some(self.downcast_mut_unchecked()) }
         } else {
             None
@@ -77,12 +77,11 @@ impl AnyVec {
     }
 
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<T:'static>(&mut self) -> AnyVecMut<T> {
+    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
         AnyVecMut{
             any_vec_typed: AnyVecTyped::new(NonNull::new_unchecked(self))
         }
     }
-
 
     fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
