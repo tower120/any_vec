@@ -1,5 +1,5 @@
 use std::ops::{Deref, DerefMut};
-use crate::{AnyVec, AnyVecRef, AnyVecTyped};
+use crate::{AnyVecTyped};
 
 pub struct AnyVecMut<'a, T>{
     pub(crate) any_vec_typed: AnyVecTyped<'a, T>

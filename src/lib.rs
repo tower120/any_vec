@@ -8,11 +8,7 @@ pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
 
-use std::{mem, ptr};
-use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
-use std::any::TypeId;
-use std::mem::{MaybeUninit, size_of};
-use std::ops::{Deref, DerefMut};
+use std::ptr;
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.

@@ -1,4 +1,4 @@
-use std::mem::MaybeUninit;
+use std::mem::{MaybeUninit, size_of};
 use std::ptr::{slice_from_raw_parts_mut};
 use std::time::{Duration, Instant};
 use criterion::{criterion_group, criterion_main, Criterion};

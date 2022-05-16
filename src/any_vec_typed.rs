@@ -65,9 +65,9 @@ impl<'a, T> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    pub fn as_slice(&mut self) -> &[T] {
+    pub fn as_slice(&self) -> &[T] {
         unsafe{
-            self.this_mut().as_slice_unchecked::<T>()
+            self.this().as_slice_unchecked::<T>()
         }
     }
 

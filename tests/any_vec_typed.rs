@@ -1,5 +1,4 @@
-use std::ops::{Deref, DerefMut};
-use any_vec::{AnyVec, AnyVecRef, AnyVecTyped};
+use any_vec::{AnyVec};
 
 #[test]
 pub fn downcast_mut_test(){
@@ -12,9 +11,9 @@ pub fn downcast_mut_test(){
 #[test]
 pub fn downcast_ref_test(){
     let mut any_vec = AnyVec::new::<String>();
+    any_vec.clear();
     let vec1 = any_vec.downcast_ref::<String>().unwrap();
     let vec2 = any_vec.downcast_ref::<String>().unwrap();
-    //any_vec.clear();
     assert_eq!(vec1.len(), 0);
     assert_eq!(vec2.len(), 0);
 }

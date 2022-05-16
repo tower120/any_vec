@@ -1,7 +1,6 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::mem::{MaybeUninit, size_of};
 use std::ptr::{NonNull};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes, swap_bytes};
 
@@ -63,7 +62,7 @@ impl AnyVec {
     pub unsafe fn downcast_ref_unchecked<T:'static>(&self) -> AnyVecRef<T> {
         AnyVecRef{
             any_vec_typed: (AnyVecTyped::new(
-                unsafe{ NonNull::new_unchecked(self as *const _ as *mut _) }
+                NonNull::new_unchecked(self as *const _ as *mut _)
             ))
         }
     }
@@ -80,7 +79,7 @@ impl AnyVec {
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T:'static>(&mut self) -> AnyVecMut<T> {
         AnyVecMut{
-            any_vec_typed: AnyVecTyped::new(unsafe{ NonNull::new_unchecked(self) })
+            any_vec_typed: AnyVecTyped::new(NonNull::new_unchecked(self))
         }
     }
 
