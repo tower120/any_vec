@@ -11,16 +11,18 @@ fn vec_push(){
 }
 
 fn any_vec_push(){
-    let mut vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVec::new::<usize>();
     for i in 0..SIZE{
+        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
         vec.push(i);
     }
 }
 
 fn any_vec_push_unchecked(){
-    let mut vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVec::new::<usize>();
     for i in 0..SIZE{
-        unsafe{ vec.push_unchecked(i); }
+        let mut vec = unsafe{ any_vec.downcast_mut_unchecked::<usize>() };
+        vec.push(i);
     }
 }
 

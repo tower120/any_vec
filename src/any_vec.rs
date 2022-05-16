@@ -201,7 +201,7 @@ impl AnyVec {
     #[inline]
     pub(crate) unsafe fn swap_take_bytes_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
     {
-        assert!(index < self.len);
+        assert!(index < self.len, "Index out of range!");
 
         // 1. move out element at index
         let element = self.mem.as_ptr().add(element_size * index);
