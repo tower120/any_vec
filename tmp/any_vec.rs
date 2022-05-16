@@ -1,5 +1,5 @@
 use std::mem::forget;
-use itertools::assert_equal;
+use itertools::{any, assert_equal};
 use any_vec::AnyVec;
 
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
@@ -139,4 +139,16 @@ fn type_erased_move_test() {
         String::from("4"),
         String::from("3"),
     ]);
+}
+
+#[test]
+fn vec_mut_test() {
+    let mut any_vec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+    //any_vec.push(String::from("0"));
+    //vec.push("Hello".into());
+    //any_vec.push(String::from("0"));
+    //any_vec.len();
+    //vec.push("Hello".into());
+    //any_vec.len();
 }
