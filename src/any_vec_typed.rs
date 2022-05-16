@@ -2,38 +2,39 @@ use std::mem::size_of;
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;
+use std::ptr::NonNull;
 use crate::AnyVec;
 
-pub struct AnyVecTyped<'a, T: 'static>{
-    any_vec: *mut AnyVec,       // TODO: NonNUll !!
+pub struct AnyVecTyped<'a, T>{
+    any_vec: NonNull<AnyVec>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static> Send for AnyVecTyped<'a, T>
+unsafe impl<'a, T> Send for AnyVecTyped<'a, T>
     where T: Send
 {}
 
-unsafe impl<'a, T: 'static> Sync for AnyVecTyped<'a, T>
+unsafe impl<'a, T> Sync for AnyVecTyped<'a, T>
     where T: Sync
 {}
 
-impl<'a, T: 'static> AnyVecTyped<'a, T>{
+impl<'a, T> AnyVecTyped<'a, T>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
     #[inline]
-    pub(crate) unsafe fn new(any_vec: *mut AnyVec) -> Self {
+    pub(crate) unsafe fn new(any_vec: NonNull<AnyVec>) -> Self {
         Self{any_vec, phantom: PhantomData}
     }
 
     #[inline]
     fn this(&self) -> &AnyVec{
-        unsafe{ &*self.any_vec }
+        unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
     fn this_mut(&mut self) -> &mut AnyVec{
-        unsafe{ &mut *self.any_vec }
+        unsafe{ self.any_vec.as_mut() }
     }
 
     #[inline]

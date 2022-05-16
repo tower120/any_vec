@@ -62,7 +62,9 @@ impl AnyVec {
     #[inline]
     pub unsafe fn downcast_ref_unchecked<T:'static>(&self) -> AnyVecRef<T> {
         AnyVecRef{
-            any_vec_typed: (AnyVecTyped::new(self as *const _ as *mut _))
+            any_vec_typed: (AnyVecTyped::new(
+                unsafe{ NonNull::new_unchecked(self as *const _ as *mut _) }
+            ))
         }
     }
 
@@ -78,7 +80,7 @@ impl AnyVec {
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T:'static>(&mut self) -> AnyVecMut<T> {
         AnyVecMut{
-            any_vec_typed: AnyVecTyped::new(self)
+            any_vec_typed: AnyVecTyped::new(unsafe{ NonNull::new_unchecked(self) })
         }
     }
 
