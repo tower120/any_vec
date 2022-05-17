@@ -5,6 +5,7 @@
 //! Or use [`AnyVec`]'s type erased operations, which operate on `[u8]` byte basis.
 //!
 //! ```rust
+//!     use any_vec::AnyVec;
 //!     let mut vec: AnyVec = AnyVec::new::<String>();
 //!     {
 //!         // Typed operations.
