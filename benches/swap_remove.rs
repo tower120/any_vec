@@ -1,5 +1,4 @@
-use std::mem::size_of;
-use std::mem::MaybeUninit;
+use std::mem::{MaybeUninit, size_of};
 use std::ptr::{slice_from_raw_parts_mut};
 use std::time::{Duration, Instant};
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -24,35 +23,39 @@ fn vec_swap_remove() -> Duration {
 }
 
 fn any_vec_swap_remove() -> Duration {
-    let mut vec = AnyVec::new::<Element>();
+    let mut any_vec = AnyVec::new::<Element>();
     for _ in 0..SIZE{
-        vec.push(VALUE.clone());
+        any_vec.downcast_mut::<Element>().unwrap()
+            .push(VALUE.clone());
     }
 
     let start = Instant::now();
         for _ in 0..SIZE{
-            vec.swap_remove(0);
+            any_vec.swap_remove(0);
         }
     start.elapsed()
 }
 
-fn any_vec_swap_take() -> Duration {
-    let mut vec = AnyVec::new::<Element>();
+fn any_vec_typed_swap_remove() -> Duration {
+    let mut any_vec = AnyVec::new::<Element>();
     for _ in 0..SIZE{
-        vec.push(VALUE.clone());
+        any_vec.downcast_mut::<Element>().unwrap()
+            .push(VALUE.clone());
     }
 
     let start = Instant::now();
         for _ in 0..SIZE{
-            vec.swap_take::<Element>(0);
+            any_vec.downcast_mut::<Element>().unwrap()
+                .swap_remove(0);
         }
     start.elapsed()
 }
 
-fn any_vec_swap_take_bytes_into() -> Duration {
-    let mut vec = AnyVec::new::<Element>();
+fn any_vec_swap_remove_into() -> Duration {
+    let mut any_vec = AnyVec::new::<Element>();
     for _ in 0..SIZE{
-        vec.push(VALUE.clone());
+        any_vec.downcast_mut::<Element>().unwrap()
+            .push(VALUE.clone());
     }
 
     let start = Instant::now();
@@ -63,7 +66,8 @@ fn any_vec_swap_take_bytes_into() -> Duration {
                     element.as_mut_ptr() as *mut u8,
                     size_of::<Element>()
                 );
-                vec.swap_take_bytes_into(0, &mut element_bytes[..]);
+
+                any_vec.swap_remove_into(0, &mut element_bytes[..]);
                 element.assume_init();
             }
         }
@@ -80,8 +84,8 @@ fn bench_custom<F: FnMut() -> Duration>(c: &mut Criterion, id: &str, mut routine
 pub fn bench_swap_remove(c: &mut Criterion) {
     bench_custom(c, "Vec swap_remove", vec_swap_remove);
     bench_custom(c, "AnyVec swap_remove", any_vec_swap_remove);
-    bench_custom(c, "AnyVec swap_take", any_vec_swap_take);
-    bench_custom(c, "AnyVec swap_take_bytes_into", any_vec_swap_take_bytes_into);
+    bench_custom(c, "AnyVecTyped swap_remove", any_vec_typed_swap_remove);
+    bench_custom(c, "AnyVecTyped swap_remove_into", any_vec_swap_remove_into);
 }
 
 criterion_group!(benches, bench_swap_remove);
