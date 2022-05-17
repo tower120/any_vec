@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+### Changed
+- Major API change. All typed operations placed into `AnyVecTyped<T>`.
+
 ## 0.2.2
 ### Optimized
 - `swap_remove` further optimized. 
