@@ -35,6 +35,9 @@
 //!
 //!```
 //!
+//! [`AnyVec`] is [`Send`]able if it's elements are.
+//! [`AnyVec`] is [`Sync`]able if it's elements are.
+//!
 
 mod any_vec;
 mod any_vec_typed;

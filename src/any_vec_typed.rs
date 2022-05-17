@@ -5,6 +5,7 @@ use std::ptr;
 use std::ptr::NonNull;
 use crate::AnyVec;
 
+/// Concrete type [`AnyVec`] representation.
 pub struct AnyVecTyped<'a, T>{
     any_vec: NonNull<AnyVec>,
     phantom: PhantomData<&'a mut T>
