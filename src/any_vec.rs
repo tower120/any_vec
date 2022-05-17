@@ -158,7 +158,6 @@ impl AnyVec {
     /// * returned byte slice must be written with actual Element bytes.
     /// * Element bytes must be aligned.
     /// * Element must be "forgotten".
-    #[inline]
     pub unsafe fn insert_uninit(&mut self, index: usize) -> &mut[u8] {
         assert!(index <= self.len, "Index out of range!");
         if self.len == self.capacity{
