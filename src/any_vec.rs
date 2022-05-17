@@ -145,7 +145,6 @@ impl AnyVec {
     /// Return byte slice, that must be filled with element data.
     ///
     /// # Safety
-    /// This is highly unsafe, due to the number of invariants that aren’t checked:
     /// * returned byte slice must be written with actual Element bytes.
     /// * Element bytes must be aligned.
     /// * Element must be "forgotten".
@@ -221,6 +220,13 @@ impl AnyVec {
     }
     }
 
+    /// Same as [`remove`], but copy removed element as bytes to `out`.
+    ///
+    /// [`remove`]: Self::remove
+    ///
+    /// # Safety
+    /// * It is your responsibility to properly drop `out` element.
+    ///
     /// # Panics
     /// * Panics if index out of bounds.
     /// * Panics if out len does not match element size.
