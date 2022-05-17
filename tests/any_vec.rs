@@ -178,3 +178,23 @@ fn type_erased_move_test() {
         String::from("3"),
     ]);
 }
+
+#[test]
+fn any_vec_insert_front(){
+    let mut any_vec = AnyVec::new::<usize>();
+    let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+    for i in 0..100{
+        vec.insert(0, i);
+    }
+    assert_equal(vec.as_slice().iter().copied(), (0..100).rev());
+}
+
+#[test]
+fn any_vec_insert_back(){
+    let mut any_vec = AnyVec::new::<usize>();
+    let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+    for i in 0..100{
+        vec.insert(i, i);
+    }
+    assert_equal(vec.as_slice().iter().copied(), 0..100);
+}

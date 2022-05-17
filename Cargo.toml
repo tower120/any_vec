@@ -15,13 +15,17 @@ itertools = "0.10.3"
 criterion = "0.3.5"
 
 [[bench]]
+name = "insert"
+harness = false
+
+[[bench]]
 name = "push"
 harness = false
 
 [[bench]]
-name = "swap_remove"
+name = "remove"
 harness = false
 
 [[bench]]
-name = "remove"
+name = "swap_remove"
 harness = false
