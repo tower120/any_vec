@@ -49,10 +49,22 @@ impl<'a, T> AnyVecTyped<'a, T>{
     }
 
     #[inline]
+    pub fn remove(&mut self, index: usize) -> T {
+        let mut out = MaybeUninit::<T>::uninit();
+        unsafe{
+            self.this_mut().remove_into_impl(
+                index,
+                size_of::<T>(),
+                out.as_mut_ptr() as *mut u8);
+            out.assume_init()
+        }
+    }
+
+    #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
         let mut out = MaybeUninit::<T>::uninit();
         unsafe{
-            self.this_mut().swap_take_bytes_impl(
+            self.this_mut().swap_remove_into_impl(
                 index,
                 size_of::<T>(),
                 out.as_mut_ptr() as *mut u8);

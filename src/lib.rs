@@ -54,15 +54,21 @@ use std::ptr;
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
 #[inline]
-unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
+    // MIRI hack
+    if cfg!(miri) {
+        ptr::copy_nonoverlapping(src, dst, count);
+        return;
+    }
+
     for i in 0..count{
         *dst.add(i) = *src.add(i);
     }
 }
 
-// same as copy_bytes but for swap_nonoverlapping.
+// same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
 #[inline]
-unsafe fn swap_bytes(src: *mut u8, dst: *mut u8, count: usize){
+unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
     // MIRI hack
     if cfg!(miri) {
         let mut tmp = Vec::<u8>::new();

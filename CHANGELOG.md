@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+### Added
+- `AnyVec::remove`, `AnyVec::remove_into`, `AnyVecTyped::remove`
+
 ## 0.3.0
 ### Changed
 - Major API change. All typed operations placed into `AnyVecTyped<T>`.
