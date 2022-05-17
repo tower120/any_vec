@@ -1,3 +1,40 @@
+//! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
+//! Have same performance and *operations* as [`std::vec::Vec`].
+//!
+//! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
+//! Or use [`AnyVec`]'s type erased operations, which operate on `[u8]` byte basis.
+//!
+//! ```rust
+//!     let mut vec: AnyVec = AnyVec::new::<String>();
+//!     {
+//!         // Typed operations.
+//!         let mut vec = vec.downcast_mut::<String>().unwrap();
+//!         vec.push(String::from("0"));
+//!         vec.push(String::from("1"));
+//!         vec.push(String::from("2"));
+//!     }
+//!
+//!     let mut other_vec: AnyVec = AnyVec::new::<String>();
+//!     // Fully type erased element move from one vec to another
+//!     // without intermediate mem-copies.
+//!     //
+//!     // Equivalent to:
+//!     //
+//!     // let element = vec.swap_remove(0);
+//!     // other.push(element);
+//!     unsafe{
+//!         let element: &mut[u8] = other_vec.push_uninit();    // allocate element
+//!         vec.swap_remove_into(0, element);                   // swap_remove
+//!     }
+//!
+//!     // Output 2 1
+//!     for s in vec.downcast_ref::<String>().unwrap().as_slice(){
+//!         println!("{}", s);
+//!     }
+//!
+//!```
+//!
+
 mod any_vec;
 mod any_vec_typed;
 mod any_vec_mut;

@@ -13,9 +13,13 @@ Only destruct operations have additional overhead of indirect call.
 
 ```rust
     let mut vec: AnyVec = AnyVec::new::<String>();
-    vec.push(String::from("0"));
-    vec.push(String::from("1"));
-    vec.push(String::from("2"));
+    {
+        // Typed operations.
+        let mut vec = vec.downcast_mut::<String>().unwrap();
+        vec.push(String::from("0"));
+        vec.push(String::from("1"));
+        vec.push(String::from("2"));
+    }
  
     let mut other_vec: AnyVec = AnyVec::new::<String>();
     // Fully type erased element move from one vec to another
@@ -27,11 +31,11 @@ Only destruct operations have additional overhead of indirect call.
     // other.push(element);
     unsafe{
         let element: &mut[u8] = other_vec.push_uninit();    // allocate element 
-        vec.swap_take_bytes_into(0, element);               // swap_remove
+        vec.swap_remove_into(0, element);                   // swap_remove
     }
 
     // Output 2 1
-    for s in vec.as_slice::<String>(){
+    for s in vec.downcast_ref::<String>().unwrap().as_slice(){
         println!("{}", s);
     }
     
