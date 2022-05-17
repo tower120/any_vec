@@ -1,8 +1,8 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::ptr::{NonNull};
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes, swap_bytes};
+use std::ptr::{NonNull, null_mut};
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -83,6 +83,9 @@ impl AnyVec {
         }
     }
 
+    /// This is the only function, which do allocations/deallocations.
+    /// Real capacity one element bigger. Last virtual element used by remove operations,
+    /// as temporary value location.
     fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);
@@ -93,8 +96,11 @@ impl AnyVec {
 
         if self.element_layout.size() != 0 {
             unsafe{
+                // Non checked mul, because this memory size already allocated.
+                // +1 - from temporary element storage
                 let mem_layout = Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.capacity, self.element_layout.align()
+                    self.element_layout.size() * (self.capacity + 1),
+                    self.element_layout.align()
                 );
 
                 self.mem =
@@ -103,7 +109,9 @@ impl AnyVec {
                         NonNull::<u8>::dangling()
                     } else {
                         // mul carefully, to prevent overflow.
-                        let new_mem_size = self.element_layout.size().checked_mul(new_capacity).unwrap();
+                        // +1 - for temporary element storage
+                        let new_mem_size = self.element_layout.size()
+                            .checked_mul(new_capacity + 1).unwrap();
                         let new_mem_layout = Layout::from_size_align_unchecked(
                             new_mem_size, self.element_layout.align()
                         );
@@ -137,7 +145,6 @@ impl AnyVec {
     /// Return byte slice, that must be filled with element data.
     ///
     /// # Safety
-    /// This is highly unsafe, due to the number of invariants that aren’t checked:
     /// * returned byte slice must be written with actual Element bytes.
     /// * Element bytes must be aligned.
     /// * Element must be "forgotten".
@@ -163,6 +170,72 @@ impl AnyVec {
         }
     }
 
+    #[inline]
+    fn index_check(&self, index: usize){
+        assert!(index < self.len, "Index out of range!");
+    }
+
+    /// element_size as parameter - because it possible can be known at compile time
+    #[inline]
+    pub(crate) unsafe fn remove_into_impl(&mut self, index: usize, element_size: usize, out: *mut u8) {
+        self.index_check(index);
+
+        let element = self.mem.as_ptr().add(element_size * index);
+
+        // 1. copy element to out
+        if !out.is_null() {
+            copy_bytes_nonoverlapping(element, out, element_size);
+        }
+
+        // 2. shift everything left
+        ptr::copy(
+            element.add(element_size),
+            element,
+            element_size * (self.len - index - 1)
+        );
+
+        // 3. shrink len
+        self.len -= 1;
+    }
+
+    /// Type erased version of [`Vec::remove`]. Due to this, does not return element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is out of bounds.
+    pub fn remove(&mut self, index: usize) {
+    unsafe{
+        let temp_element = if self.drop_fn.is_some() {
+            self.mem.as_ptr().add(self.element_layout.size() * self.capacity)
+        } else {
+            null_mut()
+        };
+
+        self.remove_into_impl(index, self.element_layout.size(), temp_element);
+
+        // drop element in temporary storage
+        if !temp_element.is_null() {
+            (self.drop_fn.unwrap_unchecked())(temp_element, 1);
+        }
+    }
+    }
+
+    /// Same as [`remove`], but copy removed element as bytes to `out`.
+    ///
+    /// [`remove`]: Self::remove
+    ///
+    /// # Safety
+    /// * It is your responsibility to properly drop `out` element.
+    ///
+    /// # Panics
+    /// * Panics if index out of bounds.
+    /// * Panics if out len does not match element size.
+    #[inline]
+    pub unsafe fn remove_into(&mut self, index: usize, out: &mut[u8]) {
+        assert_eq!(out.len(), self.element_layout.size());
+        self.remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
+    }
+
     /// Type erased version of [`Vec::swap_remove`]. Due to this, does not return element.
     ///
     /// # Panics
@@ -171,7 +244,7 @@ impl AnyVec {
     #[inline]
     pub fn swap_remove(&mut self, index: usize) {
     unsafe{
-        assert!(index < self.len);
+        self.index_check(index);
 
         let element = self.mem.as_ptr().add(self.element_layout.size() * index);
 
@@ -180,9 +253,9 @@ impl AnyVec {
         let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
         if index != last_index {
             if self.drop_fn.is_none(){
-                copy_bytes(last_element, element, self.element_layout.size());
+                copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
             } else {
-                swap_bytes(last_element, element, self.element_layout.size());
+                swap_bytes_nonoverlapping(last_element, element, self.element_layout.size());
             }
         }
 
@@ -194,12 +267,43 @@ impl AnyVec {
     }
     }
 
+    // Significantly slower.... Maybe due to additional memory access at temp area?
+    // Hide for now.
+    #[allow(dead_code)]
+    #[inline]
+    fn swap_remove_v2(&mut self, index: usize) {
+    unsafe{
+        self.index_check(index);
+
+        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
+
+        // 1. swap elements
+        let last_index = self.len - 1;
+        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
+        let mut element_do_drop = last_element;
+        if index != last_index {
+            if self.drop_fn.is_some(){
+                let temp_element = self.mem.as_ptr().add(self.element_layout.size() * self.capacity);
+                copy_bytes_nonoverlapping(element, temp_element, self.element_layout.size());
+                element_do_drop = temp_element;
+            }
+            copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
+        }
+
+        // 2. shrink len
+        self.len -= 1;
+
+        // 3. drop last
+        self.drop_element(element_do_drop, 1);
+    }
+    }
+
     /// drop element, if out is null.
     /// element_size as parameter - because it possible can be known at compile time
     #[inline]
-    pub(crate) unsafe fn swap_take_bytes_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
+    pub(crate) unsafe fn swap_remove_into_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
     {
-        assert!(index < self.len, "Index out of range!");
+        self.index_check(index);
 
         // 1. move out element at index
         let element = self.mem.as_ptr().add(element_size * index);
@@ -229,7 +333,7 @@ impl AnyVec {
     #[inline]
     pub unsafe fn swap_remove_into(&mut self, index: usize, out: &mut[u8]){
         assert_eq!(out.len(), self.element_layout.size());  // This allows compile time optimization!
-        self.swap_take_bytes_impl(index, self.element_layout.size(), out.as_mut_ptr());
+        self.swap_remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
     }
 
     #[inline]

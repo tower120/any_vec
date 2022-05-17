@@ -21,3 +21,7 @@ harness = false
 [[bench]]
 name = "swap_remove"
 harness = false
+
+[[bench]]
+name = "remove"
+harness = false

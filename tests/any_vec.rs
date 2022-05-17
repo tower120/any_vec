@@ -80,6 +80,43 @@ fn zero_size_type_test() {
 }
 
 #[test]
+fn remove_test() {
+    let mut any_vec = AnyVec::new::<String>();
+    {
+        let mut vec = any_vec.downcast_mut::<String>().unwrap();
+        vec.push(String::from("0"));
+        vec.push(String::from("1"));
+        vec.push(String::from("2"));
+        vec.push(String::from("3"));
+        vec.push(String::from("4"));
+    }
+
+    // type erased remove
+    any_vec.remove(2);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("3"),
+        String::from("4"),
+    ]);
+
+    // remove last
+    any_vec.remove(3);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("3"),
+    ]);
+
+    // remove first
+    any_vec.remove(0);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("1"),
+        String::from("3"),
+    ]);
+}
+
+#[test]
 fn swap_remove_test() {
     let mut any_vec = AnyVec::new::<String>();
     {
