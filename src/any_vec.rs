@@ -132,12 +132,53 @@ impl AnyVec {
         self.capacity = new_capacity;
     }
 
+    #[inline]
+    fn index_check(&self, index: usize){
+        assert!(index < self.len, "Index out of range!");
+    }
+
     #[cold]
     #[inline(never)]
     fn grow(&mut self){
         self.set_capacity(
              if self.capacity == 0 {2} else {self.capacity * 2}
         );
+    }
+
+    /// Inserts one element without actually writing anything at position index,
+    /// shifting all elements after it to the right.
+    ///
+    /// Return byte slice, that must be filled with element data.
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is out of bounds.
+    ///
+    /// # Safety
+    /// * returned byte slice must be written with actual Element bytes.
+    /// * Element bytes must be aligned.
+    /// * Element must be "forgotten".
+    pub unsafe fn insert_uninit(&mut self, index: usize) -> &mut[u8] {
+        assert!(index <= self.len, "Index out of range!");
+        if self.len == self.capacity{
+            self.grow();
+        }
+
+        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
+        let next_element = element.add(self.element_layout.size());
+
+        // push right
+        ptr::copy(
+            element,
+            next_element,
+            self.element_layout.size() * (self.len - index)
+        );
+        self.len += 1;
+
+        std::slice::from_raw_parts_mut(
+            element,
+            self.element_layout.size(),
+        )
     }
 
     /// Pushes one element without actually writing anything.
@@ -168,11 +209,6 @@ impl AnyVec {
         if let Some(drop_fn) = self.drop_fn{
             (drop_fn)(ptr, len);
         }
-    }
-
-    #[inline]
-    fn index_check(&self, index: usize){
-        assert!(index < self.len, "Index out of range!");
     }
 
     /// element_size as parameter - because it possible can be known at compile time

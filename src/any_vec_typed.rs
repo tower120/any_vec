@@ -39,6 +39,16 @@ impl<'a, T> AnyVecTyped<'a, T>{
     }
 
     #[inline]
+    pub fn insert(&mut self, index: usize, value: T){
+        unsafe{
+            ptr::write(
+                self.this_mut().insert_uninit(index).as_mut_ptr() as *mut T,
+                value
+            );
+        }
+    }
+
+    #[inline]
     pub fn push(&mut self, value: T){
         unsafe{
             ptr::write(

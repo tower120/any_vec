@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.3.1
+## Unreleased
 ### Added
-- `AnyVec::remove`, `AnyVec::remove_into`, `AnyVecTyped::remove`
+- `AnyVec::remove` 
+- `AnyVec::remove_into` 
+- `AnyVecTyped::remove`
+- `AnyVec::insert_uninit`
+- `AnyVecTyped::insert`
 
 ## 0.3.0
 ### Changed
