@@ -208,6 +208,27 @@ impl AnyVec {
     }
 
     #[inline]
+    pub fn push_v2(&mut self, value: impl IAnyValue) {
+        assert_eq!(value.value_typeid(), self.type_id);
+        if self.len == self.capacity{
+            self.grow();
+        }
+
+        unsafe{
+        let new_element = self.mem.as_ptr().add(self.element_layout.size() * self.len);
+        value.consume_bytes(|value_bytes|{
+            copy_bytes_nonoverlapping(
+                value_bytes.as_ptr(),
+                new_element,
+                self.element_layout.size()
+            );
+        });
+        }
+
+        self.len += 1;
+    }
+
+    #[inline]
     fn drop_element(&mut self, ptr: *mut u8, len: usize){
         if let Some(drop_fn) = self.drop_fn{
             (drop_fn)(ptr, len);
@@ -365,12 +386,7 @@ impl AnyVec {
                 self.len -= 1;
             };
 
-        AnyValue{
-            mem: element,
-            typeid,
-            drop_fn: ManuallyDrop::new(f),
-            phantom: PhantomData
-        }
+        AnyValue::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
     }
     }
 

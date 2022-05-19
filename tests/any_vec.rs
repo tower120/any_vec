@@ -1,6 +1,6 @@
 use std::mem::forget;
 use itertools::{assert_equal};
-use any_vec::AnyVec;
+use any_vec::{AnyValueWrapper, AnyVec};
 
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     std::slice::from_raw_parts(
@@ -151,6 +151,29 @@ fn swap_remove_test() {
     ]);
 }
 
+#[test]
+fn any_vec_swap_remove_push_test() {
+    let mut any_vec = AnyVec::new::<String>();
+    any_vec.push_v2(AnyValueWrapper::new(String::from("0")));
+    any_vec.push_v2(AnyValueWrapper::new(String::from("1")));
+    any_vec.push_v2(AnyValueWrapper::new(String::from("3")));
+    any_vec.push_v2(AnyValueWrapper::new(String::from("4")));
+
+    let mut any_vec_other = AnyVec::new::<String>();
+    let any1= any_vec.swap_remove_v3(1);
+    any_vec_other.push_v2(any1);
+
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("4"),
+        String::from("3"),
+    ]);
+    assert_equal(any_vec_other.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("1"),
+    ]);
+}
+
+// TODO: deprecated
 #[test]
 fn type_erased_move_test() {
     let mut any_vec = AnyVec::new::<String>();
