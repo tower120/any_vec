@@ -34,7 +34,7 @@ fn any_vec_swap_remove() -> Duration {
 
     let start = Instant::now();
         for _ in 0..SIZE{
-            any_vec.swap_remove(0);
+            any_vec.swap_remove_v3(0);
         }
     start.elapsed()
 }

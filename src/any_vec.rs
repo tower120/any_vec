@@ -1,8 +1,11 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
+use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 use std::ptr::{NonNull, null_mut};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
+use crate::any_value::{AnyValue, IAnyValue};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -331,6 +334,43 @@ impl AnyVec {
 
         // 3. drop last
         self.drop_element(element_do_drop, 1);
+    }
+    }
+
+    #[inline]
+    pub fn swap_remove_v3(&mut self, index: usize) -> impl IAnyValue + '_{
+    unsafe{
+        self.index_check(index);
+
+        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
+        let typeid = self.type_id;
+
+        let f =
+            move |mut element: *mut u8| {
+                if element.is_null(){
+                    element = self.mem.as_ptr().add(self.element_layout.size() * index);
+                } else {
+                    // 1. drop
+                    self.drop_element(element, 1);
+                }
+
+                // 2. overwrite with last element
+                let last_index = self.len - 1;
+                let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
+                if index != last_index {
+                    copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
+                }
+
+                // 3. shrink len
+                self.len -= 1;
+            };
+
+        AnyValue{
+            mem: element,
+            typeid,
+            drop_fn: ManuallyDrop::new(f),
+            phantom: PhantomData
+        }
     }
     }
 

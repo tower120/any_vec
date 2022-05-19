@@ -43,6 +43,7 @@ mod any_vec;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
+mod any_value;
 
 pub use crate::any_vec::AnyVec;
 pub use any_vec_typed::AnyVecTyped;
