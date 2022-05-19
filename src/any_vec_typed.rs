@@ -3,23 +3,23 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
-use crate::AnyVec;
+use crate::{AnyValueWrapper, AnyVec};
 
 /// Concrete type [`AnyVec`] representation.
-pub struct AnyVecTyped<'a, T>{
+pub struct AnyVecTyped<'a, T: 'static>{
     any_vec: NonNull<AnyVec>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T> Send for AnyVecTyped<'a, T>
+unsafe impl<'a, T: 'static> Send for AnyVecTyped<'a, T>
     where T: Send
 {}
 
-unsafe impl<'a, T> Sync for AnyVecTyped<'a, T>
+unsafe impl<'a, T: 'static> Sync for AnyVecTyped<'a, T>
     where T: Sync
 {}
 
-impl<'a, T> AnyVecTyped<'a, T>{
+impl<'a, T: 'static> AnyVecTyped<'a, T>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
@@ -50,12 +50,7 @@ impl<'a, T> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn push(&mut self, value: T){
-        unsafe{
-            ptr::write(
-                self.this_mut().push_uninit().as_mut_ptr() as *mut T,
-                value
-            );
-        }
+        self.this_mut().push_v2(AnyValueWrapper::new(value));
     }
 
     #[inline]

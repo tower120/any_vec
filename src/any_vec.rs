@@ -208,19 +208,21 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn push_v2(&mut self, value: impl IAnyValue) {
+    pub fn push_v2<V: IAnyValue>(&mut self, value: V) {
         assert_eq!(value.value_typeid(), self.type_id);
         if self.len == self.capacity{
             self.grow();
         }
 
+        let element_size = V::KNOWN_SIZE.unwrap_or(self.element_layout.size());
+
         unsafe{
-        let new_element = self.mem.as_ptr().add(self.element_layout.size() * self.len);
+        let new_element = self.mem.as_ptr().add(element_size * self.len);
         value.consume_bytes(|value_bytes|{
             copy_bytes_nonoverlapping(
                 value_bytes.as_ptr(),
                 new_element,
-                self.element_layout.size()
+                element_size
             );
         });
         }

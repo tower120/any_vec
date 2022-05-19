@@ -1,11 +1,11 @@
 use std::ops::{Deref};
 use crate::{AnyVecTyped};
 
-pub struct AnyVecRef<'a, T>{
+pub struct AnyVecRef<'a, T: 'static>{
     pub(crate) any_vec_typed: AnyVecTyped<'a, T>
 }
 
-impl<'a, T> Deref for AnyVecRef<'a, T> {
+impl<'a, T: 'static> Deref for AnyVecRef<'a, T> {
     type Target = AnyVecTyped<'a, T>;
 
     fn deref(&self) -> &Self::Target {

@@ -1,12 +1,16 @@
 use std::any::{Any, TypeId};
 use std::{mem, ptr};
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+use std::mem::{ManuallyDrop, size_of};
 use std::ops::DerefMut;
 use std::ptr::{drop_in_place, NonNull, null_mut};
 
 // TODO: rename to AnyValue
 pub trait IAnyValue{
+    /// Known type size.
+    /// Used for optimization.
+    const KNOWN_SIZE: Option<usize> = None;
+
     fn value_typeid(&self) -> TypeId;
 
     /// # Panic
@@ -24,15 +28,20 @@ pub struct AnyValueWrapper<T: 'static>{
     value: T
 }
 impl<T: 'static> AnyValueWrapper<T> {
+    #[inline]
     pub fn new(value: T) -> Self{
         Self{ value }
     }
 }
 impl<T: 'static> IAnyValue for AnyValueWrapper<T> {
+    const KNOWN_SIZE: Option<usize> = Some(size_of::<T>());
+
+    #[inline]
     fn value_typeid(&self) -> TypeId {
         self.value.type_id()
     }
 
+    #[inline]
     fn downcast<U: 'static>(self) -> U {
         assert_eq!(self.value_typeid(), TypeId::of::<U>());
         // rust don't see that types are the same after assert.
@@ -44,6 +53,7 @@ impl<T: 'static> IAnyValue for AnyValueWrapper<T> {
         }
     }
 
+    #[inline]
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(mut self, f: F) {
         f(NonNull::new_unchecked(&mut self.value as *mut _  as *mut u8));
         mem::forget(self.value);
@@ -61,6 +71,7 @@ pub struct AnyValue<'a, DropFn: FnOnce(*mut u8)>{
 }
 
 impl<'a, DropFn: FnOnce(*mut u8)> AnyValue<'a, DropFn>{
+    #[inline]
     pub unsafe fn from_raw_parts(mem: NonNull<u8>, typeid: TypeId, drop_fn: DropFn) -> Self {
         Self{
             mem,
@@ -72,10 +83,12 @@ impl<'a, DropFn: FnOnce(*mut u8)> AnyValue<'a, DropFn>{
 }
 
 impl<'a, DropFn: FnOnce(*mut u8)> IAnyValue for AnyValue<'a, DropFn>{
+    #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
     }
 
+    #[inline]
     fn downcast<T: 'static>(self) -> T{
         assert_eq!(self.typeid, TypeId::of::<T>());
         unsafe{
@@ -87,6 +100,7 @@ impl<'a, DropFn: FnOnce(*mut u8)> IAnyValue for AnyValue<'a, DropFn>{
         }
     }
 
+    #[inline]
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F) {
         f(self.mem);
         let drop_fn = ptr::read(&*self.drop_fn);
@@ -96,6 +110,7 @@ impl<'a, DropFn: FnOnce(*mut u8)> IAnyValue for AnyValue<'a, DropFn>{
 }
 
 impl<'a, DropFn: FnOnce(*mut u8)> Drop for AnyValue<'a, DropFn>{
+    #[inline]
     fn drop(&mut self) {
         unsafe{
             let drop_fn = ptr::read(&*self.drop_fn);
