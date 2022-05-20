@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::{NonNull, null_mut};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
-use crate::any_value::{AnyValue, IAnyValue};
+use crate::any_value::{AnyValueTemp, AnyValue};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -207,13 +207,18 @@ impl AnyVec {
         )
     }
 
+    /// # Panics
+    ///
+    /// * Panics if type mismatch.
+    /// * Panics if out of memory.
     #[inline]
-    pub fn push_v2<V: IAnyValue>(&mut self, value: V) {
+    pub fn push<V: AnyValue>(&mut self, value: V) {
         assert_eq!(value.value_typeid(), self.type_id);
         if self.len == self.capacity{
             self.grow();
         }
 
+        // Compile time optimization
         let element_size = V::KNOWN_SIZE.unwrap_or(self.element_layout.size());
 
         unsafe{
@@ -361,7 +366,7 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn swap_remove_v3(&mut self, index: usize) -> impl IAnyValue + '_{
+    pub fn swap_remove_v3(&mut self, index: usize) -> impl AnyValue + '_{
     unsafe{
         self.index_check(index);
 
@@ -388,7 +393,7 @@ impl AnyVec {
                 self.len -= 1;
             };
 
-        AnyValue::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
+        AnyValueTemp::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
     }
     }
 

@@ -5,8 +5,7 @@ use std::mem::{ManuallyDrop, size_of};
 use std::ops::DerefMut;
 use std::ptr::{drop_in_place, NonNull, null_mut};
 
-// TODO: rename to AnyValue
-pub trait IAnyValue{
+pub trait AnyValue {
     /// Known type size.
     /// Used for optimization.
     const KNOWN_SIZE: Option<usize> = None;
@@ -33,12 +32,12 @@ impl<T: 'static> AnyValueWrapper<T> {
         Self{ value }
     }
 }
-impl<T: 'static> IAnyValue for AnyValueWrapper<T> {
+impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     const KNOWN_SIZE: Option<usize> = Some(size_of::<T>());
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
-        self.value.type_id()
+        TypeId::of::<T>()
     }
 
     #[inline]
@@ -60,17 +59,16 @@ impl<T: 'static> IAnyValue for AnyValueWrapper<T> {
     }
 }
 
-// AnyValuePtr / AnyValueRef ?
-// AnyValueTemp - temporary exists in memory value, data will be erased with AnyValueTemp destruction.
+// AnyValueTemp - temporary existing value in memory, data will be erased with AnyValueTemp destruction.
 // May do some postponed actions on consumption/destruction.
-pub struct AnyValue<'a, DropFn: FnOnce(*mut u8)>{
+pub struct AnyValueTemp<'a, DropFn: FnOnce(*mut u8)>{
     mem: NonNull<u8>,
     typeid: TypeId,
     drop_fn: ManuallyDrop<DropFn>,
     phantom: PhantomData<&'a mut [u8]>
 }
 
-impl<'a, DropFn: FnOnce(*mut u8)> AnyValue<'a, DropFn>{
+impl<'a, DropFn: FnOnce(*mut u8)> AnyValueTemp<'a, DropFn>{
     #[inline]
     pub unsafe fn from_raw_parts(mem: NonNull<u8>, typeid: TypeId, drop_fn: DropFn) -> Self {
         Self{
@@ -82,7 +80,7 @@ impl<'a, DropFn: FnOnce(*mut u8)> AnyValue<'a, DropFn>{
     }
 }
 
-impl<'a, DropFn: FnOnce(*mut u8)> IAnyValue for AnyValue<'a, DropFn>{
+impl<'a, DropFn: FnOnce(*mut u8)> AnyValue for AnyValueTemp<'a, DropFn>{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
@@ -109,7 +107,7 @@ impl<'a, DropFn: FnOnce(*mut u8)> IAnyValue for AnyValue<'a, DropFn>{
     }
 }
 
-impl<'a, DropFn: FnOnce(*mut u8)> Drop for AnyValue<'a, DropFn>{
+impl<'a, DropFn: FnOnce(*mut u8)> Drop for AnyValueTemp<'a, DropFn>{
     #[inline]
     fn drop(&mut self) {
         unsafe{

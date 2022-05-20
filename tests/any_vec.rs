@@ -154,14 +154,14 @@ fn swap_remove_test() {
 #[test]
 fn any_vec_swap_remove_push_test() {
     let mut any_vec = AnyVec::new::<String>();
-    any_vec.push_v2(AnyValueWrapper::new(String::from("0")));
-    any_vec.push_v2(AnyValueWrapper::new(String::from("1")));
-    any_vec.push_v2(AnyValueWrapper::new(String::from("3")));
-    any_vec.push_v2(AnyValueWrapper::new(String::from("4")));
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
 
     let mut any_vec_other = AnyVec::new::<String>();
     let any1= any_vec.swap_remove_v3(1);
-    any_vec_other.push_v2(any1);
+    any_vec_other.push(any1);
 
     assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
         String::from("0"),

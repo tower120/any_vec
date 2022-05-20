@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
-use crate::{AnyValueWrapper, AnyVec};
+use crate::{AnyValue, AnyValueWrapper, AnyVec};
 
 /// Concrete type [`AnyVec`] representation.
 pub struct AnyVecTyped<'a, T: 'static>{
@@ -50,7 +50,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn push(&mut self, value: T){
-        self.this_mut().push_v2(AnyValueWrapper::new(value));
+        self.this_mut().push(AnyValueWrapper::new(value));
     }
 
     #[inline]
@@ -75,6 +75,11 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
                 out.as_mut_ptr() as *mut u8);
             out.assume_init()
         }
+    }
+
+    #[inline]
+    pub fn swap_remove_v2(&mut self, index: usize) -> T {
+        self.this_mut().swap_remove_v3(index).downcast::<T>()
     }
 
     #[inline]
