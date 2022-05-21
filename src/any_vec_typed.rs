@@ -4,7 +4,7 @@ use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyValue, AnyValueWrapper, AnyVec};
-use crate::any_value_tmp2::AnyValueTemp2;
+use crate::any_value_tmp2::AnyValueTemp;
 use crate::swap_remove::SwapRemove2;
 
 // TODO: just any_vec: &'a mut AnyVec
@@ -70,7 +70,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        AnyValueTemp2(SwapRemove2::<T>{
+        AnyValueTemp(SwapRemove2::<T>{
             any_vec: self.this_mut(),
             index,
             phantom: PhantomData

@@ -51,7 +51,7 @@ pub use crate::any_vec::AnyVec;
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
-pub use any_value::{AnyValue, AnyValueTemp, AnyValueWrapper};
+pub use any_value::{AnyValue, AnyValueWrapper};
 
 use std::ptr;
 use std::any::TypeId;

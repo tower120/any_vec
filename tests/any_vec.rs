@@ -27,29 +27,30 @@ fn drop_test() {
     assert_equal(vec.as_slice().iter().map(|s|s.i), [1, 2, 3]);
 }
 
-#[test]
-fn it_works() {
-    let mut any_vec = AnyVec::new::<String>();
-
-    unsafe{
-        let str1 = "Hello".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str1));
-        forget(str1);
-
-        let str2 = " to ".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str2));
-        forget(str2);
-
-        let str3 = "world".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str3));
-        forget(str3);
-    }
-
-    assert_equal(
-        any_vec.downcast_ref::<String>().unwrap().as_slice(),
-        ["Hello", " to ", "world"]
-    );
-}
+// TODO: make AnyValueRaw
+// #[test]
+// fn it_works() {
+//     let mut any_vec = AnyVec::new::<String>();
+//
+//     unsafe{
+//         let str1 = "Hello".to_string();
+//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str1));
+//         forget(str1);
+//
+//         let str2 = " to ".to_string();
+//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str2));
+//         forget(str2);
+//
+//         let str3 = "world".to_string();
+//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str3));
+//         forget(str3);
+//     }
+//
+//     assert_equal(
+//         any_vec.downcast_ref::<String>().unwrap().as_slice(),
+//         ["Hello", " to ", "world"]
+//     );
+// }
 
 #[test]
 pub fn push_with_capacity_test(){

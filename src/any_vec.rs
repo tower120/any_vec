@@ -4,9 +4,9 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::{NonNull, null_mut};
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
-use crate::any_value::{AnyValueTemp, AnyValue};
-use crate::any_value_tmp2::AnyValueTemp2;
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping, UnknownType};
+use crate::any_value::{AnyValue};
+use crate::any_value_tmp2::AnyValueTemp;
 use crate::swap_remove::{SwapRemove2};
 
 /// Type erased vec-like container.
@@ -186,29 +186,6 @@ impl AnyVec {
         )
     }
 
-    /// Pushes one element without actually writing anything.
-    ///
-    /// Return byte slice, that must be filled with element data.
-    ///
-    /// # Safety
-    /// * returned byte slice must be written with actual Element bytes.
-    /// * Element bytes must be aligned.
-    /// * Element must be "forgotten".
-    #[inline]
-    pub unsafe fn push_uninit(&mut self) -> &mut[u8] {
-        if self.len == self.capacity{
-            self.grow();
-        }
-
-        let new_element = self.mem.as_ptr().add(self.element_layout.size() * self.len);
-        self.len += 1;
-
-        std::slice::from_raw_parts_mut(
-            new_element,
-            self.element_layout.size(),
-        )
-    }
-
     /// # Panics
     ///
     /// * Panics if type mismatch.
@@ -220,26 +197,34 @@ impl AnyVec {
             self.grow();
         }
 
-        // Compile time optimization
-        let element_size = V::KNOWN_SIZE.unwrap_or(self.element_layout.size());
-
         unsafe{
-        let new_element = self.mem.as_ptr().add(element_size * self.len);
-        value.consume_bytes(|value_bytes|{
-            copy_bytes_nonoverlapping(
-                value_bytes.as_ptr(),
-                new_element,
-                element_size
-            );
-        });
+            // Compile time optimization
+            if !UnknownType::is::<V::Type>(){
+                value.consume_bytes(|value_bytes|{
+                    ptr::copy_nonoverlapping(
+                        value_bytes.cast::<V::Type>().as_ptr(),
+                        self.mem.cast::<V::Type>().as_ptr().add(self.len),
+                        1
+                    );
+                });
+            } else {
+                let element_size = self.element_layout.size();
+                let new_element = self.mem.as_ptr().add(element_size * self.len);
+                value.consume_bytes(|value_bytes|{
+                    copy_bytes_nonoverlapping(
+                        value_bytes.as_ptr(),
+                        new_element,
+                        element_size
+                    );
+                });
+            }
         }
 
         self.len += 1;
     }
 
-    // TODO: hide
     #[inline]
-    pub(crate) fn drop_element(&mut self, ptr: *mut u8, len: usize){
+    fn drop_element(&mut self, ptr: *mut u8, len: usize){
         if let Some(drop_fn) = self.drop_fn{
             (drop_fn)(ptr, len);
         }
@@ -307,10 +292,10 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp2<SwapRemove2> {
+    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove2> {
         self.index_check(index);
 
-        AnyValueTemp2(SwapRemove2{
+        AnyValueTemp(SwapRemove2{
             any_vec: self,
             index,
             phantom: PhantomData

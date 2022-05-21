@@ -10,10 +10,13 @@ pub trait Impl{
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(&mut self, f: F);
 }
 
-// AnyVecMutator ??
-pub struct AnyValueTemp2<I: Impl>(pub(crate) I);
+// Temporary existing value in memory, data will be erased with AnyValueTemp destruction.
+// May do some postponed actions on consumption/destruction.
+pub struct AnyValueTemp<I: Impl>(pub(crate) I);
 
-impl<I: Impl> AnyValue for AnyValueTemp2<I>{
+impl<I: Impl> AnyValue for AnyValueTemp<I>{
+    type Type = I::Type;
+
     #[inline]
     fn value_typeid(&self) -> TypeId {
         let typeid = TypeId::of::<I::Type>();
@@ -31,7 +34,7 @@ impl<I: Impl> AnyValue for AnyValueTemp2<I>{
     }
 }
 
-impl<I: Impl> Drop for AnyValueTemp2<I>{
+impl<I: Impl> Drop for AnyValueTemp<I>{
     #[inline]
     fn drop(&mut self) {
     unsafe{

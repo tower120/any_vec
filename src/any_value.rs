@@ -9,13 +9,17 @@ pub trait AnyValue {
     // TODO: remove?
     /// Known type size.
     /// Used for optimization.
-    const KNOWN_SIZE: Option<usize> = None;
+    //const KNOWN_SIZE: Option<usize> = None;
+
+    /// Concrete type, or [`Unknown`]
+    type Type: 'static /*= Unknown*/;
 
     fn value_typeid(&self) -> TypeId;
 
     /// # Panic
     ///
     /// Panics if type mismatch
+    #[inline]
     fn downcast<T: 'static>(self) -> T
         where Self: Sized
     {
@@ -31,10 +35,11 @@ pub trait AnyValue {
 
     /// Consume value as bytes.
     /// It is your responsibility to properly drop it.
+    /// `size = size_of::<T>`
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F);
 }
 
-/// Helper struct to convert concrete type to [`IAnyValue`]
+/// Helper struct to convert concrete type to [`AnyValue`]
 pub struct AnyValueWrapper<T: 'static>{
     value: T
 }
@@ -45,23 +50,22 @@ impl<T: 'static> AnyValueWrapper<T> {
     }
 }
 impl<T: 'static> AnyValue for AnyValueWrapper<T> {
-    const KNOWN_SIZE: Option<usize> = Some(size_of::<T>());
+    //const KNOWN_SIZE: Option<usize> = Some(size_of::<T>());
+    type Type = T;
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
         TypeId::of::<T>()
     }
 
-    // TODO: remove this impl
     #[inline]
     fn downcast<U: 'static>(self) -> U {
         assert_eq!(self.value_typeid(), TypeId::of::<U>());
         // rust don't see that types are the same after assert.
         unsafe {
-            let self_T = &self.value as *const T;
-            let self_U = self_T as *const U;
+            let ptr = &self.value as *const T as *const U;
             mem::forget(self.value);
-            ptr::read(self_U)
+            ptr::read(ptr)
         }
     }
 
@@ -69,63 +73,5 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(mut self, f: F) {
         f(NonNull::new_unchecked(&mut self.value as *mut _  as *mut u8));
         mem::forget(self.value);
-    }
-}
-
-// AnyValueTemp - temporary existing value in memory, data will be erased with AnyValueTemp destruction.
-// May do some postponed actions on consumption/destruction.
-pub struct AnyValueTemp<'a, DropFn: FnOnce(*mut u8)>{
-    mem: NonNull<u8>,
-    typeid: TypeId,
-    drop_fn: ManuallyDrop<DropFn>,
-    phantom: PhantomData<&'a mut [u8]>
-}
-
-impl<'a, DropFn: FnOnce(*mut u8)> AnyValueTemp<'a, DropFn>{
-    #[inline]
-    pub unsafe fn from_raw_parts(mem: NonNull<u8>, typeid: TypeId, drop_fn: DropFn) -> Self {
-        Self{
-            mem,
-            typeid,
-            drop_fn: ManuallyDrop::new(drop_fn),
-            phantom: PhantomData
-        }
-    }
-}
-
-impl<'a, DropFn: FnOnce(*mut u8)> AnyValue for AnyValueTemp<'a, DropFn>{
-    #[inline]
-    fn value_typeid(&self) -> TypeId {
-        self.typeid
-    }
-
-    #[inline]
-    fn downcast<T: 'static>(self) -> T{
-        assert_eq!(self.typeid, TypeId::of::<T>());
-        unsafe{
-            let value = ptr::read(self.mem.as_ptr().cast::<T>());
-            let drop_fn = ptr::read(&*self.drop_fn);
-            (drop_fn)(null_mut());
-            mem::forget(self);
-            value
-        }
-    }
-
-    #[inline]
-    unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F) {
-        f(self.mem);
-        let drop_fn = ptr::read(&*self.drop_fn);
-        (drop_fn)(null_mut());
-        mem::forget(self);
-    }
-}
-
-impl<'a, DropFn: FnOnce(*mut u8)> Drop for AnyValueTemp<'a, DropFn>{
-    #[inline]
-    fn drop(&mut self) {
-        unsafe{
-            let drop_fn = ptr::read(&*self.drop_fn);
-            (drop_fn)(self.mem.as_ptr());
-        }
     }
 }
