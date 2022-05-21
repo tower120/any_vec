@@ -1,7 +1,9 @@
+use std::any::TypeId;
 use std::mem::forget;
+use std::ptr::NonNull;
 use itertools::{assert_equal};
 use any_vec::{AnyVec};
-use any_vec::any_value::AnyValueWrapper;
+use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
 
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     std::slice::from_raw_parts(
@@ -28,30 +30,35 @@ fn drop_test() {
     assert_equal(vec.as_slice().iter().map(|s|s.i), [1, 2, 3]);
 }
 
-// TODO: make AnyValueRaw
-// #[test]
-// fn it_works() {
-//     let mut any_vec = AnyVec::new::<String>();
-//
-//     unsafe{
-//         let str1 = "Hello".to_string();
-//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str1));
-//         forget(str1);
-//
-//         let str2 = " to ".to_string();
-//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str2));
-//         forget(str2);
-//
-//         let str3 = "world".to_string();
-//         any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str3));
-//         forget(str3);
-//     }
-//
-//     assert_equal(
-//         any_vec.downcast_ref::<String>().unwrap().as_slice(),
-//         ["Hello", " to ", "world"]
-//     );
-// }
+#[test]
+fn any_value_raw_test() {
+    let mut any_vec = AnyVec::new::<String>();
+
+    unsafe{
+        let str1 = "Hello".to_string();
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str1).cast::<u8>(), TypeId::of::<String>()
+        ));
+        forget(str1);
+
+        let str2 = " to ".to_string();
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str2).cast::<u8>(), TypeId::of::<String>()
+        ));
+        forget(str2);
+
+        let str3 = "world".to_string();
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str3).cast::<u8>(), TypeId::of::<String>()
+        ));
+        forget(str3);
+    }
+
+    assert_equal(
+        any_vec.downcast_ref::<String>().unwrap().as_slice(),
+        ["Hello", " to ", "world"]
+    );
+}
 
 #[test]
 pub fn push_with_capacity_test(){

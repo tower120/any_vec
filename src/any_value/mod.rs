@@ -7,9 +7,11 @@ use std::ptr::{drop_in_place, NonNull, null_mut};
 
 pub(crate) mod temp;
 mod wrapper;
+mod raw;
 
 pub use temp::AnyValueTemp;
 pub use wrapper::AnyValueWrapper;
+pub use raw::AnyValueRaw;
 
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
@@ -18,6 +20,8 @@ pub trait AnyValue {
     type Type: 'static /*= Unknown*/;
 
     fn value_typeid(&self) -> TypeId;
+
+    // TODO: value_size(&self) ?
 
     /// # Panic
     ///
