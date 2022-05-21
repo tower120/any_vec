@@ -1,11 +1,12 @@
 use std::any::{Any, TypeId};
 use std::{mem, ptr};
 use std::marker::PhantomData;
-use std::mem::{ManuallyDrop, size_of};
+use std::mem::{ManuallyDrop, MaybeUninit, size_of};
 use std::ops::DerefMut;
 use std::ptr::{drop_in_place, NonNull, null_mut};
 
 pub trait AnyValue {
+    // TODO: remove?
     /// Known type size.
     /// Used for optimization.
     const KNOWN_SIZE: Option<usize> = None;
@@ -15,7 +16,18 @@ pub trait AnyValue {
     /// # Panic
     ///
     /// Panics if type mismatch
-    fn downcast<T: 'static>(self) -> T;
+    fn downcast<T: 'static>(self) -> T
+        where Self: Sized                       // TODO:  AnyValue Sized?
+    {
+        assert_eq!(self.value_typeid(), TypeId::of::<T>());
+        unsafe{
+            let mut tmp = MaybeUninit::<T>::uninit();
+            self.consume_bytes(|element|{
+                ptr::copy_nonoverlapping(element.as_ptr() as *const T, tmp.as_mut_ptr(), 1);
+            });
+            tmp.assume_init()
+        }
+    }
 
     /// Consume value as bytes.
     /// It is your responsibility to properly drop it.
@@ -40,6 +52,7 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
         TypeId::of::<T>()
     }
 
+    // TODO: remove this impl
     #[inline]
     fn downcast<U: 'static>(self) -> U {
         assert_eq!(self.value_typeid(), TypeId::of::<U>());

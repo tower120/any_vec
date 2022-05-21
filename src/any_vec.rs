@@ -6,6 +6,8 @@ use std::mem::ManuallyDrop;
 use std::ptr::{NonNull, null_mut};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 use crate::any_value::{AnyValueTemp, AnyValue};
+use crate::any_value_tmp2::AnyValueTemp2;
+use crate::swap_remove::{SwapRemove, SwapRemove2};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -14,12 +16,12 @@ use crate::any_value::{AnyValueTemp, AnyValue};
 ///
 /// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec {
-    mem: NonNull<u8>,
+    pub(crate) mem: NonNull<u8>,
     capacity: usize,        // in elements
-    len: usize,             // in elements
+    pub(crate) len: usize,             // in elements
     element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
-    drop_fn: Option<fn(ptr: *mut u8, len: usize)>
+    pub(crate) drop_fn: Option<fn(ptr: *mut u8, len: usize)>
 }
 
 impl AnyVec {
@@ -235,8 +237,9 @@ impl AnyVec {
         self.len += 1;
     }
 
+    // TODO: hide
     #[inline]
-    fn drop_element(&mut self, ptr: *mut u8, len: usize){
+    pub(crate) fn drop_element(&mut self, ptr: *mut u8, len: usize){
         if let Some(drop_fn) = self.drop_fn{
             (drop_fn)(ptr, len);
         }
@@ -365,9 +368,68 @@ impl AnyVec {
     }
     }
 
+
+    #[inline]
+    pub fn swap_remove_v4_test(&mut self, index: usize) -> SwapRemove {
+        self.index_check(index);
+
+        SwapRemove{
+            index,
+            any_vec: self,
+            phantom: PhantomData
+        }
+    }
+
+    #[inline]
+    pub fn swap_remove_v5(&mut self, index: usize) -> AnyValueTemp2<SwapRemove2> {
+        self.index_check(index);
+
+        AnyValueTemp2(SwapRemove2{
+            any_vec: self,
+            index,
+            phantom: PhantomData
+        })
+    }
+
+
+    #[inline]
+    pub(crate) fn swap_remove_v3_impl(&mut self, element_size: usize, index: usize) -> impl AnyValue + '_{
+    unsafe{
+        self.index_check(index);
+
+        let element = self.mem.as_ptr().add(element_size * index);
+        let typeid = self.type_id;
+
+        let f =
+            move |mut element: *mut u8| {
+                // if element.is_null(){
+                //     element = self.mem.as_ptr().add(element_size * index);
+                // } else {
+                    // 1. drop
+                    self.drop_element(element, 1);
+                // }
+
+                // 2. overwrite with last element
+                let last_index = self.len - 1;
+                let last_element = self.mem.as_ptr().add(element_size * last_index);
+                if index != last_index {
+                    //copy_bytes_nonoverlapping
+                    ptr::copy_nonoverlapping
+                        (last_element, element, element_size);
+                }
+
+                // 3. shrink len
+                self.len -= 1;
+            };
+
+        AnyValueTemp::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
+    }
+    }
+
     #[inline]
     pub fn swap_remove_v3(&mut self, index: usize) -> impl AnyValue + '_{
-    unsafe{
+        self.swap_remove_v3_impl(self.element_layout.size(), index)
+/*    unsafe{
         self.index_check(index);
 
         let element = self.mem.as_ptr().add(self.element_layout.size() * index);
@@ -394,7 +456,7 @@ impl AnyVec {
             };
 
         AnyValueTemp::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
-    }
+    }*/
     }
 
     /// drop element, if out is null.

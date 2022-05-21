@@ -79,7 +79,8 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn swap_remove_v2(&mut self, index: usize) -> T {
-        self.this_mut().swap_remove_v3(index).downcast::<T>()
+        //self.this_mut().swap_remove_v3_impl(size_of::<T>(), index).downcast::<T>()
+        self.this_mut().swap_remove_v4_test(index).downcast::<T>()
     }
 
     #[inline]

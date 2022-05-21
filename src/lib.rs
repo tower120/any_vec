@@ -44,6 +44,8 @@ mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
 mod any_value;
+mod swap_remove;
+mod any_value_tmp2;
 
 pub use crate::any_vec::AnyVec;
 pub use any_vec_typed::AnyVecTyped;
@@ -52,6 +54,8 @@ pub use any_vec_ref::AnyVecRef;
 pub use any_value::{AnyValue, AnyValueTemp, AnyValueWrapper};
 
 use std::ptr;
+
+pub struct UnknownType;
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
