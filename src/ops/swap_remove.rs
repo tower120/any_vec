@@ -4,16 +4,17 @@ use std::marker::PhantomData;
 use std::mem::{forget, MaybeUninit};
 use std::ptr;
 use std::ptr::NonNull;
-use crate::{AnyValue, AnyVec, copy_bytes_nonoverlapping, UnknownType};
-use crate::any_value_tmp2::Impl;
+use crate::{AnyVec, copy_bytes_nonoverlapping, Unknown};
+use crate::any_value::temp::Impl;
 
-pub struct SwapRemove2<'a, T: 'static = UnknownType>{
+/// Lazily `swap_remove` element on consumption/drop.
+pub struct SwapRemove<'a, T: 'static = Unknown>{
     pub(crate) any_vec: &'a mut AnyVec,
     pub(crate) index: usize,
     pub(crate) phantom: PhantomData<&'a mut T>
 }
 
-impl<'a, T: 'static> Impl for SwapRemove2<'a, T>{
+impl<'a, T: 'static> Impl for SwapRemove<'a, T>{
     type Type = T;
 
     #[inline]
@@ -24,7 +25,7 @@ impl<'a, T: 'static> Impl for SwapRemove2<'a, T>{
     #[inline]
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(&mut self, f: F) {
         // TODO: as separate fn
-        let element_size = if UnknownType::is::<T>() {
+        let element_size = if Unknown::is::<T>() {
             self.any_vec.element_layout().size()
         } else {
             size_of::<T>()
@@ -38,7 +39,7 @@ impl<'a, T: 'static> Impl for SwapRemove2<'a, T>{
         let last_index = self.any_vec.len - 1;
         let last_element = self.any_vec.mem.as_ptr().add(element_size * last_index);
         if self.index != last_index {
-            if UnknownType::is::<T>() {
+            if Unknown::is::<T>() {
                 copy_bytes_nonoverlapping(last_element, element, element_size);
             } else {
                 ptr::copy_nonoverlapping(last_element as *const T, element as *mut T, 1);

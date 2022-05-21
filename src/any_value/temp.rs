@@ -2,7 +2,8 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::{mem, ptr};
 use std::ptr::NonNull;
-use crate::{AnyValue, AnyVec, UnknownType};
+use crate::{AnyVec, Unknown};
+use crate::any_value::AnyValue;
 
 pub trait Impl{
     type Type: 'static;
@@ -10,8 +11,10 @@ pub trait Impl{
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(&mut self, f: F);
 }
 
-// Temporary existing value in memory, data will be erased with AnyValueTemp destruction.
-// May do some postponed actions on consumption/destruction.
+/// Temporary existing value in memory.
+/// Data will be erased with AnyValueTemp destruction.
+///
+/// May do some postponed actions on consumption/destruction.
 pub struct AnyValueTemp<I: Impl>(pub(crate) I);
 
 impl<I: Impl> AnyValue for AnyValueTemp<I>{
@@ -20,7 +23,7 @@ impl<I: Impl> AnyValue for AnyValueTemp<I>{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         let typeid = TypeId::of::<I::Type>();
-        if typeid == TypeId::of::<UnknownType>(){
+        if typeid == TypeId::of::<Unknown>(){
             self.0.any_vec().element_typeid()
         } else {
             typeid
@@ -41,7 +44,7 @@ impl<I: Impl> Drop for AnyValueTemp<I>{
         let drop_fn = self.0.any_vec().drop_fn;
         self.0.consume_bytes(|element|{
             // compile-time check
-            if TypeId::of::<I::Type>() == TypeId::of::<UnknownType>(){
+            if TypeId::of::<I::Type>() == TypeId::of::<Unknown>(){
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element.as_ptr(), 1);
                 }

@@ -43,24 +43,24 @@ mod any_vec;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
-mod any_value;
-mod swap_remove;
-mod any_value_tmp2;
+pub mod any_value;
+pub mod ops;
 
 pub use crate::any_vec::AnyVec;
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
-pub use any_value::{AnyValue, AnyValueWrapper};
+//pub use any_value::{AnyValue, AnyValueWrapper};
 
 use std::ptr;
 use std::any::TypeId;
 
-pub struct UnknownType;
-impl UnknownType{
+/// Marker for unknown type.
+pub struct Unknown;
+impl Unknown {
     #[inline]
     pub fn is<T:'static>() -> bool {
-        TypeId::of::<T>() == TypeId::of::<UnknownType>()
+        TypeId::of::<T>() == TypeId::of::<Unknown>()
     }
 }
 

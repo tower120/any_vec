@@ -3,13 +3,13 @@ use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
-use crate::{AnyValue, AnyValueWrapper, AnyVec};
-use crate::any_value_tmp2::AnyValueTemp;
-use crate::swap_remove::SwapRemove2;
+use crate::{AnyVec};
+use crate::any_value::{AnyValueTemp, AnyValue, AnyValueWrapper};
+use crate::ops::SwapRemove;
 
-// TODO: just any_vec: &'a mut AnyVec
 /// Concrete type [`AnyVec`] representation.
 pub struct AnyVecTyped<'a, T: 'static>{
+    // NonNull - to have one struct for both & and &mut
     any_vec: NonNull<AnyVec>,
     phantom: PhantomData<&'a mut T>
 }
@@ -70,7 +70,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        AnyValueTemp(SwapRemove2::<T>{
+        AnyValueTemp(SwapRemove::<T>{
             any_vec: self.this_mut(),
             index,
             phantom: PhantomData

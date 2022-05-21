@@ -2,12 +2,11 @@ use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
 use std::ptr::{NonNull, null_mut};
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping, UnknownType};
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknown};
 use crate::any_value::{AnyValue};
-use crate::any_value_tmp2::AnyValueTemp;
-use crate::swap_remove::{SwapRemove2};
+use crate::any_value::AnyValueTemp;
+use crate::ops::{SwapRemove};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -199,7 +198,7 @@ impl AnyVec {
 
         unsafe{
             // Compile time optimization
-            if !UnknownType::is::<V::Type>(){
+            if !Unknown::is::<V::Type>(){
                 value.consume_bytes(|value_bytes|{
                     ptr::copy_nonoverlapping(
                         value_bytes.cast::<V::Type>().as_ptr(),
@@ -292,10 +291,10 @@ impl AnyVec {
     }
 
     #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove2> {
+    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
         self.index_check(index);
 
-        AnyValueTemp(SwapRemove2{
+        AnyValueTemp(SwapRemove {
             any_vec: self,
             index,
             phantom: PhantomData
