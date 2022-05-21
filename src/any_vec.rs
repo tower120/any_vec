@@ -7,7 +7,7 @@ use std::ptr::{NonNull, null_mut};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 use crate::any_value::{AnyValueTemp, AnyValue};
 use crate::any_value_tmp2::AnyValueTemp2;
-use crate::swap_remove::{SwapRemove, SwapRemove2};
+use crate::swap_remove::{SwapRemove2};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -306,82 +306,8 @@ impl AnyVec {
         self.remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
     }
 
-    /// Type erased version of [`Vec::swap_remove`]. Due to this, does not return element.
-    ///
-    /// # Panics
-    ///
-    /// Panics if index is out of bounds.
     #[inline]
-    pub fn swap_remove(&mut self, index: usize) {
-    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-
-        // 1. swap elements
-        let last_index = self.len - 1;
-        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-        if index != last_index {
-            if self.drop_fn.is_none(){
-                copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
-            } else {
-                swap_bytes_nonoverlapping(last_element, element, self.element_layout.size());
-            }
-        }
-
-        // 2. shrink len
-        self.len -= 1;
-
-        // 3. drop last
-        self.drop_element(last_element, 1);
-    }
-    }
-
-    // Significantly slower.... Maybe due to additional memory access at temp area?
-    // Hide for now.
-    #[allow(dead_code)]
-    #[inline]
-    fn swap_remove_v2(&mut self, index: usize) {
-    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-
-        // 1. swap elements
-        let last_index = self.len - 1;
-        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-        let mut element_do_drop = last_element;
-        if index != last_index {
-            if self.drop_fn.is_some(){
-                let temp_element = self.mem.as_ptr().add(self.element_layout.size() * self.capacity);
-                copy_bytes_nonoverlapping(element, temp_element, self.element_layout.size());
-                element_do_drop = temp_element;
-            }
-            copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
-        }
-
-        // 2. shrink len
-        self.len -= 1;
-
-        // 3. drop last
-        self.drop_element(element_do_drop, 1);
-    }
-    }
-
-
-    #[inline]
-    pub fn swap_remove_v4_test(&mut self, index: usize) -> SwapRemove {
-        self.index_check(index);
-
-        SwapRemove{
-            index,
-            any_vec: self,
-            phantom: PhantomData
-        }
-    }
-
-    #[inline]
-    pub fn swap_remove_v5(&mut self, index: usize) -> AnyValueTemp2<SwapRemove2> {
+    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp2<SwapRemove2> {
         self.index_check(index);
 
         AnyValueTemp2(SwapRemove2{
@@ -389,112 +315,6 @@ impl AnyVec {
             index,
             phantom: PhantomData
         })
-    }
-
-
-    #[inline]
-    pub(crate) fn swap_remove_v3_impl(&mut self, element_size: usize, index: usize) -> impl AnyValue + '_{
-    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(element_size * index);
-        let typeid = self.type_id;
-
-        let f =
-            move |mut element: *mut u8| {
-                // if element.is_null(){
-                //     element = self.mem.as_ptr().add(element_size * index);
-                // } else {
-                    // 1. drop
-                    self.drop_element(element, 1);
-                // }
-
-                // 2. overwrite with last element
-                let last_index = self.len - 1;
-                let last_element = self.mem.as_ptr().add(element_size * last_index);
-                if index != last_index {
-                    //copy_bytes_nonoverlapping
-                    ptr::copy_nonoverlapping
-                        (last_element, element, element_size);
-                }
-
-                // 3. shrink len
-                self.len -= 1;
-            };
-
-        AnyValueTemp::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
-    }
-    }
-
-    #[inline]
-    pub fn swap_remove_v3(&mut self, index: usize) -> impl AnyValue + '_{
-        self.swap_remove_v3_impl(self.element_layout.size(), index)
-/*    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-        let typeid = self.type_id;
-
-        let f =
-            move |mut element: *mut u8| {
-                if element.is_null(){
-                    element = self.mem.as_ptr().add(self.element_layout.size() * index);
-                } else {
-                    // 1. drop
-                    self.drop_element(element, 1);
-                }
-
-                // 2. overwrite with last element
-                let last_index = self.len - 1;
-                let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-                if index != last_index {
-                    copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
-                }
-
-                // 3. shrink len
-                self.len -= 1;
-            };
-
-        AnyValueTemp::from_raw_parts(NonNull::new_unchecked(element), typeid, f)
-    }*/
-    }
-
-    /// drop element, if out is null.
-    /// element_size as parameter - because it possible can be known at compile time
-    #[inline]
-    pub(crate) unsafe fn swap_remove_into_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
-    {
-        self.index_check(index);
-
-        // 1. move out element at index
-        let element = self.mem.as_ptr().add(element_size * index);
-        ptr::copy_nonoverlapping(element, out, element_size);
-
-        // 2. move element
-        let last_index = self.len - 1;
-        if index != last_index {
-            let last_element = self.mem.as_ptr().add(element_size * last_index);
-            ptr::copy_nonoverlapping(last_element, element, element_size);
-        }
-
-        // 3. shrink len
-        self.len -= 1;
-    }
-
-    /// Same as [`swap_remove`], but copy removed element as bytes to `out`.
-    ///
-    /// # Safety
-    /// * It is your responsibility to properly drop `out` element.
-    ///
-    /// # Panics
-    /// * Panics if index out of bounds.
-    /// * Panics if out len does not match element size.
-    ///
-    /// [`swap_remove`]: Self::swap_remove
-    #[inline]
-    pub unsafe fn swap_remove_into(&mut self, index: usize, out: &mut[u8]){
-        assert_eq!(out.len(), self.element_layout.size());  // This allows compile time optimization!
-        self.swap_remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
     }
 
     #[inline]

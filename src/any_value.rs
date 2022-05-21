@@ -17,7 +17,7 @@ pub trait AnyValue {
     ///
     /// Panics if type mismatch
     fn downcast<T: 'static>(self) -> T
-        where Self: Sized                       // TODO:  AnyValue Sized?
+        where Self: Sized
     {
         assert_eq!(self.value_typeid(), TypeId::of::<T>());
         unsafe{

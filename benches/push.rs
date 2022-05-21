@@ -18,14 +18,6 @@ fn any_vec_push(){
     }
 }
 
-fn any_vec_push_v2(){
-    let mut any_vec = AnyVec::new::<usize>();
-    for i in 0..SIZE{
-        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
-        vec.push_v2(i);
-    }
-}
-
 fn any_vec_push_unchecked(){
     let mut any_vec = AnyVec::new::<usize>();
     for i in 0..SIZE{
@@ -37,7 +29,6 @@ fn any_vec_push_unchecked(){
 pub fn bench_push(c: &mut Criterion) {
     c.bench_function("Vec push", |b|b.iter(||vec_push()));
     c.bench_function("AnyVec push", |b|b.iter(||any_vec_push()));
-    c.bench_function("AnyVec push_v2", |b|b.iter(||any_vec_push_v2()));
     c.bench_function("AnyVec push_unchecked", |b|b.iter(||any_vec_push_unchecked()));
 }
 

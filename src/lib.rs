@@ -54,8 +54,15 @@ pub use any_vec_ref::AnyVecRef;
 pub use any_value::{AnyValue, AnyValueTemp, AnyValueWrapper};
 
 use std::ptr;
+use std::any::TypeId;
 
 pub struct UnknownType;
+impl UnknownType{
+    #[inline]
+    pub fn is<T:'static>() -> bool {
+        TypeId::of::<T>() == TypeId::of::<UnknownType>()
+    }
+}
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.

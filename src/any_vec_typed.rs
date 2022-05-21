@@ -4,7 +4,10 @@ use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyValue, AnyValueWrapper, AnyVec};
+use crate::any_value_tmp2::AnyValueTemp2;
+use crate::swap_remove::SwapRemove2;
 
+// TODO: just any_vec: &'a mut AnyVec
 /// Concrete type [`AnyVec`] representation.
 pub struct AnyVecTyped<'a, T: 'static>{
     any_vec: NonNull<AnyVec>,
@@ -67,20 +70,11 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        let mut out = MaybeUninit::<T>::uninit();
-        unsafe{
-            self.this_mut().swap_remove_into_impl(
-                index,
-                size_of::<T>(),
-                out.as_mut_ptr() as *mut u8);
-            out.assume_init()
-        }
-    }
-
-    #[inline]
-    pub fn swap_remove_v2(&mut self, index: usize) -> T {
-        //self.this_mut().swap_remove_v3_impl(size_of::<T>(), index).downcast::<T>()
-        self.this_mut().swap_remove_v4_test(index).downcast::<T>()
+        AnyValueTemp2(SwapRemove2::<T>{
+            any_vec: self.this_mut(),
+            index,
+            phantom: PhantomData
+        }).downcast::<T>()
     }
 
     #[inline]

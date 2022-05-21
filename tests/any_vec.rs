@@ -160,8 +160,8 @@ fn any_vec_swap_remove_push_test() {
     any_vec.push(AnyValueWrapper::new(String::from("4")));
 
     let mut any_vec_other = AnyVec::new::<String>();
-    let any1= any_vec.swap_remove_v3(1);
-    any_vec_other.push(any1);
+    let element = any_vec.swap_remove(1);
+    any_vec_other.push(element);
 
     assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
         String::from("0"),
@@ -170,35 +170,6 @@ fn any_vec_swap_remove_push_test() {
     ]);
     assert_equal(any_vec_other.downcast_ref::<String>().unwrap().as_slice(), &[
         String::from("1"),
-    ]);
-}
-
-// TODO: deprecated
-#[test]
-fn type_erased_move_test() {
-    let mut any_vec = AnyVec::new::<String>();
-    let mut vec = any_vec.downcast_mut::<String>().unwrap();
-    vec.push(String::from("0"));
-    vec.push(String::from("1"));
-    vec.push(String::from("2"));
-    vec.push(String::from("3"));
-    vec.push(String::from("4"));
-
-    let mut other_vec = AnyVec::new::<String>();
-    unsafe {
-        let element = other_vec.push_uninit();
-        any_vec.swap_remove_into(2, element);
-    }
-
-    assert_equal(other_vec.downcast_ref::<String>().unwrap().as_slice(), &[
-        String::from("2"),
-    ]);
-
-    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
-        String::from("0"),
-        String::from("1"),
-        String::from("4"),
-        String::from("3"),
     ]);
 }
 
