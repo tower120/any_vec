@@ -2,10 +2,14 @@
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
-//! Or use [`AnyVec`]'s type erased operations, which operate on `[u8]` byte basis.
+//! [`AnyVec`] type erased operations return [`AnyValue`], which you can use with other [`AnyVec`],
+//! or cast to concrete type.
+//!
+//! [`AnyValue`]: any_value::AnyValue
 //!
 //! ```rust
 //!     use any_vec::AnyVec;
+//!     use any_vec::any_value::AnyValue;
 //!     let mut vec: AnyVec = AnyVec::new::<String>();
 //!     {
 //!         // Typed operations.
@@ -18,15 +22,8 @@
 //!     let mut other_vec: AnyVec = AnyVec::new::<String>();
 //!     // Fully type erased element move from one vec to another
 //!     // without intermediate mem-copies.
-//!     //
-//!     // Equivalent to:
-//!     //
-//!     // let element = vec.swap_remove(0);
-//!     // other.push(element);
-//!     unsafe{
-//!         let element: &mut[u8] = other_vec.push_uninit();    // allocate element
-//!         vec.swap_remove_into(0, element);                   // swap_remove
-//!     }
+//!     let element = vec.swap_remove(0);
+//!     other_vec.push(element);
 //!
 //!     // Output 2 1
 //!     for s in vec.downcast_ref::<String>().unwrap().as_slice(){
@@ -49,14 +46,29 @@ pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
 
+pub mod any_value;
+pub mod ops;
+
 use std::ptr;
+use std::any::TypeId;
+
+/// Marker for unknown type.
+pub struct Unknown;
+impl Unknown {
+    #[inline]
+    pub fn is<T:'static>() -> bool {
+        TypeId::of::<T>() == TypeId::of::<Unknown>()
+    }
+}
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
 #[inline]
 unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
     // MIRI hack
-    if cfg!(miri) {
+    if cfg!(miri)
+//        || count >= 128
+    {
         ptr::copy_nonoverlapping(src, dst, count);
         return;
     }
@@ -67,6 +79,7 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
 }
 
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
+#[allow(dead_code)]
 #[inline]
 unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
     // MIRI hack

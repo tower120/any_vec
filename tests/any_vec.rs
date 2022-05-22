@@ -1,7 +1,11 @@
+use std::any::TypeId;
 use std::mem::forget;
+use std::ptr::NonNull;
 use itertools::{assert_equal};
-use any_vec::AnyVec;
+use any_vec::{AnyVec};
+use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
 
+#[allow(dead_code)]
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
     std::slice::from_raw_parts(
         (p as *const T) as *const u8,
@@ -28,20 +32,26 @@ fn drop_test() {
 }
 
 #[test]
-fn it_works() {
+fn any_value_raw_test() {
     let mut any_vec = AnyVec::new::<String>();
 
     unsafe{
         let str1 = "Hello".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str1));
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str1).cast::<u8>(), TypeId::of::<String>()
+        ));
         forget(str1);
 
         let str2 = " to ".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str2));
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str2).cast::<u8>(), TypeId::of::<String>()
+        ));
         forget(str2);
 
         let str3 = "world".to_string();
-        any_vec.push_uninit().copy_from_slice(any_as_u8_slice(&str3));
+        any_vec.push(AnyValueRaw::new(
+            NonNull::from(&str3).cast::<u8>(), TypeId::of::<String>()
+        ));
         forget(str3);
     }
 
@@ -152,30 +162,24 @@ fn swap_remove_test() {
 }
 
 #[test]
-fn type_erased_move_test() {
+fn any_vec_swap_remove_push_test() {
     let mut any_vec = AnyVec::new::<String>();
-    let mut vec = any_vec.downcast_mut::<String>().unwrap();
-    vec.push(String::from("0"));
-    vec.push(String::from("1"));
-    vec.push(String::from("2"));
-    vec.push(String::from("3"));
-    vec.push(String::from("4"));
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
 
-    let mut other_vec = AnyVec::new::<String>();
-    unsafe {
-        let element = other_vec.push_uninit();
-        any_vec.swap_remove_into(2, element);
-    }
-
-    assert_equal(other_vec.downcast_ref::<String>().unwrap().as_slice(), &[
-        String::from("2"),
-    ]);
+    let mut any_vec_other = AnyVec::new::<String>();
+    let element = any_vec.swap_remove(1);
+    any_vec_other.push(element);
 
     assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
         String::from("0"),
-        String::from("1"),
         String::from("4"),
         String::from("3"),
+    ]);
+    assert_equal(any_vec_other.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("1"),
     ]);
 }
 

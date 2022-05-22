@@ -1,8 +1,12 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
-use std::ptr::{NonNull, null_mut};
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
+use std::marker::PhantomData;
+use std::ptr::{NonNull};
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknown};
+use crate::any_value::{AnyValue};
+use crate::any_value::AnyValueTemp;
+use crate::ops::{Remove, SwapRemove};
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -11,12 +15,12 @@ use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, swap_b
 ///
 /// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec {
-    mem: NonNull<u8>,
+    pub(crate) mem: NonNull<u8>,
     capacity: usize,        // in elements
-    len: usize,             // in elements
+    pub(crate) len: usize,  // in elements
     element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
-    drop_fn: Option<fn(ptr: *mut u8, len: usize)>
+    pub(crate) drop_fn: Option<fn(ptr: *mut u8, len: usize)>
 }
 
 impl AnyVec {
@@ -145,231 +149,122 @@ impl AnyVec {
         );
     }
 
-    /// Inserts one element without actually writing anything at position index,
-    /// shifting all elements after it to the right.
-    ///
-    /// Return byte slice, that must be filled with element data.
-    ///
     /// # Panics
     ///
-    /// Panics if index is out of bounds.
-    ///
-    /// # Safety
-    /// * returned byte slice must be written with actual Element bytes.
-    /// * Element bytes must be aligned.
-    /// * Element must be "forgotten".
-    pub unsafe fn insert_uninit(&mut self, index: usize) -> &mut[u8] {
+    /// * Panics if type mismatch.
+    /// * Panics if index is out of bounds.
+    /// * Panics if out of memory.
+    pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
         if self.len == self.capacity{
             self.grow();
         }
 
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-        let next_element = element.add(self.element_layout.size());
+        unsafe{
+            // Compile time type optimization
+            if !Unknown::is::<V::Type>(){
+                let element = self.mem.cast::<V::Type>().as_ptr().add(index);
 
-        // push right
-        ptr::copy(
-            element,
-            next_element,
-            self.element_layout.size() * (self.len - index)
-        );
+                // 1. shift right
+                ptr::copy(
+                    element,
+                    element.add(1),
+                    self.len - index
+                );
+
+                // 2. write value
+                value.consume_bytes(|value_bytes|{
+                    ptr::copy_nonoverlapping(
+                        value_bytes.cast::<V::Type>().as_ptr(),
+                        element,
+                        1
+                    );
+                });
+            } else {
+                let element_size = self.element_layout.size();
+                let element = self.mem.as_ptr().add(element_size * index);
+
+                // push right
+                ptr::copy(
+                    element,
+                    element.add(element_size),
+                    element_size * (self.len - index)
+                );
+
+                value.consume_bytes(|value_bytes|{
+                    copy_bytes_nonoverlapping(
+                        value_bytes.as_ptr(),
+                        element,
+                        element_size
+                    );
+                });
+            }
+        }
+
         self.len += 1;
-
-        std::slice::from_raw_parts_mut(
-            element,
-            self.element_layout.size(),
-        )
     }
 
-    /// Pushes one element without actually writing anything.
+    /// # Panics
     ///
-    /// Return byte slice, that must be filled with element data.
-    ///
-    /// # Safety
-    /// * returned byte slice must be written with actual Element bytes.
-    /// * Element bytes must be aligned.
-    /// * Element must be "forgotten".
+    /// * Panics if type mismatch.
+    /// * Panics if out of memory.
     #[inline]
-    pub unsafe fn push_uninit(&mut self) -> &mut[u8] {
+    pub fn push<V: AnyValue>(&mut self, value: V) {
+        assert_eq!(value.value_typeid(), self.type_id);
         if self.len == self.capacity{
             self.grow();
         }
 
-        let new_element = self.mem.as_ptr().add(self.element_layout.size() * self.len);
-        self.len += 1;
-
-        std::slice::from_raw_parts_mut(
-            new_element,
-            self.element_layout.size(),
-        )
-    }
-
-    #[inline]
-    fn drop_element(&mut self, ptr: *mut u8, len: usize){
-        if let Some(drop_fn) = self.drop_fn{
-            (drop_fn)(ptr, len);
-        }
-    }
-
-    /// element_size as parameter - because it possible can be known at compile time
-    #[inline]
-    pub(crate) unsafe fn remove_into_impl(&mut self, index: usize, element_size: usize, out: *mut u8) {
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(element_size * index);
-
-        // 1. copy element to out
-        if !out.is_null() {
-            copy_bytes_nonoverlapping(element, out, element_size);
-        }
-
-        // 2. shift everything left
-        ptr::copy(
-            element.add(element_size),
-            element,
-            element_size * (self.len - index - 1)
-        );
-
-        // 3. shrink len
-        self.len -= 1;
-    }
-
-    /// Type erased version of [`Vec::remove`]. Due to this, does not return element.
-    ///
-    /// # Panics
-    ///
-    /// Panics if index is out of bounds.
-    pub fn remove(&mut self, index: usize) {
-    unsafe{
-        let temp_element = if self.drop_fn.is_some() {
-            self.mem.as_ptr().add(self.element_layout.size() * self.capacity)
-        } else {
-            null_mut()
-        };
-
-        self.remove_into_impl(index, self.element_layout.size(), temp_element);
-
-        // drop element in temporary storage
-        if !temp_element.is_null() {
-            (self.drop_fn.unwrap_unchecked())(temp_element, 1);
-        }
-    }
-    }
-
-    /// Same as [`remove`], but copy removed element as bytes to `out`.
-    ///
-    /// [`remove`]: Self::remove
-    ///
-    /// # Safety
-    /// * It is your responsibility to properly drop `out` element.
-    ///
-    /// # Panics
-    /// * Panics if index out of bounds.
-    /// * Panics if out len does not match element size.
-    #[inline]
-    pub unsafe fn remove_into(&mut self, index: usize, out: &mut[u8]) {
-        assert_eq!(out.len(), self.element_layout.size());
-        self.remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
-    }
-
-    /// Type erased version of [`Vec::swap_remove`]. Due to this, does not return element.
-    ///
-    /// # Panics
-    ///
-    /// Panics if index is out of bounds.
-    #[inline]
-    pub fn swap_remove(&mut self, index: usize) {
-    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-
-        // 1. swap elements
-        let last_index = self.len - 1;
-        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-        if index != last_index {
-            if self.drop_fn.is_none(){
-                copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
+        unsafe{
+            // Compile time type optimization
+            if !Unknown::is::<V::Type>(){
+                value.consume_bytes(|value_bytes|{
+                    ptr::copy_nonoverlapping(
+                        value_bytes.cast::<V::Type>().as_ptr(),
+                        self.mem.cast::<V::Type>().as_ptr().add(self.len),
+                        1
+                    );
+                });
             } else {
-                swap_bytes_nonoverlapping(last_element, element, self.element_layout.size());
+                let element_size = self.element_layout.size();
+                let new_element = self.mem.as_ptr().add(element_size * self.len);
+                value.consume_bytes(|value_bytes|{
+                    copy_bytes_nonoverlapping(
+                        value_bytes.as_ptr(),
+                        new_element,
+                        element_size
+                    );
+                });
             }
         }
 
-        // 2. shrink len
-        self.len -= 1;
-
-        // 3. drop last
-        self.drop_element(last_element, 1);
-    }
+        self.len += 1;
     }
 
-    // Significantly slower.... Maybe due to additional memory access at temp area?
-    // Hide for now.
-    #[allow(dead_code)]
-    #[inline]
-    fn swap_remove_v2(&mut self, index: usize) {
-    unsafe{
-        self.index_check(index);
-
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-
-        // 1. swap elements
-        let last_index = self.len - 1;
-        let last_element = self.mem.as_ptr().add(self.element_layout.size() * last_index);
-        let mut element_do_drop = last_element;
-        if index != last_index {
-            if self.drop_fn.is_some(){
-                let temp_element = self.mem.as_ptr().add(self.element_layout.size() * self.capacity);
-                copy_bytes_nonoverlapping(element, temp_element, self.element_layout.size());
-                element_do_drop = temp_element;
-            }
-            copy_bytes_nonoverlapping(last_element, element, self.element_layout.size());
-        }
-
-        // 2. shrink len
-        self.len -= 1;
-
-        // 3. drop last
-        self.drop_element(element_do_drop, 1);
-    }
-    }
-
-    /// drop element, if out is null.
-    /// element_size as parameter - because it possible can be known at compile time
-    #[inline]
-    pub(crate) unsafe fn swap_remove_into_impl(&mut self, index: usize, element_size: usize, out: *mut u8)
-    {
-        self.index_check(index);
-
-        // 1. move out element at index
-        let element = self.mem.as_ptr().add(element_size * index);
-        ptr::copy_nonoverlapping(element, out, element_size);
-
-        // 2. move element
-        let last_index = self.len - 1;
-        if index != last_index {
-            let last_element = self.mem.as_ptr().add(element_size * last_index);
-            ptr::copy_nonoverlapping(last_element, element, element_size);
-        }
-
-        // 3. shrink len
-        self.len -= 1;
-    }
-
-    /// Same as [`swap_remove`], but copy removed element as bytes to `out`.
-    ///
-    /// # Safety
-    /// * It is your responsibility to properly drop `out` element.
-    ///
     /// # Panics
-    /// * Panics if index out of bounds.
-    /// * Panics if out len does not match element size.
     ///
-    /// [`swap_remove`]: Self::swap_remove
+    /// * Panics if type mismatch.
+    /// * Panics if index out of bounds.
     #[inline]
-    pub unsafe fn swap_remove_into(&mut self, index: usize, out: &mut[u8]){
-        assert_eq!(out.len(), self.element_layout.size());  // This allows compile time optimization!
-        self.swap_remove_into_impl(index, self.element_layout.size(), out.as_mut_ptr());
+    pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
+        self.index_check(index);
+
+        AnyValueTemp(Remove {
+            any_vec: self,
+            index,
+            phantom: PhantomData
+        })
+    }
+
+    #[inline]
+    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
+        self.index_check(index);
+
+        AnyValueTemp(SwapRemove {
+            any_vec: self,
+            index,
+            phantom: PhantomData
+        })
     }
 
     #[inline]
@@ -380,7 +275,9 @@ impl AnyVec {
         // won't be able to access the dropped values.
         self.len = 0;
 
-        self.drop_element(self.mem.as_ptr(), len);
+        if let Some(drop_fn) = self.drop_fn{
+            (drop_fn)(self.mem.as_ptr(), len);
+        }
     }
 
     #[inline]

@@ -12,76 +12,72 @@ const SIZE: usize = 10000;
 type Element = String;
 static VALUE: Element = String::new();
 
-fn vec_remove() -> Duration {
-    let mut vec = Vec::new();
-    for _ in 0..SIZE{
-        vec.push(VALUE.clone());
-    }
+trait Impl{
+    fn index(i:usize) -> usize;
 
-    let start = Instant::now();
+    fn vec_remove() -> Duration {
+        let mut vec = Vec::new();
         for _ in 0..SIZE{
-            vec.remove(0);
+            vec.push(VALUE.clone());
         }
-    start.elapsed()
-}
 
-fn any_vec_remove() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
-            .push(VALUE.clone());
+        let start = Instant::now();
+            for i in (0..SIZE).rev(){
+                vec.remove(Self::index(i));
+            }
+        start.elapsed()
     }
 
-    let start = Instant::now();
-        for _ in 0..SIZE{
-            any_vec.remove(0);
-        }
-    start.elapsed()
-}
-
-fn any_vec_typed_remove() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
-            .push(VALUE.clone());
-    }
-
-    let start = Instant::now();
+    fn any_vec_remove() -> Duration {
+        let mut any_vec = AnyVec::new::<Element>();
         for _ in 0..SIZE{
             any_vec.downcast_mut::<Element>().unwrap()
-                .remove(0);
+                .push(VALUE.clone());
         }
-    start.elapsed()
-}
 
-fn any_vec_remove_into() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
-            .push(VALUE.clone());
+        let start = Instant::now();
+            for i in (0..SIZE).rev(){
+                any_vec.remove(Self::index(i));
+            }
+        start.elapsed()
     }
 
-    let start = Instant::now();
+    fn any_vec_typed_remove() -> Duration {
+        let mut any_vec = AnyVec::new::<Element>();
         for _ in 0..SIZE{
-            unsafe{
-                let mut element = MaybeUninit::<Element>::uninit();
-                let element_bytes = &mut *slice_from_raw_parts_mut(
-                    element.as_mut_ptr() as *mut u8,
-                    size_of::<Element>()
-                );
-
-                any_vec.remove_into(0, &mut element_bytes[..]);
-                element.assume_init();
-            }
+            any_vec.downcast_mut::<Element>().unwrap()
+                .push(VALUE.clone());
         }
-    start.elapsed()
+
+        let start = Instant::now();
+            for i in (0..SIZE).rev(){
+                any_vec.downcast_mut::<Element>().unwrap()
+                    .remove(Self::index(i));
+            }
+        start.elapsed()
+    }
+}
+
+struct Front;
+impl Impl for Front {
+    #[inline]
+    fn index(_: usize) -> usize { 0 }
+}
+
+struct Back;
+impl Impl for Back {
+    #[inline]
+    fn index(i: usize) -> usize { i }
 }
 
 pub fn bench_remove(c: &mut Criterion) {
-    bench_custom(c, "Vec remove", vec_remove);
-    bench_custom(c, "AnyVec remove", any_vec_remove);
-    bench_custom(c, "AnyVec remove_into", any_vec_remove_into);
-    bench_custom(c, "AnyVecTyped remove", any_vec_typed_remove);
+    bench_custom(c, "Vec remove front", Front::vec_remove);
+    bench_custom(c, "AnyVec remove front", Front::any_vec_remove);
+    bench_custom(c, "AnyVecTyped remove front", Front::any_vec_typed_remove);
+
+    bench_custom(c, "Vec remove back", Back::vec_remove);
+    bench_custom(c, "AnyVec remove back", Back::any_vec_remove);
+    bench_custom(c, "AnyVecTyped remove back", Back::any_vec_typed_remove);
 }
 
 criterion_group!(benches, bench_remove);

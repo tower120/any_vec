@@ -54,33 +54,9 @@ fn any_vec_typed_swap_remove() -> Duration {
     start.elapsed()
 }
 
-fn any_vec_swap_remove_into() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
-            .push(VALUE.clone());
-    }
-
-    let start = Instant::now();
-        for _ in 0..SIZE{
-            unsafe{
-                let mut element = MaybeUninit::<Element>::uninit();
-                let element_bytes = &mut *slice_from_raw_parts_mut(
-                    element.as_mut_ptr() as *mut u8,
-                    size_of::<Element>()
-                );
-
-                any_vec.swap_remove_into(0, &mut element_bytes[..]);
-                element.assume_init();
-            }
-        }
-    start.elapsed()
-}
-
 pub fn bench_swap_remove(c: &mut Criterion) {
     bench_custom(c, "Vec swap_remove", vec_swap_remove);
     bench_custom(c, "AnyVec swap_remove", any_vec_swap_remove);
-    bench_custom(c, "AnyVec swap_remove_into", any_vec_swap_remove_into);
     bench_custom(c, "AnyVecTyped swap_remove", any_vec_typed_swap_remove);
 }
 

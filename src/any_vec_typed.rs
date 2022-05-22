@@ -1,25 +1,25 @@
-use std::mem::size_of;
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
-use std::ptr;
 use std::ptr::NonNull;
-use crate::AnyVec;
+use crate::{AnyVec};
+use crate::any_value::{AnyValueTemp, AnyValue, AnyValueWrapper};
+use crate::ops::{Remove, SwapRemove};
 
 /// Concrete type [`AnyVec`] representation.
-pub struct AnyVecTyped<'a, T>{
+pub struct AnyVecTyped<'a, T: 'static>{
+    // NonNull - to have one struct for both & and &mut
     any_vec: NonNull<AnyVec>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T> Send for AnyVecTyped<'a, T>
+unsafe impl<'a, T: 'static> Send for AnyVecTyped<'a, T>
     where T: Send
 {}
 
-unsafe impl<'a, T> Sync for AnyVecTyped<'a, T>
+unsafe impl<'a, T: 'static> Sync for AnyVecTyped<'a, T>
     where T: Sync
 {}
 
-impl<'a, T> AnyVecTyped<'a, T>{
+impl<'a, T: 'static> AnyVecTyped<'a, T>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
@@ -40,46 +40,30 @@ impl<'a, T> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn insert(&mut self, index: usize, value: T){
-        unsafe{
-            ptr::write(
-                self.this_mut().insert_uninit(index).as_mut_ptr() as *mut T,
-                value
-            );
-        }
+        self.this_mut().insert(index, AnyValueWrapper::new(value));
     }
 
     #[inline]
     pub fn push(&mut self, value: T){
-        unsafe{
-            ptr::write(
-                self.this_mut().push_uninit().as_mut_ptr() as *mut T,
-                value
-            );
-        }
+        self.this_mut().push(AnyValueWrapper::new(value));
     }
 
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        let mut out = MaybeUninit::<T>::uninit();
-        unsafe{
-            self.this_mut().remove_into_impl(
-                index,
-                size_of::<T>(),
-                out.as_mut_ptr() as *mut u8);
-            out.assume_init()
-        }
+        AnyValueTemp(Remove::<T>{
+            any_vec: self.this_mut(),
+            index,
+            phantom: PhantomData
+        }).downcast::<T>()
     }
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        let mut out = MaybeUninit::<T>::uninit();
-        unsafe{
-            self.this_mut().swap_remove_into_impl(
-                index,
-                size_of::<T>(),
-                out.as_mut_ptr() as *mut u8);
-            out.assume_init()
-        }
+        AnyValueTemp(SwapRemove::<T>{
+            any_vec: self.this_mut(),
+            index,
+            phantom: PhantomData
+        }).downcast::<T>()
     }
 
     #[inline]
