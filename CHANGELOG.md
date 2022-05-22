@@ -5,7 +5,7 @@
 - Major type erased API change. All `AnyVec` operations now safe.
 
 ### Added
-- Introduced `any_value` family, which provide type erased safe value operations.
+- Introduced `any_value` family, which provide type erased safe operations.
 
 ## 0.4.0
 ### Added

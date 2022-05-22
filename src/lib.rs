@@ -40,14 +40,14 @@ mod any_vec;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
-pub mod any_value;
-pub mod ops;
 
 pub use crate::any_vec::AnyVec;
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
-//pub use any_value::{AnyValue, AnyValueWrapper};
+
+pub mod any_value;
+pub mod ops;
 
 use std::ptr;
 use std::any::TypeId;
