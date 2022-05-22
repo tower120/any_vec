@@ -2,7 +2,7 @@ use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
 use std::any::TypeId;
 use std::marker::PhantomData;
-use std::ptr::{NonNull, null_mut};
+use std::ptr::{NonNull};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknown};
 use crate::any_value::{AnyValue};
 use crate::any_value::AnyValueTemp;
@@ -151,8 +151,8 @@ impl AnyVec {
 
     /// # Panics
     ///
-    /// * Panics if index is out of bounds.
     /// * Panics if type mismatch.
+    /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
@@ -243,7 +243,8 @@ impl AnyVec {
 
     /// # Panics
     ///
-    /// Panics if index out of bounds.
+    /// * Panics if type mismatch.
+    /// * Panics if index out of bounds.
     #[inline]
     pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
         self.index_check(index);

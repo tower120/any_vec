@@ -24,15 +24,8 @@ Only destruct operations have additional overhead of indirect call.
     let mut other_vec: AnyVec = AnyVec::new::<String>();
     // Fully type erased element move from one vec to another
     // without intermediate mem-copies.
-    //
-    // Equivalent to:
-    //
-    // let element = vec.swap_remove(0);
-    // other.push(element);
-    unsafe{
-        let element: &mut[u8] = other_vec.push_uninit();    // allocate element 
-        vec.swap_remove_into(0, element);                   // swap_remove
-    }
+    let element = vec.swap_remove(0);
+    other_vec.push(element);
 
     // Output 2 1
     for s in vec.downcast_ref::<String>().unwrap().as_slice(){

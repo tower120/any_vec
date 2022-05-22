@@ -2,7 +2,10 @@
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
-//! Or use [`AnyVec`]'s type erased operations, which operate on `[u8]` byte basis.
+//! [`AnyVec`] type erased operations return [`AnyValue`], which you can use with other [`AnyVec`],
+//! or cast to concrete type.
+//!
+//! [`AnyValue`]: any_value::AnyValue
 //!
 //! ```rust
 //!     use any_vec::AnyVec;
@@ -76,6 +79,7 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
 }
 
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
+#[allow(dead_code)]
 #[inline]
 unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
     // MIRI hack

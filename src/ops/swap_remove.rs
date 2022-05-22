@@ -1,7 +1,5 @@
-use std::any::{Any, TypeId};
 use std::mem::size_of;
 use std::marker::PhantomData;
-use std::mem::{forget, MaybeUninit};
 use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyVec, copy_bytes_nonoverlapping, Unknown};
