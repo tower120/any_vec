@@ -5,7 +5,7 @@ use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyVec};
 use crate::any_value::{AnyValueTemp, AnyValue, AnyValueWrapper};
-use crate::ops::SwapRemove;
+use crate::ops::{Remove, SwapRemove};
 
 /// Concrete type [`AnyVec`] representation.
 pub struct AnyVecTyped<'a, T: 'static>{
@@ -53,14 +53,11 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        let mut out = MaybeUninit::<T>::uninit();
-        unsafe{
-            self.this_mut().remove_into_impl(
-                index,
-                size_of::<T>(),
-                out.as_mut_ptr() as *mut u8);
-            out.assume_init()
-        }
+        AnyValueTemp(Remove::<T>{
+            any_vec: self.this_mut(),
+            index,
+            phantom: PhantomData
+        }).downcast::<T>()
     }
 
     #[inline]
