@@ -5,6 +5,11 @@ use crate::any_value::{AnyValueTemp, AnyValue, AnyValueWrapper};
 use crate::ops::{Remove, SwapRemove};
 
 /// Concrete type [`AnyVec`] representation.
+///
+/// You can access it through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
+///
+/// [`AnyVecRef<T>`]: crate::AnyVecRef
+/// [`AnyVecMut<T>`]: crate::AnyVecMut
 pub struct AnyVecTyped<'a, T: 'static>{
     // NonNull - to have one struct for both & and &mut
     any_vec: NonNull<AnyVec>,

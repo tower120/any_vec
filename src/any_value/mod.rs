@@ -11,6 +11,7 @@ pub use temp::AnyValueTemp;
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 
+/// Type erased value interface.
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
     ///

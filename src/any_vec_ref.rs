@@ -1,6 +1,12 @@
 use std::ops::{Deref};
 use crate::{AnyVecTyped};
 
+/// Typed view to &[`AnyVec`].
+///
+/// You can get it from [`AnyVec::downcast_ref`].
+///
+/// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
 pub struct AnyVecRef<'a, T: 'static>{
     pub(crate) any_vec_typed: AnyVecTyped<'a, T>
 }
