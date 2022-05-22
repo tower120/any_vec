@@ -6,6 +6,7 @@
 //!
 //! ```rust
 //!     use any_vec::AnyVec;
+//!     use any_vec::any_value::AnyValue;
 //!     let mut vec: AnyVec = AnyVec::new::<String>();
 //!     {
 //!         // Typed operations.
@@ -18,15 +19,8 @@
 //!     let mut other_vec: AnyVec = AnyVec::new::<String>();
 //!     // Fully type erased element move from one vec to another
 //!     // without intermediate mem-copies.
-//!     //
-//!     // Equivalent to:
-//!     //
-//!     // let element = vec.swap_remove(0);
-//!     // other.push(element);
-//!     unsafe{
-//!         let element: &mut[u8] = other_vec.push_uninit();    // allocate element
-//!         vec.swap_remove_into(0, element);                   // swap_remove
-//!     }
+//!     let element = vec.swap_remove(0);
+//!     other_vec.push(element);
 //!
 //!     // Output 2 1
 //!     for s in vec.downcast_ref::<String>().unwrap().as_slice(){
@@ -69,7 +63,9 @@ impl Unknown {
 #[inline]
 unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
     // MIRI hack
-    if cfg!(miri) {
+    if cfg!(miri)
+//        || count >= 128
+    {
         ptr::copy_nonoverlapping(src, dst, count);
         return;
     }

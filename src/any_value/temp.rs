@@ -15,6 +15,8 @@ pub trait Impl{
 /// Data will be erased with AnyValueTemp destruction.
 ///
 /// May do some postponed actions on consumption/destruction.
+///
+/// Intrinsic.
 pub struct AnyValueTemp<I: Impl>(pub(crate) I);
 
 impl<I: Impl> AnyValue for AnyValueTemp<I>{

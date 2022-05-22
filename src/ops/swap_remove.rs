@@ -32,11 +32,15 @@ impl<'a, T: 'static> Impl for SwapRemove<'a, T>{
         };
         let element = self.any_vec.mem.as_ptr().add(element_size * self.index);
 
+        // mem::forget and element drop panic "safety".
+        let last_index = self.any_vec.len - 1;
+        self.any_vec.len = self.index;
+
         // 1. Consume
         f(NonNull::new_unchecked(element));
 
         // 2. overwrite with last element
-        let last_index = self.any_vec.len - 1;
+        //let last_index = self.any_vec.len - 1;
         let last_element = self.any_vec.mem.as_ptr().add(element_size * last_index);
         if self.index != last_index {
             if Unknown::is::<T>() {
@@ -46,7 +50,7 @@ impl<'a, T: 'static> Impl for SwapRemove<'a, T>{
             }
         }
 
-        // 3. shrink len
-        self.any_vec.len -= 1;
+        // 3. shrink len `self.any_vec.len -= 1`
+        self.any_vec.len = last_index
     }
 }

@@ -43,12 +43,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn insert(&mut self, index: usize, value: T){
-        unsafe{
-            ptr::write(
-                self.this_mut().insert_uninit(index).as_mut_ptr() as *mut T,
-                value
-            );
-        }
+        self.this_mut().insert(index, AnyValueWrapper::new(value));
     }
 
     #[inline]

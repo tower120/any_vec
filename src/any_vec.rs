@@ -149,40 +149,60 @@ impl AnyVec {
         );
     }
 
-    /// Inserts one element without actually writing anything at position index,
-    /// shifting all elements after it to the right.
-    ///
-    /// Return byte slice, that must be filled with element data.
-    ///
     /// # Panics
     ///
-    /// Panics if index is out of bounds.
-    ///
-    /// # Safety
-    /// * returned byte slice must be written with actual Element bytes.
-    /// * Element bytes must be aligned.
-    /// * Element must be "forgotten".
-    pub unsafe fn insert_uninit(&mut self, index: usize) -> &mut[u8] {
+    /// * Panics if index is out of bounds.
+    /// * Panics if type mismatch.
+    /// * Panics if out of memory.
+    pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
         if self.len == self.capacity{
             self.grow();
         }
 
-        let element = self.mem.as_ptr().add(self.element_layout.size() * index);
-        let next_element = element.add(self.element_layout.size());
+        unsafe{
+            // Compile time type optimization
+            if !Unknown::is::<V::Type>(){
+                let element = self.mem.cast::<V::Type>().as_ptr().add(index);
 
-        // push right
-        ptr::copy(
-            element,
-            next_element,
-            self.element_layout.size() * (self.len - index)
-        );
+                // 1. shift right
+                ptr::copy(
+                    element,
+                    element.add(1),
+                    self.len - index
+                );
+
+                // 2. write value
+                value.consume_bytes(|value_bytes|{
+                    ptr::copy_nonoverlapping(
+                        value_bytes.cast::<V::Type>().as_ptr(),
+                        element,
+                        1
+                    );
+                });
+            } else {
+                let element_size = self.element_layout.size();
+                let element = self.mem.as_ptr().add(element_size * index);
+
+                // push right
+                ptr::copy
+                (
+                    element,
+                    element.add(element_size),
+                    element_size * (self.len - index)
+                );
+
+                value.consume_bytes(|value_bytes|{
+                    copy_bytes_nonoverlapping(
+                        value_bytes.as_ptr(),
+                        element,
+                        element_size
+                    );
+                });
+            }
+        }
+
         self.len += 1;
-
-        std::slice::from_raw_parts_mut(
-            element,
-            self.element_layout.size(),
-        )
     }
 
     /// # Panics
@@ -197,7 +217,7 @@ impl AnyVec {
         }
 
         unsafe{
-            // Compile time optimization
+            // Compile time type optimization
             if !Unknown::is::<V::Type>(){
                 value.consume_bytes(|value_bytes|{
                     ptr::copy_nonoverlapping(
