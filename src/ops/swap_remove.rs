@@ -6,6 +6,8 @@ use crate::{AnyVec, copy_bytes_nonoverlapping, Unknown};
 use crate::any_value::temp::Impl;
 
 /// Lazily `swap_remove` element on consumption/drop.
+///
+/// This `struct` is created by [`AnyVec::swap_remove`].
 pub struct SwapRemove<'a, T: 'static = Unknown>{
     pub(crate) any_vec: &'a mut AnyVec,
     pub(crate) index: usize,

@@ -13,6 +13,9 @@ use crate::ops::{Remove, SwapRemove};
 ///
 /// Only destruct operations have indirect call overhead.
 ///
+/// Some operations return [`AnyValueTemp<Operation>`], which internally holds &mut to [`AnyVec`].
+/// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
+///
 /// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec {
     pub(crate) mem: NonNull<u8>,
@@ -245,6 +248,13 @@ impl AnyVec {
     ///
     /// * Panics if type mismatch.
     /// * Panics if index out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices >= index.
+    ///
     #[inline]
     pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
         self.index_check(index);
@@ -256,6 +266,17 @@ impl AnyVec {
         })
     }
 
+    /// # Panics
+    ///
+    /// * Panics if type mismatch.
+    /// * Panics if index out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices >= index.
+    ///
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
         self.index_check(index);

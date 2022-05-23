@@ -15,9 +15,10 @@ pub trait Impl{
 /// Temporary existing value in memory.
 /// Data will be erased with AnyValueTemp destruction.
 ///
+/// Have internal `&mut AnyVec`.
+///
 /// May do some postponed actions on consumption/destruction.
 ///
-/// Intrinsic.
 pub struct AnyValueTemp<I: Impl>(pub(crate) I);
 
 impl<I: Impl> AnyValue for AnyValueTemp<I>{

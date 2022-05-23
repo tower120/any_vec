@@ -5,6 +5,8 @@ use crate::{AnyVec, Unknown};
 use crate::any_value::temp::Impl;
 
 /// Lazily `remove` element on consumption/drop.
+///
+/// This `struct` is created by [`AnyVec::remove`].
 pub struct Remove<'a, T: 'static = Unknown>{
     pub(crate) any_vec: &'a mut AnyVec,
     pub(crate) index: usize,
