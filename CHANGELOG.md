@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Fixed
+- `AnyVec::insert` now check type again.
+
 ## 0.5.0
 ### Changed
 - Major type erased API change. All `AnyVec` operations now safe.

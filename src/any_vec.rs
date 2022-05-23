@@ -142,6 +142,11 @@ impl AnyVec {
         assert!(index < self.len, "Index out of range!");
     }
 
+    #[inline]
+    fn type_check<V: AnyValue>(&self, value: &V){
+        assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
+    }
+
     #[cold]
     #[inline(never)]
     fn grow(&mut self){
@@ -156,7 +161,9 @@ impl AnyVec {
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
+        self.type_check(&value);
         assert!(index <= self.len, "Index out of range!");
+
         if self.len == self.capacity{
             self.grow();
         }
@@ -211,7 +218,8 @@ impl AnyVec {
     /// * Panics if out of memory.
     #[inline]
     pub fn push<V: AnyValue>(&mut self, value: V) {
-        assert_eq!(value.value_typeid(), self.type_id);
+        self.type_check(&value);
+
         if self.len == self.capacity{
             self.grow();
         }
