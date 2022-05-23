@@ -251,7 +251,6 @@ impl AnyVec {
 
     /// # Panics
     ///
-    /// * Panics if type mismatch.
     /// * Panics if index out of bounds.
     ///
     /// # Leaking
@@ -273,7 +272,6 @@ impl AnyVec {
 
     /// # Panics
     ///
-    /// * Panics if type mismatch.
     /// * Panics if index out of bounds.
     ///
     /// # Leaking
