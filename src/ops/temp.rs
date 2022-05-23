@@ -4,9 +4,7 @@ use std::ptr::NonNull;
 use crate::{AnyVec, Unknown};
 use crate::any_value::AnyValue;
 
-// TODO: move to ops
-
-pub trait Impl{
+pub trait Operation {
     type Type: 'static;
     fn any_vec(&self) -> &AnyVec;
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(&mut self, f: F);
@@ -19,14 +17,14 @@ pub trait Impl{
 ///
 /// May do some postponed actions on consumption/destruction.
 ///
-pub struct AnyValueTemp<I: Impl>(pub(crate) I);
+pub struct AnyValueTemp<Op: Operation>(pub(crate) Op);
 
-impl<I: Impl> AnyValue for AnyValueTemp<I>{
-    type Type = I::Type;
+impl<Op: Operation> AnyValue for AnyValueTemp<Op>{
+    type Type = Op::Type;
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
-        let typeid = TypeId::of::<I::Type>();
+        let typeid = TypeId::of::<Op::Type>();
         if typeid == TypeId::of::<Unknown>(){
             self.0.any_vec().element_typeid()
         } else {
@@ -41,19 +39,19 @@ impl<I: Impl> AnyValue for AnyValueTemp<I>{
     }
 }
 
-impl<I: Impl> Drop for AnyValueTemp<I>{
+impl<Op: Operation> Drop for AnyValueTemp<Op>{
     #[inline]
     fn drop(&mut self) {
     unsafe{
         let drop_fn = self.0.any_vec().drop_fn;
         self.0.consume_bytes(|element|{
             // compile-time check
-            if TypeId::of::<I::Type>() == TypeId::of::<Unknown>(){
+            if Unknown::is::<Op::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element.as_ptr(), 1);
                 }
             } else {
-                ptr::drop_in_place(element.as_ptr() as *mut  I::Type);
+                ptr::drop_in_place(element.as_ptr() as *mut  Op::Type);
             }
         });
     }

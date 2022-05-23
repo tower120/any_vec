@@ -5,8 +5,7 @@ use std::marker::PhantomData;
 use std::ptr::{NonNull};
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknown};
 use crate::any_value::{AnyValue};
-use crate::any_value::AnyValueTemp;
-use crate::ops::{Remove, SwapRemove};
+use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 /// Type erased vec-like container.
 /// All elements have the same type.

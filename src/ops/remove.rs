@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyVec, Unknown};
-use crate::any_value::temp::Impl;
+use crate::ops::temp::Operation;
 
 /// Lazily `remove` element on consumption/drop.
 ///
@@ -13,7 +13,7 @@ pub struct Remove<'a, T: 'static = Unknown>{
     pub(crate) phantom: PhantomData<&'a mut T>
 }
 
-impl<'a, T: 'static> Impl for Remove<'a, T>{
+impl<'a, T: 'static> Operation for Remove<'a, T>{
     type Type = T;
 
     #[inline]

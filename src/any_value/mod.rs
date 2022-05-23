@@ -1,13 +1,11 @@
-use std::any::{TypeId};
-use std::{ptr};
-use std::mem::{MaybeUninit};
-use std::ptr::{NonNull};
+use std::any::TypeId;
+use std::ptr;
+use std::mem::MaybeUninit;
+use std::ptr::NonNull;
 
-pub(crate) mod temp;
 mod wrapper;
 mod raw;
 
-pub use temp::AnyValueTemp;
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 

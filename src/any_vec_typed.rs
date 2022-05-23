@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::{AnyVec};
-use crate::any_value::{AnyValueTemp, AnyValue, AnyValueWrapper};
-use crate::ops::{Remove, SwapRemove};
+use crate::any_value::{AnyValue, AnyValueWrapper};
+use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 /// Concrete type [`AnyVec`] representation.
 ///

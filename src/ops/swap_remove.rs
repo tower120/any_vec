@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::ptr;
 use std::ptr::NonNull;
 use crate::{AnyVec, copy_bytes_nonoverlapping, Unknown};
-use crate::any_value::temp::Impl;
+use crate::ops::temp::Operation;
 
 /// Lazily `swap_remove` element on consumption/drop.
 ///
@@ -14,7 +14,7 @@ pub struct SwapRemove<'a, T: 'static = Unknown>{
     pub(crate) phantom: PhantomData<&'a mut T>
 }
 
-impl<'a, T: 'static> Impl for SwapRemove<'a, T>{
+impl<'a, T: 'static> Operation for SwapRemove<'a, T>{
     type Type = T;
 
     #[inline]
