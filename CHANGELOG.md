@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- `any_value::AnyValueTemp` moved to `ops::AnyValueTemp`
+
 ### Fixed
 - `AnyVec::insert` now check type again.
 
