@@ -104,9 +104,8 @@ impl AnyVec {
         if self.element_layout.size() != 0 {
             unsafe{
                 // Non checked mul, because this memory size already allocated.
-                // +1 - from temporary element storage
                 let mem_layout = Layout::from_size_align_unchecked(
-                    self.element_layout.size() * (self.capacity + 1),
+                    self.element_layout.size() * self.capacity,
                     self.element_layout.align()
                 );
 
@@ -116,9 +115,8 @@ impl AnyVec {
                         NonNull::<u8>::dangling()
                     } else {
                         // mul carefully, to prevent overflow.
-                        // +1 - for temporary element storage
                         let new_mem_size = self.element_layout.size()
-                            .checked_mul(new_capacity + 1).unwrap();
+                            .checked_mul(new_capacity).unwrap();
                         let new_mem_layout = Layout::from_size_align_unchecked(
                             new_mem_size, self.element_layout.align()
                         );
