@@ -4,7 +4,7 @@ use std::mem::{MaybeUninit, size_of};
 use std::ptr::{slice_from_raw_parts_mut};
 use std::time::{Duration, Instant};
 use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::AnyVec;
+use any_vec::AnyVecRaw;
 use crate::utils::bench_custom;
 
 const SIZE: usize = 10000;
@@ -26,7 +26,7 @@ fn vec_swap_remove() -> Duration {
 }
 
 fn any_vec_swap_remove() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
+    let mut any_vec = AnyVecRaw::new::<Element>();
     for _ in 0..SIZE{
         any_vec.downcast_mut::<Element>().unwrap()
             .push(VALUE.clone());
@@ -40,7 +40,7 @@ fn any_vec_swap_remove() -> Duration {
 }
 
 fn any_vec_typed_swap_remove() -> Duration {
-    let mut any_vec = AnyVec::new::<Element>();
+    let mut any_vec = AnyVecRaw::new::<Element>();
     for _ in 0..SIZE{
         any_vec.downcast_mut::<Element>().unwrap()
             .push(VALUE.clone());

@@ -1,4 +1,4 @@
-use any_vec::{AnyVec};
+use any_vec::AnyVec;
 
 #[test]
 pub fn downcast_mut_test(){

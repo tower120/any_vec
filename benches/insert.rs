@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
-use any_vec::AnyVec;
+use any_vec::AnyVecRaw;
 
 const SIZE: usize = 10000;
 
@@ -14,7 +14,7 @@ fn vec_insert_front(){
 }
 
 fn any_vec_insert_front(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVecRaw::new::<usize>();
     for i in 0..SIZE{
         let raw_value = unsafe{AnyValueRaw::new(NonNull::from(&i).cast::<u8>(), TypeId::of::<usize>())};
         any_vec.insert(0, raw_value);
@@ -22,7 +22,7 @@ fn any_vec_insert_front(){
 }
 
 fn any_vec_typed_insert_front(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVecRaw::new::<usize>();
     for i in 0..SIZE{
         let mut vec = any_vec.downcast_mut::<usize>().unwrap();
         vec.insert(0, i);
@@ -37,7 +37,7 @@ fn vec_insert_back(){
 }
 
 fn any_vec_insert_back(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVecRaw::new::<usize>();
     for i in 0..SIZE{
         let raw_value = unsafe{AnyValueRaw::new(NonNull::from(&i).cast::<u8>(), TypeId::of::<usize>())};
         any_vec.insert(i, raw_value);
@@ -45,7 +45,7 @@ fn any_vec_insert_back(){
 }
 
 fn any_vec_typed_insert_back(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec = AnyVecRaw::new::<usize>();
     for i in 0..SIZE{
         let mut vec = any_vec.downcast_mut::<usize>().unwrap();
         vec.insert(i, i);

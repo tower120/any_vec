@@ -1,14 +1,17 @@
 use std::marker::PhantomData;
 use std::ptr;
 use std::ptr::NonNull;
-use crate::{AnyVec, Unknown};
+use crate::{Unknown};
+use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::temp::Operation;
 
 /// Lazily `remove` element on consumption/drop.
 ///
 /// This `struct` is created by [`AnyVec::remove`].
+///
+/// [`AnyVec::remove`]: crate::AnyVec::remove
 pub struct Remove<'a, T: 'static = Unknown>{
-    pub(crate) any_vec: &'a mut AnyVec,
+    pub(crate) any_vec: &'a mut AnyVecRaw,
     pub(crate) index: usize,
     pub(crate) phantom: PhantomData<&'a mut T>
 }
@@ -17,7 +20,7 @@ impl<'a, T: 'static> Operation for Remove<'a, T>{
     type Type = T;
 
     #[inline]
-    fn any_vec(&self) -> &AnyVec {
+    fn any_vec(&self) -> &AnyVecRaw {
         self.any_vec
     }
 

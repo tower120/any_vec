@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::{assert_equal};
-use any_vec::{AnyVec};
+use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
 
 #[allow(dead_code)]

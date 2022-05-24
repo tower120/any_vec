@@ -1,12 +1,13 @@
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::ptr::NonNull;
-use crate::{AnyVec, Unknown};
+use crate::{Unknown};
 use crate::any_value::AnyValue;
+use crate::any_vec_raw::AnyVecRaw;
 
 pub trait Operation {
     type Type: 'static;
-    fn any_vec(&self) -> &AnyVec;
+    fn any_vec(&self) -> &AnyVecRaw;
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(&mut self, f: F);
 }
 

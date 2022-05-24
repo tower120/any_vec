@@ -36,6 +36,7 @@
 //!
 
 mod any_vec;
+mod any_vec_raw;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
