@@ -6,6 +6,7 @@
 
 ### Fixed
 - `AnyVec::insert` now check type again.
+- `AnyValueWrapper::downcast` UB fx.
 
 ## 0.5.0
 ### Changed

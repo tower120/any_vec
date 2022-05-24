@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::mem;
+use std::mem::ManuallyDrop;
 use std::ptr;
 use std::ptr::NonNull;
 use crate::any_value::AnyValue;
@@ -26,11 +27,9 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     fn downcast<U: 'static>(self) -> U {
         assert_eq!(self.value_typeid(), TypeId::of::<U>());
         // rust don't see that types are the same after assert.
-        unsafe {
-            let ptr = &self.value as *const T as *const U;
-            mem::forget(self.value);
-            ptr::read(ptr)
-        }
+        let value = ManuallyDrop::new(self.value);
+        let ptr = &*value as *const T as *const U;
+        unsafe { ptr::read(ptr) }
     }
 
     #[inline]
