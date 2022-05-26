@@ -1,22 +1,56 @@
 use std::alloc::Layout;
 use std::any::TypeId;
+use std::marker::PhantomData;
 use crate::{AnyVecMut, AnyVecRef};
 use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
+use crate::any_vec::traits::{Trait};
+use crate::traits::Cloneable;
 
-pub struct AnyVec {
-    raw: AnyVecRaw
+/// Trait constraints
+pub mod traits{
+    mod private{
+        pub trait Sealed{}
+    }
+    pub trait Trait: private::Sealed {}
+
+    impl Trait for dyn Sync{}
+    impl private::Sealed for dyn Sync{}
+
+    impl Trait for dyn Send{}
+    impl private::Sealed for dyn Send{}
+
+    impl Trait for dyn Sync + Send{}
+    impl private::Sealed for dyn Sync + Send{}
+
+    pub trait Cloneable: Trait{}
 }
 
-impl AnyVec {
+pub struct AnyVec<Traits: ?Sized + Trait = dyn Trait> {
+    raw: AnyVecRaw,
+    phantom: PhantomData<Traits>
+}
+
+unsafe impl<Traits: ?Sized + Trait> Send for AnyVec<Traits>
+    where Traits: Send
+{}
+
+unsafe impl<Traits: ?Sized + Trait> Sync for AnyVec<Traits>
+    where Traits: Sync
+{}
+
+impl<Traits: ?Sized + Trait> AnyVec<Traits> {
     pub fn new<Element: 'static>() -> Self {
         Self::with_capacity::<Element>(0)
     }
 
-    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self {
+    // TODO: check type Trait constraints!!!!
+    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
+    {
         Self{
-            raw: AnyVecRaw::with_capacity::<Element>(capacity)
+            raw: AnyVecRaw::with_capacity::<Element>(capacity),
+            phantom: PhantomData
         }
     }
 
@@ -84,5 +118,16 @@ impl AnyVec {
     #[inline]
     pub fn capacity(&self) -> usize {
         self.raw.capacity()
+    }
+}
+
+impl<Traits: ?Sized + Trait> Clone for AnyVec<Traits>
+    where Traits: Cloneable
+{
+    fn clone(&self) -> Self {
+        Self{
+            raw: unsafe{ self.raw.clone() },
+            phantom: PhantomData
+        }
     }
 }

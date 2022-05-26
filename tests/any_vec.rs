@@ -22,7 +22,7 @@ impl Drop for S{
 
 #[test]
 fn drop_test() {
-    let mut any_vec = AnyVec::new::<S>();
+    let mut any_vec: AnyVec = AnyVec::new::<S>();
     let mut vec = any_vec.downcast_mut::<S>().unwrap();
     vec.push(S{i:1});
     vec.push(S{i:2});
@@ -33,7 +33,7 @@ fn drop_test() {
 
 #[test]
 fn any_value_raw_test() {
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
 
     unsafe{
         let str1 = "Hello".to_string();
@@ -64,7 +64,7 @@ fn any_value_raw_test() {
 #[test]
 pub fn push_with_capacity_test(){
     const SIZE: usize = 10000;
-    let mut any_vec = AnyVec::with_capacity::<usize>(SIZE);
+    let mut any_vec: AnyVec = AnyVec::with_capacity::<usize>(SIZE);
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();
     for i in 0..SIZE{
         vec.push(i);

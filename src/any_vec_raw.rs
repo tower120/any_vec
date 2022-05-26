@@ -55,6 +55,35 @@ impl AnyVecRaw {
         this
     }
 
+    /// Unsafe, because type cloneability is not checked
+    pub(crate) unsafe fn clone(&self) -> Self {
+        // 1. construct empty "prototype"
+        let mut cloned = Self{
+            mem: NonNull::<u8>::dangling(),
+            capacity: 0,
+            len: 0,
+            element_layout: self.element_layout,
+            type_id: self.type_id,
+            drop_fn: self.drop_fn
+        };
+
+        // 2. allocate
+        // TODO: set only necessary capacity size.
+        // TODO: implement through expand.
+        cloned.set_capacity(self.capacity);
+
+        // 3. copy
+        ptr::copy_nonoverlapping(
+            self.mem.as_ptr(),
+            cloned.mem.as_ptr(),
+            self.element_layout.size() * self.len
+        );
+
+        // 4. set len
+        cloned.len = self.len;
+        cloned
+    }
+
     #[inline]
     pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
         if self.type_id == TypeId::of::<Element>() {
