@@ -33,3 +33,22 @@ pub fn test_clone(){
         any_vec2.downcast_ref::<String>().unwrap().as_slice()
     );
 }
+
+#[test]
+pub fn type_check_test(){
+    let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+    any_vec.check::<String>();
+
+    let mut any_vec: AnyVec<dyn Send> = AnyVec::new::<String>();
+    any_vec.check::<String>();
+
+    let mut any_vec: AnyVec<dyn Sync> = AnyVec::new::<String>();
+    any_vec.check::<String>();
+
+    let mut any_vec: AnyVec<dyn Sync + Send> = AnyVec::new::<String>();
+    any_vec.check::<String>();
+
+    let mut any_vec: AnyVec<dyn Sync + Send + Cloneable> = AnyVec::new::<String>();
+    any_vec.check::<String>();
+}
+
