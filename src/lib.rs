@@ -31,8 +31,21 @@
 //!
 //!```
 //!
-//! [`AnyVec`] is [`Send`]able if it's elements are.
-//! [`AnyVec`] is [`Sync`]able if it's elements are.
+//! # Send, Sync, Clone
+//!
+//! You can make [`AnyVec`] [`Send`]able, [`Sync`]able, [`Cloneable`]:
+//!```rust
+//! use any_vec::AnyVec;
+//! use any_vec::traits::*;
+//! let v1: AnyVec<dyn Cloneable + Sync + Send> = AnyVec::new::<String>();
+//! let v2 = v1.clone();
+//! ```
+//! This constraints will be applied compiletime to element type:
+//!```compile_fail
+//! # use any_vec::AnyVec;
+//! # use std::rc::Rc;
+//! let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
+//!```
 //!
 
 mod any_vec;

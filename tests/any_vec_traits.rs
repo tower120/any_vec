@@ -36,19 +36,37 @@ pub fn test_clone(){
 
 #[test]
 pub fn type_check_test(){
-    let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
-    any_vec.check::<String>();
+    fn fn_send(_: &impl Send){}
+    fn fn_sync(_: &impl Sync){}
 
-    let mut any_vec: AnyVec<dyn Send> = AnyVec::new::<String>();
-    any_vec.check::<String>();
-
-    let mut any_vec: AnyVec<dyn Sync> = AnyVec::new::<String>();
-    any_vec.check::<String>();
-
-    let mut any_vec: AnyVec<dyn Sync + Send> = AnyVec::new::<String>();
-    any_vec.check::<String>();
-
-    let mut any_vec: AnyVec<dyn Sync + Send + Cloneable> = AnyVec::new::<String>();
-    any_vec.check::<String>();
+    {
+        let any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+        any_vec.clone();
+    }
+    {
+        let any_vec: AnyVec<dyn Send> = AnyVec::new::<String>();
+        fn_send(&any_vec);
+    }
+    {
+        let any_vec: AnyVec<dyn Sync> = AnyVec::new::<String>();
+        fn_sync(&any_vec);
+    }
+    {
+        let any_vec: AnyVec<dyn Send + Sync> = AnyVec::new::<String>();
+        fn_send(&any_vec);
+        fn_sync(&any_vec);
+    }
+    {
+        let any_vec: AnyVec<dyn Send + Sync + Cloneable> = AnyVec::new::<String>();
+        fn_send(&any_vec);
+        fn_sync(&any_vec);
+        any_vec.clone();
+    }
 }
 
+/*// Should not compile
+#[test]
+pub fn type_check_fail_test(){
+    let any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.clone();
+}*/

@@ -55,18 +55,32 @@ impl<T: Clone + Sync> CheckTraits<dyn Cloneable + Sync> for T{}
 
 impl<T: Clone + Send + Sync> CheckTraits<dyn Cloneable + Send + Sync> for T{}
 
+/// Type erased vec-like container.
+/// All elements have the same type.
+///
+/// Only destruct operations have indirect call overhead.
+///
+/// You can make AnyVec [`Send`]-able, [`Sync`]-able, [`Cloneable`], by
+/// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`crate::traits`].
+///
+/// Some operations return [`AnyValueTemp<Operation>`], which internally holds &mut to [`AnyVec`].
+/// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
+///
+/// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec<Traits: ?Sized + Trait = dyn Trait> {
     raw: AnyVecRaw,
     phantom: PhantomData<Traits>
 }
 
 impl<Traits: ?Sized + Trait> AnyVec<Traits> {
+    /// Element should implement requested Traits
     pub fn new<Element: 'static>() -> Self
         where Element: CheckTraits<Traits>
     {
         Self::with_capacity::<Element>(0)
     }
 
+    /// Element should implement requested Traits
     pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
         where Element: CheckTraits<Traits>
     {
@@ -96,20 +110,49 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits> {
         self.raw.downcast_mut_unchecked::<Element>()
     }
 
+    /// # Panics
+    ///
+    /// * Panics if type mismatch.
+    /// * Panics if index is out of bounds.
+    /// * Panics if out of memory.
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         self.raw.insert(index, value);
     }
 
+    /// # Panics
+    ///
+    /// * Panics if type mismatch.
+    /// * Panics if out of memory.
     #[inline]
     pub fn push<V: AnyValue>(&mut self, value: V) {
         self.raw.push(value);
     }
 
+    /// # Panics
+    ///
+    /// * Panics if index out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices >= index.
+    ///
     #[inline]
     pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
         self.raw.remove(index)
     }
 
+    /// # Panics
+    ///
+    /// * Panics if index out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices >= index.
+    ///
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
         self.raw.swap_remove(index)

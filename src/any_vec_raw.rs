@@ -7,15 +7,6 @@ use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknow
 use crate::any_value::{AnyValue};
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
-/// Type erased vec-like container.
-/// All elements have the same type.
-///
-/// Only destruct operations have indirect call overhead.
-///
-/// Some operations return [`AnyValueTemp<Operation>`], which internally holds &mut to [`AnyVec`].
-/// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
-///
-/// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVecRaw {
     pub(crate) mem: NonNull<u8>,
     capacity: usize,        // in elements
@@ -183,11 +174,6 @@ impl AnyVecRaw {
         );
     }
 
-    /// # Panics
-    ///
-    /// * Panics if type mismatch.
-    /// * Panics if index is out of bounds.
-    /// * Panics if out of memory.
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         self.type_check(&value);
         assert!(index <= self.len, "Index out of range!");
@@ -240,10 +226,6 @@ impl AnyVecRaw {
         self.len += 1;
     }
 
-    /// # Panics
-    ///
-    /// * Panics if type mismatch.
-    /// * Panics if out of memory.
     #[inline]
     pub fn push<V: AnyValue>(&mut self, value: V) {
         self.type_check(&value);
@@ -278,16 +260,6 @@ impl AnyVecRaw {
         self.len += 1;
     }
 
-    /// # Panics
-    ///
-    /// * Panics if index out of bounds.
-    ///
-    /// # Leaking
-    ///
-    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
-    /// [`mem::forget`], for example), the vector may have lost and leaked
-    /// elements with indices >= index.
-    ///
     #[inline]
     pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
         self.index_check(index);
@@ -299,16 +271,6 @@ impl AnyVecRaw {
         })
     }
 
-    /// # Panics
-    ///
-    /// * Panics if index out of bounds.
-    ///
-    /// # Leaking
-    ///
-    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
-    /// [`mem::forget`], for example), the vector may have lost and leaked
-    /// elements with indices >= index.
-    ///
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
         self.index_check(index);
