@@ -42,18 +42,63 @@ pub mod traits{
     pub trait Cloneable: Trait{}
 }
 
-pub trait CheckTraits<Traits: ?Sized>{}
 
-impl<T> CheckTraits<dyn Trait> for T{}
-impl<T: Clone> CheckTraits<dyn Cloneable> for T{}
-impl<T: Send> CheckTraits<dyn Send> for T{}
-impl<T: Sync> CheckTraits<dyn Sync> for T{}
+const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
+    if impls::impls!(T: Copy){
+        None
+    } else {
+        Some(clone_fn::<T>)
+    }
+}
 
-impl<T: Send + Sync> CheckTraits<dyn Send + Sync> for T{}
-impl<T: Clone + Send> CheckTraits<dyn Cloneable + Send> for T{}
-impl<T: Clone + Sync> CheckTraits<dyn Cloneable + Sync> for T{}
+pub trait SatisfyTraits<Traits: ?Sized>{
+    const CLONE_FN: Option<CloneFn> = None;
+}
 
-impl<T: Clone + Send + Sync> CheckTraits<dyn Cloneable + Send + Sync> for T{}
+impl<T> SatisfyTraits<dyn Trait> for T{}
+impl<T: Clone> SatisfyTraits<dyn Cloneable> for T{
+    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+}
+impl<T: Send> SatisfyTraits<dyn Send> for T{}
+impl<T: Sync> SatisfyTraits<dyn Sync> for T{}
+
+impl<T: Send + Sync> SatisfyTraits<dyn Send + Sync> for T{}
+impl<T: Clone + Send> SatisfyTraits<dyn Cloneable + Send> for T{
+    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+}
+impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{
+    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+}
+
+impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{
+    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+}
+
+
+pub(crate) type CloneFn = fn(*const u8, *mut u8, usize);
+fn clone_fn<T: Clone>(src: *const u8, dst: *mut u8, len: usize){
+    let src = src as *const T;
+    let dst = dst as *mut T;
+    for i in 0..len {
+        unsafe{
+            let dst = dst.add(i);
+            let src = src.add(i);
+            dst.write((*src).clone());
+        }
+    }
+}
+/*trait GetCloneFn<Traits: ?Sized>{
+    const CLONE_FN: Option<CloneFn> = None;
+}
+impl<T: Clone> GetCloneFn<dyn Cloneable> for T {
+    const CLONE_FN: Option<CloneFn> =
+        if impls!(T: Copy){
+            None
+        } else {
+            Some(clone_fn::<T>)
+        };
+}*/
+
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -67,25 +112,30 @@ impl<T: Clone + Send + Sync> CheckTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized + Trait = dyn Trait> {
+pub struct AnyVec<Traits: ?Sized/* + Trait*/ = dyn Trait> {
     raw: AnyVecRaw,
+    // TODO: make ZST, depending on Traits
+    clone_fn: Option<CloneFn>,
     phantom: PhantomData<Traits>
 }
+
+// TODO: trait AnyVec with most functions ?
 
 impl<Traits: ?Sized + Trait> AnyVec<Traits> {
     /// Element should implement requested Traits
     pub fn new<Element: 'static>() -> Self
-        where Element: CheckTraits<Traits>
+        where Element: SatisfyTraits<Traits>
     {
         Self::with_capacity::<Element>(0)
     }
 
     /// Element should implement requested Traits
     pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
-        where Element: CheckTraits<Traits>
+        where Element: SatisfyTraits<Traits>
     {
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
+            clone_fn: <Element as SatisfyTraits<Traits>>::CLONE_FN,
             phantom: PhantomData
         }
     }
@@ -199,7 +249,8 @@ impl<Traits: ?Sized + Trait> Clone for AnyVec<Traits>
 {
     fn clone(&self) -> Self {
         Self{
-            raw: unsafe{ self.raw.clone() },
+            raw: unsafe{ self.raw.clone(self.clone_fn) },
+            clone_fn: self.clone_fn,
             phantom: PhantomData
         }
     }

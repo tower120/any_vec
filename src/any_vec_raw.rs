@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping};
 use crate::any_value::{AnyValue, Unknown};
+use crate::any_vec::CloneFn;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 pub struct AnyVecRaw {
@@ -40,14 +41,31 @@ impl AnyVecRaw {
                             }
                         }
                     })
-                }
+                },
+            /*clone_fn:
+                if impls!(Element: Copy) {
+                    None
+                } else if impls!(Element: Clone) {
+                    Some(|src: *const u8, dst: *mut u8, len: usize|{
+                        let src = src as &[Element];
+                        let dst = dst as *mut Element;
+
+                        for i in 0..len{
+                            unsafe{
+                                dst.add(i).write(src[i].clone());
+                            }
+                        }
+                    })
+                } else {
+                    None
+                }*/
         };
         this.set_capacity(capacity);
         this
     }
 
     /// Unsafe, because type cloneability is not checked
-    pub(crate) unsafe fn clone(&self) -> Self {
+    pub(crate) unsafe fn clone(&self, clone_fn: Option<CloneFn>) -> Self {
         // 1. construct empty "prototype"
         let mut cloned = Self{
             mem: NonNull::<u8>::dangling(),
@@ -55,7 +73,8 @@ impl AnyVecRaw {
             len: 0,
             element_layout: self.element_layout,
             type_id: self.type_id,
-            drop_fn: self.drop_fn
+            drop_fn: self.drop_fn,
+            //clone_fn: self.clone_fn
         };
 
         // 2. allocate
@@ -63,12 +82,19 @@ impl AnyVecRaw {
         // TODO: implement through expand.
         cloned.set_capacity(self.capacity);
 
-        // 3. copy
-        ptr::copy_nonoverlapping(
-            self.mem.as_ptr(),
-            cloned.mem.as_ptr(),
-            self.element_layout.size() * self.len
-        );
+        // 3. copy/clone
+        {
+            let src = self.mem.as_ptr();
+            let dst = cloned.mem.as_ptr();
+            if let Some(clone_fn) = clone_fn{
+                (clone_fn)(src, dst, self.len);
+            } else {
+                ptr::copy_nonoverlapping(
+                    src, dst,
+                    self.element_layout.size() * self.len
+                );
+            }
+        }
 
         // 4. set len
         cloned.len = self.len;

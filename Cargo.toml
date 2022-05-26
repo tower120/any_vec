@@ -10,6 +10,9 @@ keywords = ["vec", "any", "container"]
 categories = ["data-structures"]
 exclude = [".github"]
 
+[dependencies]
+impls = "1.0.3"
+
 [dev-dependencies]
 itertools = "0.10.3"
 criterion = "0.3.5"
