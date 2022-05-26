@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::{assert_equal};
@@ -76,7 +76,7 @@ pub fn push_with_capacity_test(){
 #[test]
 fn zero_size_type_test() {
     struct Empty{}
-    let mut any_vec = AnyVec::new::<Empty>();
+    let mut any_vec: AnyVec = AnyVec::new::<Empty>();
     let mut vec = any_vec.downcast_mut::<Empty>().unwrap();
     vec.push(Empty{});
     vec.push(Empty{});
@@ -91,7 +91,7 @@ fn zero_size_type_test() {
 
 #[test]
 fn remove_test() {
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
         vec.push(String::from("0"));
@@ -128,7 +128,7 @@ fn remove_test() {
 
 #[test]
 fn swap_remove_test() {
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
         vec.push(String::from("0"));
@@ -163,13 +163,13 @@ fn swap_remove_test() {
 
 #[test]
 fn any_vec_swap_remove_push_test() {
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
     any_vec.push(AnyValueWrapper::new(String::from("0")));
     any_vec.push(AnyValueWrapper::new(String::from("1")));
     any_vec.push(AnyValueWrapper::new(String::from("3")));
     any_vec.push(AnyValueWrapper::new(String::from("4")));
 
-    let mut any_vec_other = AnyVec::new::<String>();
+    let mut any_vec_other: AnyVec = AnyVec::new::<String>();
     let element = any_vec.swap_remove(1);
     any_vec_other.push(element);
 
@@ -185,7 +185,7 @@ fn any_vec_swap_remove_push_test() {
 
 #[test]
 fn any_vec_insert_front(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();
     for i in 0..100{
         vec.insert(0, i);
@@ -195,7 +195,7 @@ fn any_vec_insert_front(){
 
 #[test]
 fn any_vec_insert_back(){
-    let mut any_vec = AnyVec::new::<usize>();
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();
     for i in 0..100{
         vec.insert(i, i);

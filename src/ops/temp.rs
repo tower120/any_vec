@@ -1,8 +1,7 @@
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::ptr::NonNull;
-use crate::{Unknown};
-use crate::any_value::AnyValue;
+use crate::any_value::{AnyValue, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 
 pub trait Operation {

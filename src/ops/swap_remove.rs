@@ -2,7 +2,8 @@ use std::mem::size_of;
 use std::marker::PhantomData;
 use std::ptr;
 use std::ptr::NonNull;
-use crate::{copy_bytes_nonoverlapping, Unknown};
+use crate::copy_bytes_nonoverlapping;
+use crate::any_value::Unknown;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::temp::Operation;
 

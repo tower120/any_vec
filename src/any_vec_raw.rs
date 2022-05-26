@@ -1,10 +1,10 @@
 use std::{mem, ptr};
-use std::alloc::{alloc, dealloc, Layout, realloc, handle_alloc_error};
+use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::any::TypeId;
 use std::marker::PhantomData;
-use std::ptr::{NonNull};
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping, Unknown};
-use crate::any_value::{AnyValue};
+use std::ptr::NonNull;
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping};
+use crate::any_value::{AnyValue, Unknown};
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 pub struct AnyVecRaw {

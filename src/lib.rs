@@ -65,16 +65,6 @@ pub mod ops;
 use std::ptr;
 use std::any::TypeId;
 
-// TODO: move to any_value
-/// Marker for unknown type.
-pub struct Unknown;
-impl Unknown {
-    #[inline]
-    pub fn is<T:'static>() -> bool {
-        TypeId::of::<T>() == TypeId::of::<Unknown>()
-    }
-}
-
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
 #[inline]

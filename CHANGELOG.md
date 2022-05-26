@@ -1,8 +1,12 @@
 # Changelog
 
 ## Unreleased
+### Added
+- `AnyVec` now can be Sync, Send, Clone. 
+
 ### Changed
 - `any_value::AnyValueTemp` moved to `ops::AnyValueTemp`
+- `any_vec::Unknown` -> `any_vec::any_value::Unknown` 
 
 ### Fixed
 - `AnyVec::insert` now check type again.
