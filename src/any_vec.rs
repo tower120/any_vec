@@ -99,6 +99,27 @@ impl<T: Clone> GetCloneFn<dyn Cloneable> for T {
         };
 }*/
 
+#[derive(Copy, Clone)]
+pub struct Empty;
+
+pub trait CloneType{
+    type Type: Copy;
+    fn new() -> Self::Type;
+}
+impl CloneType for dyn Trait{
+    type Type = i8;
+    fn new() -> Self::Type{ 0 }
+}
+impl CloneType for dyn Sync{
+    type Type = Empty;
+    fn new() -> Self::Type{ Empty }
+}
+impl CloneType for dyn Cloneable{
+    type Type = i64;
+    fn new() -> Self::Type{ 0 }
+}
+
+
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -112,16 +133,21 @@ impl<T: Clone> GetCloneFn<dyn Cloneable> for T {
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized/* + Trait*/ = dyn Trait> {
+pub struct AnyVec<Traits: ?Sized + Trait = dyn Trait>
+    where Traits: CloneType
+{
     raw: AnyVecRaw,
     // TODO: make ZST, depending on Traits
     clone_fn: Option<CloneFn>,
+    c: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
 
 // TODO: trait AnyVec with most functions ?
 
-impl<Traits: ?Sized + Trait> AnyVec<Traits> {
+impl<Traits: ?Sized + Trait> AnyVec<Traits>
+    where Traits: CloneType
+{
     /// Element should implement requested Traits
     pub fn new<Element: 'static>() -> Self
         where Element: SatisfyTraits<Traits>
@@ -136,6 +162,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits> {
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
             clone_fn: <Element as SatisfyTraits<Traits>>::CLONE_FN,
+            c: <Traits as CloneType>::new(),
             phantom: PhantomData
         }
     }
@@ -237,20 +264,21 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits> {
 }
 
 unsafe impl<Traits: ?Sized + Trait> Send for AnyVec<Traits>
-    where Traits: Send
+    where Traits: Send + CloneType
 {}
 
 unsafe impl<Traits: ?Sized + Trait> Sync for AnyVec<Traits>
-    where Traits: Sync
+    where Traits: Sync + CloneType
 {}
 
 impl<Traits: ?Sized + Trait> Clone for AnyVec<Traits>
-    where Traits: Cloneable
+    where Traits: Cloneable + CloneType
 {
     fn clone(&self) -> Self {
         Self{
             raw: unsafe{ self.raw.clone(self.clone_fn) },
             clone_fn: self.clone_fn,
+            c: self.c,
             phantom: PhantomData
         }
     }
