@@ -47,8 +47,8 @@ impl<T> CloneFnTrait<dyn Sync> for T{}
 impl<T> CloneFnTrait<dyn Send+Sync> for T{}
 
 
-//! This all just to replace AnyVec's clone function pointer with ZST,
-//! when non-Cloneable.
+/// This all just to replace AnyVec's clone function pointer with ZST,
+/// when non-Cloneable.
 pub trait CloneType{
     type Type: Copy;
     fn new(f: Option<CloneFn>) -> Self::Type;
