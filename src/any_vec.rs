@@ -39,7 +39,20 @@ pub mod traits{
     impl private::Sealed for dyn Sync + Send{}
 
     /// Enforce type [`Clone`]-ability.
-    pub trait Cloneable: Trait{}
+    //pub trait Cloneable: Trait{}
+
+    pub trait Cloneable{}
+    impl Trait for dyn Cloneable{}
+    impl private::Sealed for dyn Cloneable{}
+
+    impl Trait for dyn Cloneable + Send{}
+    impl private::Sealed for dyn Cloneable + Send{}
+
+    impl Trait for dyn Cloneable + Sync{}
+    impl private::Sealed for dyn Cloneable + Sync{}
+    
+    impl Trait for dyn Cloneable + Send + Sync{}
+    impl private::Sealed for dyn Cloneable + Send + Sync{}
 }
 
 
@@ -140,6 +153,18 @@ impl_clone_type_fn!(dyn Cloneable + Send + Sync);
 
 
 
+pub trait TraitT: Trait + CloneType{}
+impl TraitT for dyn Trait{}
+impl TraitT for dyn Send{}
+impl TraitT for dyn Sync{}
+impl TraitT for dyn Send + Sync{}
+impl TraitT for dyn Cloneable{}
+impl TraitT for dyn Cloneable + Send{}
+impl TraitT for dyn Cloneable + Sync{}
+impl TraitT for dyn Cloneable + Send + Sync{}
+
+
+
 /// Type erased vec-like container.
 /// All elements have the same type.
 ///
@@ -152,7 +177,7 @@ impl_clone_type_fn!(dyn Cloneable + Send + Sync);
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized + Trait + CloneType = dyn Trait>
+pub struct AnyVec<Traits: ?Sized + /*Trait + CloneType*/TraitT = dyn Trait>
 {
     raw: AnyVecRaw,
     clone_fn: <Traits as CloneType>::Type,
@@ -161,7 +186,7 @@ pub struct AnyVec<Traits: ?Sized + Trait + CloneType = dyn Trait>
 
 // TODO: trait AnyVec with most functions ?
 
-impl<Traits: ?Sized + Trait> AnyVec<Traits>
+impl<Traits: ?Sized + TraitT> AnyVec<Traits>
     where Traits: CloneType
 {
     /// Element should implement requested Traits
@@ -279,15 +304,15 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 }
 
-unsafe impl<Traits: ?Sized + Trait> Send for AnyVec<Traits>
+unsafe impl<Traits: ?Sized + TraitT> Send for AnyVec<Traits>
     where Traits: Send + CloneType
 {}
 
-unsafe impl<Traits: ?Sized + Trait> Sync for AnyVec<Traits>
+unsafe impl<Traits: ?Sized + TraitT> Sync for AnyVec<Traits>
     where Traits: Sync + CloneType
 {}
 
-impl<Traits: ?Sized + Trait> Clone for AnyVec<Traits>
+impl<Traits: ?Sized + TraitT> Clone for AnyVec<Traits>
     where Traits: Cloneable + CloneType
 {
     fn clone(&self) -> Self {
