@@ -21,8 +21,6 @@ impl Unknown {
 /// Type erased value interface.
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
-    ///
-    /// [`Unknown`]: crate::Unknown
     type Type: 'static /*= Unknown*/;
 
     fn value_typeid(&self) -> TypeId;

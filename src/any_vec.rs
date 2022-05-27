@@ -1,13 +1,12 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
-use std::mem::MaybeUninit;
 use crate::{AnyVecMut, AnyVecRef};
 use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 use crate::any_vec::traits::{EmptyTrait};
-use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
+use crate::clone_type::{CloneFnTrait, CloneType};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -142,6 +141,8 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
     ///
+    /// [`mem::forget`]: std::mem::forget
+    ///
     #[inline]
     pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
         self.raw.remove(index)
@@ -156,6 +157,8 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
+    ///
+    /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {

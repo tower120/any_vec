@@ -59,7 +59,7 @@ macro_rules! impl_clone_type_empty {
         impl CloneType for $t {
             type Type = Empty;
             fn new(_: Option<CloneFn>) -> Self::Type{ Empty }
-            fn get(f: Self::Type) -> Option<CloneFn>{ None }
+            fn get(_: Self::Type) -> Option<CloneFn>{ None }
         }
     }
 }

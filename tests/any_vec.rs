@@ -1,4 +1,4 @@
-use std::any::{Any, TypeId};
+use std::any::{TypeId};
 use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::{assert_equal};

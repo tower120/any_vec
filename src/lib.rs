@@ -34,6 +34,9 @@
 //! # Send, Sync, Clone
 //!
 //! You can make [`AnyVec`] [`Send`]able, [`Sync`]able, [`Cloneable`]:
+//!
+//! [`Cloneable`]: traits::Cloneable
+//!
 //!```rust
 //! use any_vec::AnyVec;
 //! use any_vec::traits::*;
@@ -64,7 +67,6 @@ pub mod any_value;
 pub mod ops;
 
 use std::ptr;
-use std::any::TypeId;
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.

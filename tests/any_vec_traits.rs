@@ -1,3 +1,4 @@
+use std::mem::size_of_val;
 use itertools::assert_equal;
 use any_vec::{AnyVec, SatisfyTraits};
 use any_vec::traits::*;
@@ -50,7 +51,7 @@ pub fn type_check_test(){
 
     {
         let any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
-        any_vec.clone();
+        let _ = any_vec.clone();
     }
     {
         let any_vec: AnyVec<dyn Send> = AnyVec::new::<String>();
@@ -69,7 +70,7 @@ pub fn type_check_test(){
         let any_vec: AnyVec<dyn Send + Sync + Cloneable> = AnyVec::new::<String>();
         fn_send(&any_vec);
         fn_sync(&any_vec);
-        any_vec.clone();
+        let _ = any_vec.clone();
     }
 }
 
@@ -79,3 +80,14 @@ pub fn type_check_fail_test(){
     let any_vec: AnyVec = AnyVec::new::<String>();
     any_vec.clone();
 }*/
+
+#[test]
+fn any_vec_cloneable_zst_test(){
+    let v1: AnyVec<dyn Cloneable> = AnyVec::new::<usize>();
+    let v2: AnyVec<dyn Sync> = AnyVec::new::<usize>();
+
+    let s1 = size_of_val(&v1);
+    let s2 = size_of_val(&v2);
+
+    assert!(s1 > s2);
+}
