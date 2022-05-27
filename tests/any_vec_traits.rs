@@ -1,5 +1,5 @@
 use itertools::assert_equal;
-use any_vec::{AnyVec, CloneType, SatisfyTraits, TraitT};
+use any_vec::{AnyVec, CloneType, SatisfyTraits};
 use any_vec::traits::*;
 
 #[test]
@@ -19,7 +19,7 @@ pub fn test_sync(){
 
 #[test]
 pub fn test_clone(){
-    fn do_test<Traits: ?Sized + Cloneable + TraitT>()
+    fn do_test<Traits: ?Sized + Cloneable + CloneType>()
         where String: SatisfyTraits<Traits>
     {
         let mut any_vec: AnyVec<Traits> = AnyVec::new::<String>();

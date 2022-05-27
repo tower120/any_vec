@@ -29,32 +29,31 @@ pub mod traits{
     /// Does not enforce anything. Default.
     pub trait Trait/*: private::Sealed */{}
 
-    impl Trait for dyn Sync{}
+    // impl Trait for dyn Sync{}
     // impl private::Sealed for dyn Sync{}
 
-    impl Trait for dyn Send{}
+    // impl Trait for dyn Send{}
     // impl private::Sealed for dyn Send{}
 
-    impl Trait for dyn Sync + Send{}
+    // impl Trait for dyn Sync + Send{}
     // impl private::Sealed for dyn Sync + Send{}
 
     /// Enforce type [`Clone`]-ability.
     //pub trait Cloneable: Trait{}
 
     pub trait Cloneable{}
-    impl Trait for dyn Cloneable{}
+    // impl Trait for dyn Cloneable{}
     // impl private::Sealed for dyn Cloneable{}
 
-    impl Trait for dyn Cloneable + Send{}
+    // impl Trait for dyn Cloneable + Send{}
     // impl private::Sealed for dyn Cloneable + Send{}
 
-    impl Trait for dyn Cloneable + Sync{}
+    // impl Trait for dyn Cloneable + Sync{}
     // impl private::Sealed for dyn Cloneable + Sync{}
 
-    impl Trait for dyn Cloneable + Send + Sync{}
+    // impl Trait for dyn Cloneable + Send + Sync{}
     // impl private::Sealed for dyn Cloneable + Send + Sync{}
 }
-
 
 const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
     if impls::impls!(T: Copy){
@@ -151,16 +150,6 @@ impl_clone_type_fn!(dyn Cloneable + Sync);
 impl_clone_type_fn!(dyn Cloneable + Send + Sync);
 
 
-
-pub trait TraitT: Trait + CloneType{}
-impl TraitT for dyn Trait{}
-impl TraitT for dyn Send{}
-impl TraitT for dyn Sync{}
-impl TraitT for dyn Send + Sync{}
-impl TraitT for dyn Cloneable{}
-impl TraitT for dyn Cloneable + Send{}
-impl TraitT for dyn Cloneable + Sync{}
-impl TraitT for dyn Cloneable + Send + Sync{}
 
 
 
