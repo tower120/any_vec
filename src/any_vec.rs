@@ -99,25 +99,44 @@ impl<T: Clone> GetCloneFn<dyn Cloneable> for T {
         };
 }*/
 
-#[derive(Copy, Clone)]
+
+macro_rules! impl_clone_type_empty {
+    ($t:ty) => {
+        impl CloneType for $t {
+            type Type = Empty;
+            fn new(_: Option<CloneFn>) -> Self::Type{ Empty }
+            fn get_fn(f: Self::Type) -> Option<CloneFn>{ None }
+        }
+    }
+}
+
+macro_rules! impl_clone_type_fn {
+    ($t:ty) => {
+        impl CloneType for $t {
+            type Type = Option<CloneFn>;
+            fn new(f: Option<CloneFn>) -> Self::Type{ f }
+            fn get_fn(f: Self::Type) -> Option<CloneFn>{ f as Option<CloneFn> }
+        }
+    }
+}
+
+
+#[derive(Copy, Clone, Default)]
 pub struct Empty;
 
 pub trait CloneType{
     type Type: Copy;
-    fn new() -> Self::Type;
+    fn new(f: Option<CloneFn>) -> Self::Type;
+    fn get_fn(f: Self::Type) -> Option<CloneFn>;
 }
-impl CloneType for dyn Trait{
-    type Type = i8;
-    fn new() -> Self::Type{ 0 }
-}
-impl CloneType for dyn Sync{
-    type Type = Empty;
-    fn new() -> Self::Type{ Empty }
-}
-impl CloneType for dyn Cloneable{
-    type Type = i64;
-    fn new() -> Self::Type{ 0 }
-}
+impl_clone_type_empty!(dyn Trait);
+impl_clone_type_empty!(dyn Sync);
+impl_clone_type_empty!(dyn Send);
+impl_clone_type_empty!(dyn Send + Sync);
+impl_clone_type_fn!(dyn Cloneable);
+impl_clone_type_fn!(dyn Cloneable + Send);
+impl_clone_type_fn!(dyn Cloneable + Sync);
+impl_clone_type_fn!(dyn Cloneable + Send + Sync);
 
 
 
@@ -133,13 +152,10 @@ impl CloneType for dyn Cloneable{
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized + Trait = dyn Trait>
-    where Traits: CloneType
+pub struct AnyVec<Traits: ?Sized + Trait + CloneType = dyn Trait>
 {
     raw: AnyVecRaw,
-    // TODO: make ZST, depending on Traits
-    clone_fn: Option<CloneFn>,
-    c: <Traits as CloneType>::Type,
+    clone_fn: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
 
@@ -159,10 +175,10 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
         where Element: SatisfyTraits<Traits>
     {
+        let clone_fn = <Element as SatisfyTraits<Traits>>::CLONE_FN;
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
-            clone_fn: <Element as SatisfyTraits<Traits>>::CLONE_FN,
-            c: <Traits as CloneType>::new(),
+            clone_fn: <Traits as CloneType>::new(clone_fn),
             phantom: PhantomData
         }
     }
@@ -275,10 +291,10 @@ impl<Traits: ?Sized + Trait> Clone for AnyVec<Traits>
     where Traits: Cloneable + CloneType
 {
     fn clone(&self) -> Self {
+        let clone_fn = <Traits as CloneType>::get_fn(self.clone_fn);
         Self{
-            raw: unsafe{ self.raw.clone(self.clone_fn) },
+            raw: unsafe{ self.raw.clone(clone_fn) },
             clone_fn: self.clone_fn,
-            c: self.c,
             phantom: PhantomData
         }
     }
