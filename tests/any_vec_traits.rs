@@ -19,7 +19,7 @@ pub fn test_sync(){
 
 #[test]
 pub fn test_clone(){
-    fn do_test<Traits: ?Sized + Cloneable + CloneType>()
+    fn do_test<Traits: ?Sized + Cloneable + Trait>()
         where String: SatisfyTraits<Traits>
     {
         let mut any_vec: AnyVec<Traits> = AnyVec::new::<String>();
