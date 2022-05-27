@@ -1,5 +1,5 @@
 use itertools::assert_equal;
-use any_vec::{AnyVec, CloneType, SatisfyTraits};
+use any_vec::{AnyVec, SatisfyTraits};
 use any_vec::traits::*;
 
 #[test]

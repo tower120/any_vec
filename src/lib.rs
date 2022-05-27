@@ -49,12 +49,13 @@
 //!
 
 mod any_vec;
+mod clone_type;
 mod any_vec_raw;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
 
-pub use crate::any_vec::{AnyVec, traits, SatisfyTraits, CloneType};
+pub use crate::any_vec::{AnyVec, traits, SatisfyTraits};
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;

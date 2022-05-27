@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping};
 use crate::any_value::{AnyValue, Unknown};
-use crate::any_vec::CloneFn;
+use crate::clone_type::CloneFn;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 pub struct AnyVecRaw {
@@ -41,24 +41,7 @@ impl AnyVecRaw {
                             }
                         }
                     })
-                },
-            /*clone_fn:
-                if impls!(Element: Copy) {
-                    None
-                } else if impls!(Element: Clone) {
-                    Some(|src: *const u8, dst: *mut u8, len: usize|{
-                        let src = src as &[Element];
-                        let dst = dst as *mut Element;
-
-                        for i in 0..len{
-                            unsafe{
-                                dst.add(i).write(src[i].clone());
-                            }
-                        }
-                    })
-                } else {
-                    None
-                }*/
+                }
         };
         this.set_capacity(capacity);
         this

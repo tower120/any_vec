@@ -7,6 +7,7 @@ use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 use crate::any_vec::traits::{EmptyTrait};
+use crate::clone_type::{clone_fn, CloneFn, CloneType};
 use crate::traits::{Cloneable, Trait};
 
 // TODO: rename mod to marker
@@ -23,7 +24,7 @@ use crate::traits::{Cloneable, Trait};
 /// ```
 pub mod traits{
     /// Marker trait, for traits accepted by AnyVec.
-    pub trait Trait: crate::CloneType{}
+    pub trait Trait: crate::clone_type::CloneType{}
     impl Trait for dyn EmptyTrait{}
     impl Trait for dyn Sync{}
     impl Trait for dyn Send{}
@@ -36,22 +37,14 @@ pub mod traits{
     /// Does not enforce anything. Default.
     pub trait EmptyTrait{}
 
+    pub use std::marker::Sync;
+
+    pub use std::marker::Send;
+
     /// Enforce type [`Clone`]-ability.
     pub trait Cloneable{}
 }
 
-pub(crate) type CloneFn = fn(*const u8, *mut u8, usize);
-fn clone_fn<T: Clone>(src: *const u8, dst: *mut u8, len: usize){
-    let src = src as *const T;
-    let dst = dst as *mut T;
-    for i in 0..len {
-        unsafe{
-            let dst = dst.add(i);
-            let src = src.add(i);
-            dst.write((*src).clone());
-        }
-    }
-}
 const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
     if impls::impls!(T: Copy){
         None
@@ -82,44 +75,6 @@ impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{
 impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{
     const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
 }
-
-macro_rules! impl_clone_type_empty {
-    ($t:ty) => {
-        impl CloneType for $t {
-            type Type = Empty;
-            fn new(_: Option<CloneFn>) -> Self::Type{ Empty }
-            fn get_fn(f: Self::Type) -> Option<CloneFn>{ None }
-        }
-    }
-}
-
-macro_rules! impl_clone_type_fn {
-    ($t:ty) => {
-        impl CloneType for $t {
-            type Type = Option<CloneFn>;
-            fn new(f: Option<CloneFn>) -> Self::Type{ f }
-            fn get_fn(f: Self::Type) -> Option<CloneFn>{ f as Option<CloneFn> }
-        }
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct Empty;
-
-pub trait CloneType{
-    type Type: Copy;
-    fn new(f: Option<CloneFn>) -> Self::Type;
-    fn get_fn(f: Self::Type) -> Option<CloneFn>;
-}
-impl_clone_type_empty!(dyn EmptyTrait);
-impl_clone_type_empty!(dyn Sync);
-impl_clone_type_empty!(dyn Send);
-impl_clone_type_empty!(dyn Send + Sync);
-impl_clone_type_fn!(dyn Cloneable);
-impl_clone_type_fn!(dyn Cloneable + Send);
-impl_clone_type_fn!(dyn Cloneable + Sync);
-impl_clone_type_fn!(dyn Cloneable + Send + Sync);
-
 
 
 
@@ -268,7 +223,7 @@ unsafe impl<Traits: ?Sized + Sync + Trait> Sync for AnyVec<Traits> {}
 impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
 {
     fn clone(&self) -> Self {
-        let clone_fn = <Traits as CloneType>::get_fn(self.clone_fn);
+        let clone_fn = <Traits as CloneType>::get(self.clone_fn);
         Self{
             raw: unsafe{ self.raw.clone(clone_fn) },
             clone_fn: self.clone_fn,
