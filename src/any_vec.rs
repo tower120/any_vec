@@ -7,10 +7,9 @@ use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 use crate::any_vec::traits::{EmptyTrait};
-use crate::clone_type::{clone_fn, CloneFn, CloneType};
+use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::traits::{Cloneable, Trait};
 
-// TODO: rename mod to marker
 /// Trait constraints.
 /// Possible variants [`Cloneable`], [`Send`] and [`Sync`], in any combination.
 ///
@@ -44,38 +43,15 @@ pub mod traits{
     /// Enforce type [`Clone`]-ability.
     pub trait Cloneable{}
 }
-
-const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
-    if impls::impls!(T: Copy){
-        None
-    } else {
-        Some(clone_fn::<T>)
-    }
-}
-
-pub trait SatisfyTraits<Traits: ?Sized>{
-    const CLONE_FN: Option<CloneFn> = None;
-}
-
+pub trait SatisfyTraits<Traits: ?Sized>: CloneFnTrait<Traits> {}
 impl<T> SatisfyTraits<dyn EmptyTrait> for T{}
-impl<T: Clone> SatisfyTraits<dyn Cloneable> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
-}
+impl<T: Clone> SatisfyTraits<dyn Cloneable> for T{}
 impl<T: Send> SatisfyTraits<dyn Send> for T{}
 impl<T: Sync> SatisfyTraits<dyn Sync> for T{}
-
 impl<T: Send + Sync> SatisfyTraits<dyn Send + Sync> for T{}
-impl<T: Clone + Send> SatisfyTraits<dyn Cloneable + Send> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
-}
-impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
-}
-
-impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
-}
-
+impl<T: Clone + Send> SatisfyTraits<dyn Cloneable + Send> for T{}
+impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{}
+impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 
 
 /// Type erased vec-like container.
@@ -97,8 +73,6 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn EmptyTrait>
     phantom: PhantomData<Traits>
 }
 
-// TODO: trait AnyVec with most functions ?
-
 impl<Traits: ?Sized + Trait> AnyVec<Traits>
 {
     /// Element should implement requested Traits
@@ -112,7 +86,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
         where Element: SatisfyTraits<Traits>
     {
-        let clone_fn = <Element as SatisfyTraits<Traits>>::CLONE_FN;
+        let clone_fn = <Element as CloneFnTrait<Traits>>::CLONE_FN;
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
             clone_fn: <Traits as CloneType>::new(clone_fn),
