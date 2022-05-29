@@ -45,7 +45,7 @@ pub mod traits{
 
 /// Trait for compile time check if T satisfy Traits constraints.
 ///
-/// Almost for sure you don't need it. It's public - just in case.
+/// Almost for sure you don't need to use it. It is public - just in case.
 /// In our tests we found niche case where it was needed:
 /// ```rust
 ///     # use any_vec::AnyVec;
