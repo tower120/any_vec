@@ -42,6 +42,30 @@ pub mod traits{
     /// Enforce type [`Clone`]-ability.
     pub trait Cloneable{}
 }
+
+/// Trait for compile time check if T satisfy Traits constraints.
+///
+/// Almost for sure you don't need it. It's public - just in case.
+/// In our tests we found niche case where it was needed:
+/// ```rust
+///     # use any_vec::AnyVec;
+///     # use any_vec::SatisfyTraits;
+///     # use any_vec::traits::*;
+///     fn do_test<Traits: ?Sized + Cloneable + Trait>(vec: &mut AnyVec<Traits>)
+///         where String: SatisfyTraits<Traits>,
+///               usize:  SatisfyTraits<Traits>
+///     {
+///         # let something = true;
+///         # let other_something = true;
+///         if something {
+///             *vec = AnyVec::new::<String>();
+///             /*...*/
+///         } else if other_something {
+///             *vec = AnyVec::new::<usize>();
+///             /*...*/
+///         }
+///     # }
+/// ```
 pub trait SatisfyTraits<Traits: ?Sized>: CloneFnTrait<Traits> {}
 impl<T> SatisfyTraits<dyn EmptyTrait> for T{}
 impl<T: Clone> SatisfyTraits<dyn Cloneable> for T{}
