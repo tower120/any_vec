@@ -30,9 +30,13 @@ Only destruct operations have additional overhead of indirect call.
     // Output 2 1
     for s in vec.downcast_ref::<String>().unwrap().as_slice(){
         println!("{}", s);
-    }
-    
+    } 
 ```
+
+#### N.B.
+
+*Currently, minimum rust version is 1.61. This is to simplify implementation.  
+If you need `any_vec` to work on lower rust version - please fell free to make an issue.*
 
 # Known alternatives
 

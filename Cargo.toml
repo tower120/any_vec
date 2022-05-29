@@ -4,6 +4,7 @@ authors = ["Andrey Diduh <tower120@gmail.com>"]
 license = "MIT OR Apache-2.0"
 version = "0.5.0"
 edition = "2021"
+rust-version = "1.61.0"
 description = "Type erased vector. Most operations can be done without type knowledge. Mostly zero overhead."
 repository = "https://github.com/tower120/any_vec"
 keywords = ["vec", "any", "container"]
