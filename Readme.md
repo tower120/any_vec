@@ -36,7 +36,7 @@ Only destruct operations have additional overhead of indirect call.
 #### N.B.
 
 *Currently, minimum rust version is 1.61. This is to simplify implementation.  
-If you need `any_vec` to work on lower rust version - please fell free to make an issue.*
+If you need `any_vec` to work on lower rust version - please feel free to make an issue.*
 
 # Known alternatives
 
