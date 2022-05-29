@@ -1,24 +1,29 @@
-use std::any::TypeId;
-use std::ptr;
-use std::mem::MaybeUninit;
-use std::ptr::NonNull;
-
 mod wrapper;
 mod raw;
 
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 
+use std::any::TypeId;
+use std::ptr;
+use std::mem::MaybeUninit;
+use std::ptr::NonNull;
+
+/// Marker for unknown type.
+pub struct Unknown;
+impl Unknown {
+    #[inline]
+    pub fn is<T:'static>() -> bool {
+        TypeId::of::<T>() == TypeId::of::<Unknown>()
+    }
+}
+
 /// Type erased value interface.
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
-    ///
-    /// [`Unknown`]: crate::Unknown
     type Type: 'static /*= Unknown*/;
 
     fn value_typeid(&self) -> TypeId;
-
-    // TODO: value_size(&self) ?
 
     /// # Panic
     ///

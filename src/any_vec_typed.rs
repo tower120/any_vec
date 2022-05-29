@@ -1,18 +1,19 @@
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVec};
 use crate::any_value::{AnyValue, AnyValueWrapper};
+use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 /// Concrete type [`AnyVec`] representation.
 ///
 /// You can access it through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
 ///
+/// [`AnyVec`]: crate::AnyVec
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
 pub struct AnyVecTyped<'a, T: 'static>{
     // NonNull - to have one struct for both & and &mut
-    any_vec: NonNull<AnyVec>,
+    any_vec: NonNull<AnyVecRaw>,
     phantom: PhantomData<&'a mut T>
 }
 
@@ -29,17 +30,17 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     ///
     /// Unsafe, because type not checked
     #[inline]
-    pub(crate) unsafe fn new(any_vec: NonNull<AnyVec>) -> Self {
+    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw>) -> Self {
         Self{any_vec, phantom: PhantomData}
     }
 
     #[inline]
-    fn this(&self) -> &AnyVec{
+    fn this(&self) -> &AnyVecRaw {
         unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
-    fn this_mut(&mut self) -> &mut AnyVec{
+    fn this_mut(&mut self) -> &mut AnyVecRaw {
         unsafe{ self.any_vec.as_mut() }
     }
 

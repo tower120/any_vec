@@ -31,16 +31,34 @@
 //!
 //!```
 //!
-//! [`AnyVec`] is [`Send`]able if it's elements are.
-//! [`AnyVec`] is [`Sync`]able if it's elements are.
+//! # Send, Sync, Clone
+//!
+//! You can make [`AnyVec`] [`Send`]able, [`Sync`]able, [`Cloneable`]:
+//!
+//! [`Cloneable`]: traits::Cloneable
+//!
+//!```rust
+//! use any_vec::AnyVec;
+//! use any_vec::traits::*;
+//! let v1: AnyVec<dyn Cloneable + Sync + Send> = AnyVec::new::<String>();
+//! let v2 = v1.clone();
+//! ```
+//! This constraints will be applied compiletime to element type:
+//!```compile_fail
+//! # use any_vec::AnyVec;
+//! # use std::rc::Rc;
+//! let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
+//!```
 //!
 
 mod any_vec;
+mod clone_type;
+mod any_vec_raw;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
 
-pub use crate::any_vec::AnyVec;
+pub use crate::any_vec::{AnyVec, traits, SatisfyTraits};
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
@@ -49,16 +67,6 @@ pub mod any_value;
 pub mod ops;
 
 use std::ptr;
-use std::any::TypeId;
-
-/// Marker for unknown type.
-pub struct Unknown;
-impl Unknown {
-    #[inline]
-    pub fn is<T:'static>() -> bool {
-        TypeId::of::<T>() == TypeId::of::<Unknown>()
-    }
-}
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.

@@ -1,8 +1,8 @@
-use any_vec::{AnyVec};
+use any_vec::AnyVec;
 
 #[test]
 pub fn downcast_mut_test(){
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
     let mut vec = any_vec.downcast_mut::<String>().unwrap();
     vec.push("Hello".into());
     assert_eq!(vec.len(), 1);
@@ -10,7 +10,7 @@ pub fn downcast_mut_test(){
 
 #[test]
 pub fn downcast_ref_test(){
-    let mut any_vec = AnyVec::new::<String>();
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
     any_vec.clear();
     let vec1 = any_vec.downcast_ref::<String>().unwrap();
     let vec2 = any_vec.downcast_ref::<String>().unwrap();
