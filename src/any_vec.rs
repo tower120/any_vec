@@ -1,7 +1,8 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
-use crate::{AnyVecMut, AnyVecRef};
+use std::ptr::NonNull;
+use crate::{AnyVecMut, AnyVecRef, Element, ElementRef};
 use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
@@ -92,7 +93,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 pub struct AnyVec<Traits: ?Sized + Trait = dyn EmptyTrait>
 {
     raw: AnyVecRaw,
-    clone_fn: <Traits as CloneType>::Type,
+    pub(crate) clone_fn: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
 
@@ -135,6 +136,29 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
         self.raw.downcast_mut_unchecked::<Element>()
+    }
+
+    #[inline]
+    pub fn as_bytes(&self) -> *const u8 {
+        self.raw.mem.as_ptr()
+    }
+
+    #[inline]
+    pub fn get(&self, index: usize) -> ElementRef<Traits>{
+        self.raw.index_check(index);
+        unsafe{
+            self.get_unchecked(index)
+        }
+    }
+
+    #[inline]
+    pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
+        unsafe{ ElementRef(
+            Element::new(
+                NonNull::new_unchecked(self as *const _ as *mut _),
+                index
+            )
+        )}
     }
 
     /// # Panics

@@ -35,12 +35,12 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    fn this(&self) -> &AnyVecRaw {
+    fn this(&self) -> &'a AnyVecRaw {
         unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
-    fn this_mut(&mut self) -> &mut AnyVecRaw {
+    fn this_mut(&mut self) -> &'a mut AnyVecRaw {
         unsafe{ self.any_vec.as_mut() }
     }
 
@@ -78,14 +78,14 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    pub fn as_slice(&self) -> &[T] {
+    pub fn as_slice(&self) -> &'a [T] {
         unsafe{
             self.this().as_slice_unchecked::<T>()
         }
     }
 
     #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut[T] {
+    pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
             self.this_mut().as_mut_slice_unchecked::<T>()
         }

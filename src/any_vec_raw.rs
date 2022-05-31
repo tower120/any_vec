@@ -166,7 +166,7 @@ impl AnyVecRaw {
     }
 
     #[inline]
-    fn index_check(&self, index: usize){
+    pub(crate) fn index_check(&self, index: usize){
         assert!(index < self.len, "Index out of range!");
     }
 

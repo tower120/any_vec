@@ -1,6 +1,5 @@
 mod wrapper;
 mod raw;
-//mod r#ref;
 
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
@@ -8,7 +7,7 @@ pub use raw::AnyValueRaw;
 use std::any::TypeId;
 use std::ptr;
 use std::mem::MaybeUninit;
-use std::ptr::{NonNull};
+use std::ptr::NonNull;
 use crate::copy_bytes_nonoverlapping;
 
 /// Marker for unknown type.
