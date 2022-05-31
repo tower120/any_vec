@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::mem;
-use std::mem::ManuallyDrop;
+use std::mem::{ManuallyDrop, size_of};
 use std::ptr;
 use std::ptr::NonNull;
 use crate::any_value::AnyValue;
@@ -21,6 +21,11 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     #[inline]
     fn value_typeid(&self) -> TypeId {
         TypeId::of::<T>()
+    }
+
+    #[inline]
+    fn value_size(&self) -> usize {
+        size_of::<T>()
     }
 
     #[inline]

@@ -1,5 +1,6 @@
 mod wrapper;
 mod raw;
+//mod r#ref;
 
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
@@ -7,7 +8,8 @@ pub use raw::AnyValueRaw;
 use std::any::TypeId;
 use std::ptr;
 use std::mem::MaybeUninit;
-use std::ptr::NonNull;
+use std::ptr::{NonNull};
+use crate::copy_bytes_nonoverlapping;
 
 /// Marker for unknown type.
 pub struct Unknown;
@@ -25,6 +27,9 @@ pub trait AnyValue {
 
     fn value_typeid(&self) -> TypeId;
 
+    /// In bytes. Return compile-time value, whenever possible.
+    fn value_size(&self) -> usize;
+
     /// # Panic
     ///
     /// Panics if type mismatch
@@ -35,16 +40,37 @@ pub trait AnyValue {
         assert_eq!(self.value_typeid(), TypeId::of::<T>());
         unsafe{
             let mut tmp = MaybeUninit::<T>::uninit();
-            self.consume_bytes(|element|{
-                ptr::copy_nonoverlapping(element.as_ptr() as *const T, tmp.as_mut_ptr(), 1);
-            });
+            self.consume_bytes_into(tmp.as_mut_ptr() as *mut u8);
             tmp.assume_init()
         }
     }
 
-    // TODO: *const u8
+    // TODO: *const u8 ?
     /// Consume value as bytes.
     /// It is your responsibility to properly drop it.
     /// `size = size_of::<T>`
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F);
+
+
+    /// `out` must have at least [`value_size`] bytes.
+    /// Will do compile-time optimisation if type/size known.
+    #[inline]
+    unsafe fn consume_bytes_into(self, out: *mut u8)
+        where Self: Sized
+    {
+        if !Unknown::is::<Self::Type>() {
+            self.consume_bytes(|bytes| {
+                ptr::copy_nonoverlapping(
+                    bytes.as_ptr() as *const Self::Type,
+                    out as *mut Self::Type,
+                    1);
+            });
+        } else {
+            let size = self.value_size();
+            self.consume_bytes(|bytes| {
+                copy_bytes_nonoverlapping(bytes.as_ptr(), out, size);
+            });
+
+        }
+    }
 }

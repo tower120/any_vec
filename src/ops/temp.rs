@@ -33,6 +33,15 @@ impl<Op: Operation> AnyValue for AnyValueTemp<Op>{
     }
 
     #[inline]
+    fn value_size(&self) -> usize {
+        if Unknown::is::<Op::Type>() {
+            self.0.any_vec().element_layout().size()
+        } else{
+            mem::size_of::<Op::Type>()
+        }
+    }
+
+    #[inline]
     unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(mut self, f: F) {
         self.0.consume_bytes(f);
         mem::forget(self);

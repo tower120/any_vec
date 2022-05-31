@@ -3,7 +3,7 @@ use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping};
+use crate::{AnyVecMut, AnyVecRef, AnyVecTyped};
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
@@ -204,31 +204,20 @@ impl AnyVecRaw {
                 );
 
                 // 2. write value
-                value.consume_bytes(|value_bytes|{
-                    ptr::copy_nonoverlapping(
-                        value_bytes.cast::<V::Type>().as_ptr(),
-                        element,
-                        1
-                    );
-                });
+                value.consume_bytes_into(element as *mut u8);
             } else {
                 let element_size = self.element_layout.size();
                 let element = self.mem.as_ptr().add(element_size * index);
 
-                // push right
+                // 1. shift right
                 ptr::copy(
                     element,
                     element.add(element_size),
                     element_size * (self.len - index)
                 );
 
-                value.consume_bytes(|value_bytes|{
-                    copy_bytes_nonoverlapping(
-                        value_bytes.as_ptr(),
-                        element,
-                        element_size
-                    );
-                });
+                // 2. write value
+                value.consume_bytes_into(element);
             }
         }
 
@@ -245,25 +234,15 @@ impl AnyVecRaw {
 
         unsafe{
             // Compile time type optimization
-            if !Unknown::is::<V::Type>(){
-                value.consume_bytes(|value_bytes|{
-                    ptr::copy_nonoverlapping(
-                        value_bytes.cast::<V::Type>().as_ptr(),
-                        self.mem.cast::<V::Type>().as_ptr().add(self.len),
-                        1
-                    );
-                });
-            } else {
-                let element_size = self.element_layout.size();
-                let new_element = self.mem.as_ptr().add(element_size * self.len);
-                value.consume_bytes(|value_bytes|{
-                    copy_bytes_nonoverlapping(
-                        value_bytes.as_ptr(),
-                        new_element,
-                        element_size
-                    );
-                });
-            }
+            let element =
+                if !Unknown::is::<V::Type>(){
+                     self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
+                } else {
+                    let element_size = self.element_layout.size();
+                    self.mem.as_ptr().add(element_size * self.len)
+                };
+
+            value.consume_bytes_into(element);
         }
 
         self.len += 1;
