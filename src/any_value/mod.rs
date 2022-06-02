@@ -20,6 +20,9 @@ impl Unknown {
 }
 
 /// Type erased value interface.
+///
+/// Use [`consume_bytes`], if you need to read value.
+/// Use [`consume_bytes_into`], if you need to copy value.
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
     type Type: 'static /*= Unknown*/;
@@ -29,6 +32,7 @@ pub trait AnyValue {
     /// In bytes. Return compile-time value, whenever possible.
     fn value_size(&self) -> usize;
 
+    // TODO: -> Option<T> , instead of panic
     /// # Panic
     ///
     /// Panics if type mismatch

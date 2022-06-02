@@ -19,12 +19,12 @@ fn any_vec_get_test(){
     assert_eq!(e1_ref.value_typeid(), TypeId::of::<String>());
 
     {
-        let mut e1 = (*e1_ref).clone();
-        let mut e2 = (*e1_ref).clone();
-        let mut e3 = (*e1_ref).clone();
-
-        e3.downcast_mut::<String>().unwrap().len();
+        let e1 = (*e1_ref).clone();
+        let e2 = (*e1_ref).clone();
+        let e3 = (*e1_ref).clone();
 
         assert_eq!(e1.downcast::<String>(), String::from("1"));
+        assert_eq!(e2.downcast::<String>(), String::from("1"));
+        assert_eq!(e3.downcast::<String>(), String::from("1"));
     }
 }

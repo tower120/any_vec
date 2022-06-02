@@ -8,6 +8,7 @@ use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 use crate::any_vec::traits::{EmptyTrait};
 use crate::clone_type::{CloneFnTrait, CloneType};
+use crate::element::ElementMut;
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -153,12 +154,32 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        unsafe{ ElementRef(
-            Element::new(
-                NonNull::new_unchecked(self as *const _ as *mut _),
-                index
-            )
-        )}
+        ElementRef::new(
+            Element{
+                any_vec: NonNull::from(self),
+                index,
+                phantom: PhantomData
+            }
+        )
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, index: usize) -> ElementMut<Traits>{
+        self.raw.index_check(index);
+        unsafe{
+            self.get_mut_unchecked(index)
+        }
+    }
+
+    #[inline]
+    pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits>{
+         ElementMut::new(
+            Element{
+                any_vec: NonNull::from(self),
+                index,
+                phantom: PhantomData
+            }
+        )
     }
 
     /// # Panics

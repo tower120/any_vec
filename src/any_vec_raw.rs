@@ -97,7 +97,7 @@ impl AnyVecRaw {
     pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
         AnyVecRef{
             any_vec_typed: (AnyVecTyped::new(
-                NonNull::new_unchecked(self as *const _ as *mut _)
+                NonNull::from(self)
             ))
         }
     }
@@ -114,7 +114,7 @@ impl AnyVecRaw {
     #[inline]
     pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
         AnyVecMut{
-            any_vec_typed: AnyVecTyped::new(NonNull::new_unchecked(self))
+            any_vec_typed: AnyVecTyped::new(NonNull::from(self))
         }
     }
 
