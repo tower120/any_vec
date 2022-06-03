@@ -2,7 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, Element, ElementRef};
+use crate::{AnyVecMut, AnyVecRef, LazyClonedElement, ElementRef};
 use crate::any_value::AnyValue;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
@@ -155,7 +155,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
         ElementRef::new(
-            Element{
+            LazyClonedElement {
                 any_vec: NonNull::from(self),
                 index,
                 phantom: PhantomData
@@ -174,7 +174,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits>{
          ElementMut::new(
-            Element{
+            LazyClonedElement {
                 any_vec: NonNull::from(self),
                 index,
                 phantom: PhantomData

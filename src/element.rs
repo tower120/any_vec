@@ -12,11 +12,11 @@ use crate::clone_type::CloneType;
 use crate::traits::{Cloneable, Trait};
 
 
-pub struct ElementMut<'a, Traits: ?Sized + Trait>(Element<'a, Traits>);
+pub struct ElementMut<'a, Traits: ?Sized + Trait>(LazyClonedElement<'a, Traits>);
 impl<'a, Traits: ?Sized + Trait> ElementMut<'a, Traits>{
     /// Unsafe, because Element origin is unchecked
     #[inline]
-    pub(crate) unsafe fn new(element: Element<'a, Traits>) -> Self{
+    pub(crate) unsafe fn new(element: LazyClonedElement<'a, Traits>) -> Self{
         Self(element)
     }
 
@@ -53,7 +53,7 @@ impl<'a, Traits: ?Sized + Trait> ElementMut<'a, Traits>{
     }
 }
 impl<'a, Traits: ?Sized + Trait> Deref for ElementMut<'a, Traits>{
-    type Target = Element<'a, Traits>;
+    type Target = LazyClonedElement<'a, Traits>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -73,7 +73,7 @@ pub struct ElementRef<'a, Traits: ?Sized + Trait>(ElementMut<'a, Traits>);
 impl<'a, Traits: ?Sized + Trait> ElementRef<'a, Traits>{
     /// Unsafe, because Element origin is unchecked
     #[inline]
-    pub(crate) unsafe fn new(element: Element<'a, Traits>) -> Self{
+    pub(crate) unsafe fn new(element: LazyClonedElement<'a, Traits>) -> Self{
         Self(ElementMut::new(element))
     }
 
@@ -88,7 +88,7 @@ impl<'a, Traits: ?Sized + Trait> ElementRef<'a, Traits>{
     }
 }
 impl<'a, Traits: ?Sized + Trait> Deref for ElementRef<'a, Traits>{
-    type Target = Element<'a, Traits>;
+    type Target = LazyClonedElement<'a, Traits>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -98,21 +98,43 @@ impl<'a, Traits: ?Sized + Trait> Deref for ElementRef<'a, Traits>{
 
 
 
-/// If `Traits` implement Cloneable - `Element` implements [`Clone`] and [`AnyValue`].
+/// Element cursor/pointer which can clone element, if element cloneable.
 ///
-/// `Element` lazily clone on consumption as [`AnyValue`].
+/// If `Traits` implement Cloneable - `Element` implements [`Clone`] and [`AnyValue`].
+/// Lazily clone on consumption as [`AnyValue`].
+///
+/// Internally store a pointer to an element in [`AnyVec`].
 ///
 /// # Example
-// TODO: Example
-// TODO: rename to LazyClone
-pub struct Element<'a, Traits: ?Sized + Trait>{
-    // NonNull instead of &'a because it is used by both ElementRef and ElementMut
+///
+/// ```rust
+/// let e = any_vec.get(1);
+/// let e1 = (*e).clone();
+/// let e2 = (*e).clone();
+///
+/// any_vec_other.push(e1);
+/// any_vec_other.push(e2);
+/// ```
+/// Alas, you can not directly push to self. You need intermediate storage for this.
+/// In future versions there will be `clone_empty` and `clone_empty_in`, which you can use
+/// to create [`AnyVec`] of the same type:
+///
+/// ```
+/// // Intermediate storage on stack
+/// let mut temp_any_vec = any_vec.clone_empty_in(any_vec, StackAllocator::<512>::new());
+/// temp_any_vec.push((*any_vec.get(1)).clone());
+/// let e = temp_any_vec.get(0);
+/// any_vec.push((*e).clone());
+/// any_vec.push((*e).clone());
+/// ```
+pub struct LazyClonedElement<'a, Traits: ?Sized + Trait>{
+    /// NonNull instead of &'a because it is used by both ElementRef and ElementMut
     pub(crate) any_vec: NonNull<AnyVec<Traits>>,
     pub(crate) index: usize,
     pub(crate) phantom: PhantomData<&'a mut AnyVec<Traits>>
 }
 
-impl<'a, Traits: ?Sized + Trait> Element<'a, Traits> {
+impl<'a, Traits: ?Sized + Trait> LazyClonedElement<'a, Traits> {
     #[inline]
     fn any_vec(&self) -> &'a AnyVec<Traits>{
         unsafe{ self.any_vec.as_ref() }
@@ -120,7 +142,7 @@ impl<'a, Traits: ?Sized + Trait> Element<'a, Traits> {
 }
 
 /// Lazy clone on consumption
-impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValue for Element<'a, Traits>{
+impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValue for LazyClonedElement<'a, Traits>{
     type Type = Unknown;
 
     #[inline]
@@ -168,7 +190,7 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValue for Element<'a, Traits>{
     }
 }
 
-impl<'a, Traits: ?Sized + Cloneable + Trait> Clone for Element<'a, Traits>{
+impl<'a, Traits: ?Sized + Cloneable + Trait> Clone for LazyClonedElement<'a, Traits>{
     #[inline]
     fn clone(&self) -> Self {
         Self{
@@ -178,3 +200,6 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> Clone for Element<'a, Traits>{
         }
     }
 }
+
+unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for LazyClonedElement<'a, Traits>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for LazyClonedElement<'a, Traits>{}

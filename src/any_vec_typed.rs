@@ -17,13 +17,8 @@ pub struct AnyVecTyped<'a, T: 'static>{
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static> Send for AnyVecTyped<'a, T>
-    where T: Send
-{}
-
-unsafe impl<'a, T: 'static> Sync for AnyVecTyped<'a, T>
-    where T: Sync
-{}
+unsafe impl<'a, T: 'static + Send> Send for AnyVecTyped<'a, T> {}
+unsafe impl<'a, T: 'static + Sync> Sync for AnyVecTyped<'a, T> {}
 
 impl<'a, T: 'static> AnyVecTyped<'a, T>{
     /// # Safety

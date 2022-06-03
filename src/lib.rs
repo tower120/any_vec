@@ -63,7 +63,7 @@ pub use crate::any_vec::{AnyVec, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
-pub use element::{Element, ElementRef};
+pub use element::{LazyClonedElement, ElementRef};
 
 pub mod any_value;
 pub mod ops;
