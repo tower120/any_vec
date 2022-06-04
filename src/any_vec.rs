@@ -2,13 +2,14 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, LazyClonedElement, ElementRef};
-use crate::any_value::AnyValue;
+use crate::{AnyVecMut, AnyVecRef, LazyClonedElement, ElementRef, ops2};
+use crate::any_value::{AnyValue, AnyValue2};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 use crate::any_vec::traits::{EmptyTrait};
-use crate::clone_type::{CloneFnTrait, CloneType};
+use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::ElementMut;
+use crate::ops2::TempValue;
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -93,7 +94,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// *`Element: 'static` due to TypeId requirements*
 pub struct AnyVec<Traits: ?Sized + Trait = dyn EmptyTrait>
 {
-    raw: AnyVecRaw,
+    pub(crate) raw: AnyVecRaw,
     pub(crate) clone_fn: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
@@ -120,6 +121,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
+    pub(crate) fn clone_fn(&self) -> Option<CloneFn>{
+        <Traits as CloneType>::get(self.clone_fn)
+    }
+
+    #[inline]
     pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
         self.raw.downcast_ref::<Element>()
     }
@@ -139,6 +145,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.downcast_mut_unchecked::<Element>()
     }
 
+    // TODO: return slice
     #[inline]
     pub fn as_bytes(&self) -> *const u8 {
         self.raw.mem.as_ptr()
@@ -200,6 +207,13 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.push(value);
     }
 
+    
+    #[inline]
+    pub fn push2<V: AnyValue2>(&mut self, value: V) {
+        self.raw.push2(value);
+    }
+
+
     /// # Panics
     ///
     /// * Panics if index out of bounds.
@@ -232,6 +246,13 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
         self.raw.swap_remove(index)
+    }
+
+    // TODO: WIP
+    #[inline]
+    pub fn swap_remove2(&mut self, index: usize) -> TempValue<ops2::SwapRemove<Traits>> {
+        self.raw.index_check(index);
+        TempValue(ops2::SwapRemove::new(self, index))
     }
 
     #[inline]
@@ -269,9 +290,8 @@ unsafe impl<Traits: ?Sized + Sync + Trait> Sync for AnyVec<Traits> {}
 impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
 {
     fn clone(&self) -> Self {
-        let clone_fn = <Traits as CloneType>::get(self.clone_fn);
         Self{
-            raw: unsafe{ self.raw.clone(clone_fn) },
+            raw: unsafe{ self.raw.clone(self.clone_fn()) },
             clone_fn: self.clone_fn,
             phantom: PhantomData
         }

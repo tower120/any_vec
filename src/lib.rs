@@ -67,6 +67,7 @@ pub use element::{LazyClonedElement, ElementRef};
 
 pub mod any_value;
 pub mod ops;
+pub mod ops2;
 
 use std::ptr;
 

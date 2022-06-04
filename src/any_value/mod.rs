@@ -1,11 +1,13 @@
 mod wrapper;
 mod raw;
+mod lazy_clone;
 
+pub use lazy_clone::LazyClone;
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 
 use std::any::TypeId;
-use std::ptr;
+use std::{mem, ptr};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use crate::copy_bytes_nonoverlapping;
@@ -18,6 +20,58 @@ impl Unknown {
         TypeId::of::<T>() == TypeId::of::<Unknown>()
     }
 }
+
+pub trait AnyValue2{
+    /// Concrete type, or [`Unknown`]
+    type Type: 'static /*= Unknown*/;
+
+    fn value_typeid(&self) -> TypeId;
+
+    /// In bytes. Return compile-time value, whenever possible.
+    fn size(&self) -> usize;
+
+    #[inline]
+    fn downcast<T: 'static>(self) -> Option<T>
+        where Self: Sized
+    {
+        if self.value_typeid() != TypeId::of::<T>(){
+            return None;
+        }
+        unsafe{
+            let mut tmp = MaybeUninit::<T>::uninit();
+            self.consume_into(tmp.as_mut_ptr() as *mut u8);
+            Some(tmp.assume_init())
+        }
+    }
+
+    fn bytes(&self) -> *const u8;
+
+    // TODO: bytes_mut, downcast_ref, downcast_mut
+
+    // move?
+    unsafe fn consume_into(self, out: *mut u8)
+        where Self: Sized
+    {
+        if !Unknown::is::<Self::Type>() {
+            ptr::copy_nonoverlapping(
+                self.bytes() as *const Self::Type,
+                out as *mut Self::Type,
+                1);
+        } else {
+            copy_bytes_nonoverlapping(
+                self.bytes(),
+                out,
+                self.size());
+        }
+        mem::forget(self);
+    }
+}
+
+pub trait AnyValue2Cloneable : AnyValue2 {
+    unsafe fn clone_into(&self, out: *mut u8);
+    // TODO: lazy_clone(&self) -> LazyClone
+}
+
 
 /// Type erased value interface.
 ///
