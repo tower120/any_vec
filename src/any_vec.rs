@@ -211,7 +211,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     ///
     /// # Leaking
     ///
-    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// If the returned [`TempValue`] goes out of scope without being dropped (due to
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
     ///
@@ -232,7 +232,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     ///
     /// # Leaking
     ///
-    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// If the returned [`TempValue`] goes out of scope without being dropped (due to
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
     ///

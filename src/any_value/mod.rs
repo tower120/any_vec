@@ -58,6 +58,8 @@ pub trait AnyValue {
 
     /// `out` must have at least [`size`] bytes.
     /// Will do compile-time optimisation if type/size known.
+    ///
+    /// [`size`]: Self::size
     unsafe fn move_into(self, out: *mut u8)
         where Self: Sized
     {
