@@ -6,7 +6,7 @@ use crate::{AnyVecMut, AnyVecRef/*, LazyClonedElement, ElementRef*/};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
-use crate::any_vec::traits::{EmptyTrait};
+use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::ops::any_vec_ptr::AnyVecPtr;
 use crate::traits::{Cloneable, Trait};
@@ -25,7 +25,7 @@ use crate::traits::{Cloneable, Trait};
 pub mod traits{
     /// Marker trait, for traits accepted by AnyVec.
     pub trait Trait: crate::clone_type::CloneType{}
-    impl Trait for dyn EmptyTrait{}
+    impl Trait for dyn None {}
     impl Trait for dyn Sync{}
     impl Trait for dyn Send{}
     impl Trait for dyn Sync + Send{}
@@ -35,7 +35,7 @@ pub mod traits{
     impl Trait for dyn Cloneable + Send+ Sync{}
 
     /// Does not enforce anything. Default.
-    pub trait EmptyTrait{}
+    pub trait None {}
 
     pub use std::marker::Sync;
 
@@ -69,7 +69,7 @@ pub mod traits{
 ///     # }
 /// ```
 pub trait SatisfyTraits<Traits: ?Sized>: CloneFnTrait<Traits> {}
-impl<T> SatisfyTraits<dyn EmptyTrait> for T{}
+impl<T> SatisfyTraits<dyn None> for T{}
 impl<T: Clone> SatisfyTraits<dyn Cloneable> for T{}
 impl<T: Send> SatisfyTraits<dyn Send> for T{}
 impl<T: Sync> SatisfyTraits<dyn Sync> for T{}
@@ -91,7 +91,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized + Trait = dyn EmptyTrait>
+pub struct AnyVec<Traits: ?Sized + Trait = dyn None>
 {
     pub(crate) raw: AnyVecRaw,
     clone_fn: <Traits as CloneType>::Type,

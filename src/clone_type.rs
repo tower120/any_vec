@@ -41,7 +41,7 @@ impl<T: Clone> CloneFnTrait<dyn Cloneable+Sync> for T{
 impl<T: Clone> CloneFnTrait<dyn Cloneable+Send+Sync> for T{
     const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
 }
-impl<T> CloneFnTrait<dyn EmptyTrait> for T{}
+impl<T> CloneFnTrait<dyn None> for T{}
 impl<T> CloneFnTrait<dyn Send> for T{}
 impl<T> CloneFnTrait<dyn Sync> for T{}
 impl<T> CloneFnTrait<dyn Send+Sync> for T{}
@@ -72,7 +72,7 @@ macro_rules! impl_clone_type_fn {
         }
     }
 }
-impl_clone_type_empty!(dyn EmptyTrait);
+impl_clone_type_empty!(dyn None);
 impl_clone_type_empty!(dyn Sync);
 impl_clone_type_empty!(dyn Send);
 impl_clone_type_empty!(dyn Send + Sync);

@@ -6,7 +6,7 @@ use crate::any_value::{AnyValue, AnyValueCloneable, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::{AnyVec, copy_bytes_nonoverlapping};
 use super::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
-use crate::traits::{Cloneable, EmptyTrait, Trait};
+use crate::traits::{Cloneable, None, Trait};
 
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;
@@ -27,7 +27,7 @@ pub trait Operation {
 ///
 /// May do some postponed actions on consumption/destruction.
 ///
-pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn EmptyTrait>{
+pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn None>{
     op: Op,
     phantom: PhantomData<Traits>
 }
