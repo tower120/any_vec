@@ -94,7 +94,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 pub struct AnyVec<Traits: ?Sized + Trait = dyn EmptyTrait>
 {
     pub(crate) raw: AnyVecRaw,
-    pub(crate) clone_fn: <Traits as CloneType>::Type,
+    clone_fn: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
 
@@ -144,7 +144,6 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.downcast_mut_unchecked::<Element>()
     }
 
-    // TODO: return slice
     #[inline]
     pub fn as_bytes(&self) -> *const u8 {
         self.raw.mem.as_ptr()
@@ -222,7 +221,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     pub fn remove(&mut self, index: usize) -> Remove<Traits> {
         self.raw.index_check(index);
         TempValue::new(remove::Remove::new(
-            AnyVecPtr::from(NonNull::from(self)),
+            AnyVecPtr::from(self),
             index
         ))
     }
@@ -243,7 +242,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits> {
         self.raw.index_check(index);
         TempValue::new(swap_remove::SwapRemove::new(
-            AnyVecPtr::from(NonNull::from(self)),
+            AnyVecPtr::from(self),
             index
         ))
     }

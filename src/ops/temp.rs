@@ -93,7 +93,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
     #[inline]
     fn drop(&mut self) {
         unsafe{
-            let drop_fn = self.any_vec_raw().drop_fn;
+            let drop_fn = self.any_vec_raw().drop_fn();
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check

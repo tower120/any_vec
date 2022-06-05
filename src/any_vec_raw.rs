@@ -7,13 +7,15 @@ use crate::{AnyVecMut, AnyVecRef, AnyVecTyped};
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 
+pub type DropFn = fn(ptr: *mut u8, len: usize);
+
 pub struct AnyVecRaw {
     pub(crate) mem: NonNull<u8>,
     capacity: usize,        // in elements
     pub(crate) len: usize,  // in elements
     element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
-    pub(crate) drop_fn: Option<fn(ptr: *mut u8, len: usize)>
+    drop_fn: Option<DropFn>
 }
 
 impl AnyVecRaw {
@@ -44,6 +46,11 @@ impl AnyVecRaw {
         };
         this.set_capacity(capacity);
         this
+    }
+
+    #[inline]
+    pub fn drop_fn(&self) -> Option<DropFn>{
+        self.drop_fn
     }
 
     /// Unsafe, because type cloneability is not checked
@@ -118,8 +125,6 @@ impl AnyVecRaw {
     }
 
     /// This is the only function, which do allocations/deallocations.
-    /// Real capacity one element bigger. Last virtual element used by remove operations,
-    /// as temporary value location.
     fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);

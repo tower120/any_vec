@@ -10,8 +10,6 @@ pub trait IAnyVecPtr<Traits: ?Sized + Trait>: IAnyVecRawPtr{
     fn any_vec(&self) -> NonNull<AnyVec<Traits>>;
 }
 
-// TODO: implement from &, &mut
-
 #[derive(Copy, Clone)]
 pub struct AnyVecRawPtr{
     ptr: NonNull<AnyVecRaw>
@@ -34,6 +32,11 @@ pub struct AnyVecPtr<Traits: ?Sized + Trait>{
 impl<Traits: ?Sized + Trait> From<NonNull<AnyVec<Traits>>> for AnyVecPtr<Traits> {
     fn from(ptr: NonNull<AnyVec<Traits>>) -> Self {
         Self{ptr}
+    }
+}
+impl<Traits: ?Sized + Trait> From<&mut AnyVec<Traits>> for AnyVecPtr<Traits> {
+    fn from(reference: &mut AnyVec<Traits>) -> Self {
+        Self{ptr: NonNull::from(reference)}
     }
 }
 impl<Traits: ?Sized + Trait> Clone for AnyVecPtr<Traits>{
