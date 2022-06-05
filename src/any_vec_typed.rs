@@ -81,20 +81,26 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub fn as_slice(&self) -> &'a [T] {
         unsafe{
-            self.this().as_slice_unchecked::<T>()
+            std::slice::from_raw_parts(
+                self.this().mem.as_ptr().cast::<T>(),
+                self.this().len,
+            )
         }
     }
 
     #[inline]
     pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
-            self.this_mut().as_mut_slice_unchecked::<T>()
+            std::slice::from_raw_parts_mut(
+                self.this_mut().mem.as_ptr().cast::<T>(),
+                self.this().len,
+            )
         }
     }
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.this().len()
+        self.this().len
     }
 
     #[inline]

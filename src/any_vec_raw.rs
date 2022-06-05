@@ -265,23 +265,6 @@ impl AnyVecRaw {
         }
     }
 
-    #[inline]
-    pub(crate) unsafe fn as_slice_unchecked<T>(&self) -> &[T]{
-        std::slice::from_raw_parts(
-            self.mem.as_ptr().cast::<T>(),
-            self.len,
-        )
-    }
-
-    #[inline]
-    pub(crate) unsafe fn as_mut_slice_unchecked<T>(&mut self) -> &mut[T]{
-        std::slice::from_raw_parts_mut(
-            self.mem.as_ptr().cast::<T>(),
-            self.len,
-        )
-    }
-
-    // TODO: move to AnyVec completely?
     /// Element TypeId
     #[inline]
     pub fn element_typeid(&self) -> TypeId{
@@ -292,11 +275,6 @@ impl AnyVecRaw {
     #[inline]
     pub fn element_layout(&self) -> Layout {
         self.element_layout
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.len
     }
 
     #[inline]

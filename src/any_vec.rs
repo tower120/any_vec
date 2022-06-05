@@ -266,7 +266,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.raw.len()
+        self.raw.len
     }
 
     #[inline]
