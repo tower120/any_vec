@@ -47,7 +47,7 @@ pub trait AnyValue {
         where Self: Sized
     {
         let mut tmp = MaybeUninit::<T>::uninit();
-        self.consume_into(tmp.as_mut_ptr() as *mut u8);
+        self.move_into(tmp.as_mut_ptr() as *mut u8);
         tmp.assume_init()
     }
 
@@ -56,10 +56,9 @@ pub trait AnyValue {
 
     // TODO: bytes_mut, downcast_ref, downcast_mut
 
-    // move?
     /// `out` must have at least [`size`] bytes.
     /// Will do compile-time optimisation if type/size known.
-    unsafe fn consume_into(self, out: *mut u8)
+    unsafe fn move_into(self, out: *mut u8)
         where Self: Sized
     {
         copy_bytes(&self, out);

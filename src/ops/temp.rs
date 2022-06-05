@@ -68,7 +68,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
         self.op.bytes()
     }
 
-    unsafe fn consume_into(mut self, out: *mut u8)
+    unsafe fn move_into(mut self, out: *mut u8)
     {
         copy_bytes(&self, out);
         self.op.consume_op();

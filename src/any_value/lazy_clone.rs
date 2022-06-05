@@ -33,7 +33,7 @@ impl<'a, T: AnyValueCloneable> AnyValue for LazyClone<'a, T>{
     }
 
     #[inline]
-    unsafe fn consume_into(self, out: *mut u8) {
+    unsafe fn move_into(self, out: *mut u8) {
         self.value.clone_into(out);
     }
 }

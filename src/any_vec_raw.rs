@@ -203,7 +203,7 @@ impl AnyVecRaw {
                 );
 
                 // 2. write value
-                value.consume_into(element as *mut u8);
+                value.move_into(element as *mut u8);
             } else {
                 let element_size = self.element_layout.size();
                 let element = self.mem.as_ptr().add(element_size * index);
@@ -216,7 +216,7 @@ impl AnyVecRaw {
                 );
 
                 // 2. write value
-                value.consume_into(element);
+                value.move_into(element);
             }
         }
 
@@ -241,7 +241,7 @@ impl AnyVecRaw {
                     self.mem.as_ptr().add(element_size * self.len)
                 };
 
-            value.consume_into(element);
+            value.move_into(element);
         }
 
         self.len += 1;
