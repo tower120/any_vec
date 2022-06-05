@@ -50,6 +50,26 @@
 //! let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
 //!```
 //!
+//! # LazyClone
+//!
+//! Whenever possible, [`any_vec`] types implement [`AnyValueCloneable`], which
+//! can work with [`LazyClone`]:
+//!
+//! [`any_vec`]: crate
+//! [`AnyValueCloneable`]: any_value::AnyValueCloneable
+//! [`LazyClone`]: any_value::LazyClone
+//!
+//! ```rust
+//! # use any_vec::AnyVec;
+//! # use any_vec::traits::*;
+//! let mut v1: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+//! v1.push(String::from("0"));
+//!
+//! let mut v2: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+//! let e = v.swap_remove(0);
+//! v2.push(e.lazy_clone());
+//! v2.push(e.lazy_clone());
+//! ```
 
 mod any_vec;
 mod clone_type;

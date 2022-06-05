@@ -83,5 +83,9 @@ pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
 
 pub trait AnyValueCloneable: AnyValue {
     unsafe fn clone_into(&self, out: *mut u8);
-    // TODO: lazy_clone(&self) -> LazyClone
+
+    #[inline]
+    fn lazy_clone(&self) -> LazyClone<Self> {
+        LazyClone::new(self)
+    }
 }

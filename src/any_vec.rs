@@ -85,9 +85,9 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// Only destruct operations have indirect call overhead.
 ///
 /// You can make AnyVec [`Send`]-able, [`Sync`]-able, [`Cloneable`], by
-/// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`crate::traits`].
+/// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`traits`].
 ///
-/// Some operations return [`AnyValueTemp<Operation>`], which internally holds &mut to [`AnyVec`].
+/// Some operations return [`TempValue<Operation, Traits>`], which internally holds &mut to [`AnyVec`].
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
