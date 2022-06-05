@@ -151,7 +151,7 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValue for LazyClonedElement<'a, 
     }
 
     #[inline]
-    fn value_size(&self) -> usize {
+    fn size(&self) -> usize {
         self.any_vec().element_layout().size()
     }
 

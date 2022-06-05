@@ -2,14 +2,13 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, LazyClonedElement, ElementRef, ops2};
-use crate::any_value::{AnyValue, AnyValue2};
+use crate::{AnyVecMut, AnyVecRef/*, LazyClonedElement, ElementRef*/};
+use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{AnyValueTemp, Remove, SwapRemove};
+use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
 use crate::any_vec::traits::{EmptyTrait};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
-use crate::element::ElementMut;
-use crate::ops2::TempValue;
+use crate::ops::any_vec_ptr::AnyVecPtr;
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -151,7 +150,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.mem.as_ptr()
     }
 
-    #[inline]
+/*    #[inline]
     pub fn get(&self, index: usize) -> ElementRef<Traits>{
         self.raw.index_check(index);
         unsafe{
@@ -187,7 +186,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
                 phantom: PhantomData
             }
         )
-    }
+    }*/
 
     /// # Panics
     ///
@@ -207,13 +206,6 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.push(value);
     }
 
-    
-    #[inline]
-    pub fn push2<V: AnyValue2>(&mut self, value: V) {
-        self.raw.push2(value);
-    }
-
-
     /// # Panics
     ///
     /// * Panics if index out of bounds.
@@ -227,32 +219,33 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
-    pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
-        self.raw.remove(index)
-    }
-
-    /// # Panics
-    ///
-    /// * Panics if index out of bounds.
-    ///
-    /// # Leaking
-    ///
-    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
-    /// [`mem::forget`], for example), the vector may have lost and leaked
-    /// elements with indices >= index.
-    ///
-    /// [`mem::forget`]: std::mem::forget
-    ///
-    #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
-        self.raw.swap_remove(index)
-    }
-
-    // TODO: WIP
-    #[inline]
-    pub fn swap_remove2(&mut self, index: usize) -> TempValue<ops2::SwapRemove<Traits>> {
+    pub fn remove(&mut self, index: usize) -> Remove<Traits> {
         self.raw.index_check(index);
-        TempValue(ops2::SwapRemove::new(self, index))
+        TempValue::new(remove::Remove::new(
+            AnyVecPtr::from(NonNull::from(self)),
+            index
+        ))
+    }
+
+    /// # Panics
+    ///
+    /// * Panics if index out of bounds.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned [`AnyValueTemp`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices >= index.
+    ///
+    /// [`mem::forget`]: std::mem::forget
+    ///
+    #[inline]
+    pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits> {
+        self.raw.index_check(index);
+        TempValue::new(swap_remove::SwapRemove::new(
+            AnyVecPtr::from(NonNull::from(self)),
+            index
+        ))
     }
 
     #[inline]

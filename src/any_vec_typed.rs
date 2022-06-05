@@ -2,7 +2,9 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{AnyValueTemp, Remove, SwapRemove};
+use crate::ops::{remove, swap_remove, TempValue};
+use crate::ops::any_vec_ptr::AnyVecRawPtr;
+use crate::traits::EmptyTrait;
 
 /// Concrete type [`AnyVec`] representation.
 ///
@@ -51,20 +53,24 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        AnyValueTemp(Remove::<T>{
-            any_vec: self.this_mut(),
-            index,
-            phantom: PhantomData
-        }).downcast::<T>()
+        self.this().index_check(index);
+        unsafe{
+            TempValue::<_>::new(remove::Remove::<_, T>::new(
+                AnyVecRawPtr::from(self.any_vec),
+                index
+            )).downcast_unchecked::<T>()
+        }
     }
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        AnyValueTemp(SwapRemove::<T>{
-            any_vec: self.this_mut(),
-            index,
-            phantom: PhantomData
-        }).downcast::<T>()
+        self.this().index_check(index);
+        unsafe{
+            TempValue::<_>::new(swap_remove::SwapRemove::<_, T>::new(
+                AnyVecRawPtr::from(self.any_vec),
+                index
+            )).downcast_unchecked::<T>()
+        }
     }
 
     #[inline]

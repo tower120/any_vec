@@ -27,12 +27,12 @@ impl AnyValue for AnyValueRaw{
     }
 
     #[inline]
-    fn value_size(&self) -> usize {
+    fn size(&self) -> usize {
         self.size
     }
 
     #[inline]
-    unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F) {
-        f(self.ptr);
+    fn bytes(&self) -> *const u8 {
+        self.ptr.as_ptr()
     }
 }

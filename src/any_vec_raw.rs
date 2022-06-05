@@ -4,9 +4,8 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::{AnyVecMut, AnyVecRef, AnyVecTyped};
-use crate::any_value::{AnyValue, AnyValue2, Unknown};
+use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
-use crate::ops::{AnyValueTemp, Remove, SwapRemove};
 
 pub struct AnyVecRaw {
     pub(crate) mem: NonNull<u8>,
@@ -175,11 +174,6 @@ impl AnyVecRaw {
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
-    #[inline]
-    fn type_check2<V: AnyValue2>(&self, value: &V){
-        assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
-    }
-
     #[cold]
     #[inline(never)]
     fn grow(&mut self){
@@ -209,7 +203,7 @@ impl AnyVecRaw {
                 );
 
                 // 2. write value
-                value.consume_bytes_into(element as *mut u8);
+                value.consume_into(element as *mut u8);
             } else {
                 let element_size = self.element_layout.size();
                 let element = self.mem.as_ptr().add(element_size * index);
@@ -222,7 +216,7 @@ impl AnyVecRaw {
                 );
 
                 // 2. write value
-                value.consume_bytes_into(element);
+                value.consume_into(element);
             }
         }
 
@@ -247,57 +241,10 @@ impl AnyVecRaw {
                     self.mem.as_ptr().add(element_size * self.len)
                 };
 
-            value.consume_bytes_into(element);
-        }
-
-        self.len += 1;
-    }
-
-    #[inline]
-    pub fn push2<V: AnyValue2>(&mut self, value: V) {
-        self.type_check2(&value);
-
-        if self.len == self.capacity{
-            self.grow();
-        }
-
-        unsafe{
-            // Compile time type optimization
-            let element =
-                if !Unknown::is::<V::Type>(){
-                     self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
-                } else {
-                    let element_size = self.element_layout.size();
-                    self.mem.as_ptr().add(element_size * self.len)
-                };
-
             value.consume_into(element);
         }
 
         self.len += 1;
-    }
-
-
-    #[inline]
-    pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
-        self.index_check(index);
-
-        AnyValueTemp(Remove {
-            any_vec: self,
-            index,
-            phantom: PhantomData
-        })
-    }
-
-    #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
-        self.index_check(index);
-
-        AnyValueTemp(SwapRemove {
-            any_vec: self,
-            index,
-            phantom: PhantomData
-        })
     }
 
     #[inline]

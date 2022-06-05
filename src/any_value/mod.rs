@@ -21,7 +21,8 @@ impl Unknown {
     }
 }
 
-pub trait AnyValue2{
+/// Type erased value interface.
+pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
     type Type: 'static /*= Unknown*/;
 
@@ -35,99 +36,53 @@ pub trait AnyValue2{
         where Self: Sized
     {
         if self.value_typeid() != TypeId::of::<T>(){
-            return None;
-        }
-        unsafe{
-            let mut tmp = MaybeUninit::<T>::uninit();
-            self.consume_into(tmp.as_mut_ptr() as *mut u8);
-            Some(tmp.assume_init())
+            None
+        } else {
+            Some(unsafe{ self.downcast_unchecked::<T>() })
         }
     }
 
+    #[inline]
+    unsafe fn downcast_unchecked<T: 'static>(self) -> T
+        where Self: Sized
+    {
+        let mut tmp = MaybeUninit::<T>::uninit();
+        self.consume_into(tmp.as_mut_ptr() as *mut u8);
+        tmp.assume_init()
+    }
+
+    // TODO: -> NonNull
     fn bytes(&self) -> *const u8;
 
     // TODO: bytes_mut, downcast_ref, downcast_mut
 
     // move?
+    /// `out` must have at least [`size`] bytes.
+    /// Will do compile-time optimisation if type/size known.
     unsafe fn consume_into(self, out: *mut u8)
         where Self: Sized
     {
-        if !Unknown::is::<Self::Type>() {
-            ptr::copy_nonoverlapping(
-                self.bytes() as *const Self::Type,
-                out as *mut Self::Type,
-                1);
-        } else {
-            copy_bytes_nonoverlapping(
-                self.bytes(),
-                out,
-                self.size());
-        }
+        copy_bytes(&self, out);
         mem::forget(self);
     }
 }
 
-pub trait AnyValue2Cloneable : AnyValue2 {
-    unsafe fn clone_into(&self, out: *mut u8);
-    // TODO: lazy_clone(&self) -> LazyClone
+/// Helper function, which utilize type knowledge.
+pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
+    if !Unknown::is::<T::Type>() {
+        ptr::copy_nonoverlapping(
+            any_value.bytes() as *const T::Type,
+            out as *mut T::Type,
+            1);
+    } else {
+        copy_bytes_nonoverlapping(
+            any_value.bytes(),
+            out,
+            any_value.size());
+    }
 }
 
-
-/// Type erased value interface.
-///
-/// Use [`consume_bytes`], if you need to read value.
-/// Use [`consume_bytes_into`], if you need to copy value.
-pub trait AnyValue {
-    /// Concrete type, or [`Unknown`]
-    type Type: 'static /*= Unknown*/;
-
-    fn value_typeid(&self) -> TypeId;
-
-    /// In bytes. Return compile-time value, whenever possible.
-    fn value_size(&self) -> usize;
-
-    // TODO: -> Option<T> , instead of panic
-    /// # Panic
-    ///
-    /// Panics if type mismatch
-    #[inline]
-    fn downcast<T: 'static>(self) -> T
-        where Self: Sized
-    {
-        assert_eq!(self.value_typeid(), TypeId::of::<T>());
-        unsafe{
-            let mut tmp = MaybeUninit::<T>::uninit();
-            self.consume_bytes_into(tmp.as_mut_ptr() as *mut u8);
-            tmp.assume_init()
-        }
-    }
-
-    // TODO: *const u8 ?
-    /// Consume value as bytes.
-    /// It is your responsibility to properly drop it.
-    /// `size = size_of::<T>`
-    unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F);
-
-
-    /// `out` must have at least [`value_size`] bytes.
-    /// Will do compile-time optimisation if type/size known.
-    #[inline]
-    unsafe fn consume_bytes_into(self, out: *mut u8)
-        where Self: Sized
-    {
-        if !Unknown::is::<Self::Type>() {
-            self.consume_bytes(|bytes| {
-                ptr::copy_nonoverlapping(
-                    bytes.as_ptr() as *const Self::Type,
-                    out as *mut Self::Type,
-                    1);
-            });
-        } else {
-            let size = self.value_size();
-            self.consume_bytes(|bytes| {
-                copy_bytes_nonoverlapping(bytes.as_ptr(), out, size);
-            });
-
-        }
-    }
+pub trait AnyValueCloneable: AnyValue {
+    unsafe fn clone_into(&self, out: *mut u8);
+    // TODO: lazy_clone(&self) -> LazyClone
 }
