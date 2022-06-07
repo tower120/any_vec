@@ -2,10 +2,12 @@ use std::any::TypeId;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, LazyClone, Unknown};
-use crate::AnyVec;
+use crate::{AnyVec, refs};
 use crate::traits::{Cloneable, Trait};
 
 /// Pointer to [`AnyVec`] element.
+///
+/// Crated with [`AnyVec::get`] -family.
 ///
 /// # Notes
 ///
@@ -74,31 +76,5 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValueCloneable for Element<'a, T
 unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, Traits>{}
 unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, Traits>{}
 
-
-// TODO: Try make helper Ref/Mut and use it everywhere
-pub struct ElementRef<'a, Traits: ?Sized + Trait>(
-    pub(crate) Element<'a, Traits>
-);
-impl<'a, Traits: ?Sized + Trait> Deref for ElementRef<'a, Traits>{
-    type Target = Element<'a, Traits>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-pub struct ElementMut<'a, Traits: ?Sized + Trait>(
-    pub(crate) Element<'a, Traits>
-);
-impl<'a, Traits: ?Sized + Trait> Deref for ElementMut<'a, Traits>{
-    type Target = Element<'a, Traits>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<'a, Traits: ?Sized + Trait> DerefMut for ElementMut<'a, Traits>{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
+pub type ElementRef<'a, Traits> = refs::Ref<Element<'a, Traits>>;
+pub type ElementMut<'a, Traits> = refs::Mut<Element<'a, Traits>>;

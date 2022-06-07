@@ -90,40 +90,6 @@ impl AnyVecRaw {
         cloned
     }
 
-    #[inline]
-    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
-        if self.type_id == TypeId::of::<Element>() {
-            unsafe{ Some(self.downcast_ref_unchecked()) }
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
-        AnyVecRef{
-            any_vec_typed: (AnyVecTyped::new(
-                NonNull::from(self)
-            ))
-        }
-    }
-
-    #[inline]
-    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element>> {
-        if self.type_id == TypeId::of::<Element>() {
-            unsafe{ Some(self.downcast_mut_unchecked()) }
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
-        AnyVecMut{
-            any_vec_typed: AnyVecTyped::new(NonNull::from(self))
-        }
-    }
-
     /// This is the only function, which do allocations/deallocations.
     fn set_capacity(&mut self, new_capacity: usize){
         // Never cut

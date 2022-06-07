@@ -2,7 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef/*, LazyClonedElement, ElementRef*/};
+use crate::{AnyVecTyped, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
@@ -127,22 +127,30 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
-        self.raw.downcast_ref::<Element>()
+        if self.element_typeid() == TypeId::of::<Element>() {
+            unsafe{ Some(self.downcast_ref_unchecked()) }
+        } else {
+            None
+        }
     }
 
     #[inline]
     pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
-        self.raw.downcast_ref_unchecked::<Element>()
+        refs::Ref(AnyVecTyped::new(NonNull::from(&self.raw)))
     }
 
     #[inline]
     pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element>> {
-        self.raw.downcast_mut::<Element>()
+        if self.element_typeid() == TypeId::of::<Element>() {
+            unsafe{ Some(self.downcast_mut_unchecked()) }
+        } else {
+            None
+        }
     }
 
     #[inline]
     pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
-        self.raw.downcast_mut_unchecked::<Element>()
+        refs::Mut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
     }
 
     #[inline]
@@ -160,7 +168,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        ElementRef(
+        refs::Ref(
             Element{
                 any_vec: self,
                 element: self.as_bytes().add(self.element_layout().size() * index)
@@ -177,8 +185,8 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits>{
-         ElementMut(
+    pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits> {
+         refs::Mut(
             Element{
                 any_vec: self,
                 element: self.as_bytes().add(self.element_layout().size() * index)
@@ -275,9 +283,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 }
 
 unsafe impl<Traits: ?Sized + Send + Trait> Send for AnyVec<Traits> {}
-
 unsafe impl<Traits: ?Sized + Sync + Trait> Sync for AnyVec<Traits> {}
-
 impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
 {
     fn clone(&self) -> Self {
@@ -288,3 +294,6 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
         }
     }
 }
+
+pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
+pub type AnyVecMut<'a, T> = refs::Mut<AnyVecTyped<'a, T>>;

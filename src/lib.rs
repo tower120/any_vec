@@ -75,17 +75,14 @@ mod any_vec;
 mod clone_type;
 mod any_vec_raw;
 mod any_vec_typed;
-mod any_vec_mut;
-mod any_vec_ref;
 pub mod element;
 
-pub use crate::any_vec::{AnyVec, SatisfyTraits, traits};
+pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
-pub use any_vec_mut::AnyVecMut;
-pub use any_vec_ref::AnyVecRef;
 
 pub mod any_value;
 pub mod ops;
+pub mod refs;
 
 use std::ptr;
 

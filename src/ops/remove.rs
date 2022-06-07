@@ -42,8 +42,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
         unsafe{
             let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
             if !Unknown::is::<T>(){
-                any_vec_raw.downcast_ref_unchecked::<T>().as_slice().get_unchecked(self.index)
-                    as *const T as *const u8
+                any_vec_raw.mem.cast::<T>().as_ptr().add(self.index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.index)

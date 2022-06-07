@@ -20,18 +20,17 @@ pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>{
 impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> SwapRemove<'a, AnyVecPtr, T>{
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, index: usize) -> Self{
-        let any_vec = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
 
         // 1. mem::forget and element drop panic "safety".
-        let last_index = any_vec.len - 1;
-        any_vec.len = index;
+        let last_index = any_vec_raw.len - 1;
+        any_vec_raw.len = index;
 
         let element: *mut u8 = unsafe{
             if !Unknown::is::<T>(){
-                any_vec.downcast_mut_unchecked::<T>().as_mut_slice().get_unchecked_mut(index)
-                    as *mut T as *mut u8
+                any_vec_raw.mem.cast::<T>().as_ptr().add(index) as *mut u8
             } else {
-                any_vec.mem.as_ptr().add(any_vec.element_layout().size() * index)
+                any_vec_raw.mem.as_ptr().add(any_vec_raw.element_layout().size() * index)
             }
         };
         Self{ any_vec_ptr, element, last_index, phantom: PhantomData }
@@ -59,8 +58,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for SwapRemove<'a, AnyV
         let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
         let last_element =
             if !Unknown::is::<T>() {
-                any_vec_raw.downcast_ref_unchecked::<T>().as_slice()
-                    .get_unchecked(self.last_index) as *const T as *const u8
+                any_vec_raw.mem.cast::<T>().as_ptr().add(self.last_index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.last_index)
