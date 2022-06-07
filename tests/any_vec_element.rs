@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use itertools::{any, assert_equal};
-use any_vec::any_value::{AnyValue, LazyClone};
+use any_vec::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, LazyClone};
 use any_vec::AnyVec;
 use any_vec::traits::Cloneable;
 
@@ -34,7 +34,7 @@ fn lazy_clone_test(){
     );
 }
 
-/*#[test]
+#[test]
 fn any_vec_get_test(){
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     assert_eq!(any_vec.element_typeid(), TypeId::of::<String>());
@@ -50,15 +50,17 @@ fn any_vec_get_test(){
     assert_eq!(e1_ref.value_typeid(), TypeId::of::<String>());
 
     {
-        let e1 = e1_ref.clone();
-        let e2 = (*e1_ref).clone();
-        let e3 = (*e1_ref).clone();
+        let e1 = e1_ref.lazy_clone();
+        let e2 = e1.lazy_clone();
+        let e3 = e2.lazy_clone();
 
-        assert_eq!(e1.downcast::<String>(), String::from("1"));
-        assert_eq!(e2.downcast::<String>(), String::from("1"));
-        assert_eq!(e3.downcast::<String>(), String::from("1"));
+        // Consume in reverse order, since lazy clone source must outlive it.
+        assert_eq!(e3.downcast::<String>().unwrap(), String::from("1"));
+        assert_eq!(e2.downcast::<String>().unwrap(), String::from("1"));
+        assert_eq!(e1.downcast::<String>().unwrap(), String::from("1"));
     }
-}*/
+
+}
 
 /*#[test]
 fn any_vec_push_to_self_test(){

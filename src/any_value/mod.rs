@@ -2,7 +2,7 @@ mod wrapper;
 mod raw;
 mod lazy_clone;
 
-pub use lazy_clone::LazyClone;
+pub use lazy_clone::{LazyClone};
 pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 
@@ -10,6 +10,7 @@ use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
+use crate::clone_type::CloneFn;
 use crate::copy_bytes_nonoverlapping;
 
 /// Marker for unknown type.
@@ -28,8 +29,25 @@ pub trait AnyValue {
 
     fn value_typeid(&self) -> TypeId;
 
+    // TODO: Layout instead of size?
     /// In bytes. Return compile-time value, whenever possible.
     fn size(&self) -> usize;
+
+    fn bytes(&self) -> *const u8;
+
+    #[inline]
+    fn downcast_ref<T: 'static>(&self) -> Option<&T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_ref_unchecked::<T>() })
+        }
+    }
+
+    #[inline]
+    unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T{
+        &*(self.bytes() as *const T)
+    }
 
     #[inline]
     fn downcast<T: 'static>(self) -> Option<T>
@@ -51,11 +69,6 @@ pub trait AnyValue {
         tmp.assume_init()
     }
 
-    // TODO: -> NonNull
-    fn bytes(&self) -> *const u8;
-
-    // TODO: bytes_mut, downcast_ref, downcast_mut
-
     /// `out` must have at least [`size`] bytes.
     /// Will do compile-time optimisation if type/size known.
     ///
@@ -65,6 +78,27 @@ pub trait AnyValue {
     {
         copy_bytes(&self, out);
         mem::forget(self);
+    }
+}
+
+pub trait AnyValueMut: AnyValue{
+    #[inline]
+    fn bytes_mut(&mut self) -> *mut u8{
+        self.bytes() as *mut u8
+    }
+
+    #[inline]
+    fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_mut_unchecked::<T>() })
+        }
+    }
+
+    #[inline]
+    unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T{
+        &mut *(self.bytes_mut() as *mut T)
     }
 }
 
@@ -87,7 +121,18 @@ pub trait AnyValueCloneable: AnyValue {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]
-    fn lazy_clone(&self) -> LazyClone<Self> {
+    fn lazy_clone(&self) -> LazyClone<Self>
+        where Self: Sized
+    {
         LazyClone::new(self)
+    }
+}
+
+/// Helper function, which utilize type knowledge.
+pub(crate) unsafe fn clone_into(any_value: &impl AnyValue, out: *mut u8, clone_fn: Option<CloneFn>) {
+    if let Some(clone_fn) = clone_fn{
+        (clone_fn)(any_value.bytes(), out, 1);
+    } else {
+        copy_bytes(any_value, out);
     }
 }

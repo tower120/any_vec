@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::{mem, ptr};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::any_value::{AnyValue, AnyValueCloneable, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, LazyClone, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::{AnyVec, copy_bytes_nonoverlapping};
 use super::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
@@ -68,24 +68,23 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
         self.op.bytes()
     }
 
-    unsafe fn move_into(mut self, out: *mut u8)
-    {
+    unsafe fn move_into(mut self, out: *mut u8) {
         copy_bytes(&self, out);
         self.op.consume_op();
         mem::forget(self);
     }
 }
 
+impl<Op: Operation, Traits: ?Sized + Trait> AnyValueMut for TempValue<Op, Traits>
+    where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
+{}
+
 impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, Traits>
     where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
 {
     unsafe fn clone_into(&self, out: *mut u8) {
         let any_vec = self.op.any_vec_ptr().any_vec().as_ref();
-        if let Some(clone_fn) = any_vec.clone_fn(){
-            (clone_fn)(self.bytes(), out, 1);
-        } else {
-            copy_bytes(self, out);
-        }
+        clone_into(self, out, any_vec.clone_fn());
     }
 }
 

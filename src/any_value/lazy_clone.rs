@@ -3,6 +3,10 @@ use crate::any_value::{AnyValue, AnyValueCloneable};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
 /// Lazy clone on consumption.
+///
+/// Source must outlive LazyClone. LazyClone let you
+/// take element from one ['AnyVec'] and put it multiple times
+/// into another, without intermediate copies and cast to concrete type.
 pub struct LazyClone<'a, T: AnyValueCloneable>{
     value: &'a T
 }

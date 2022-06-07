@@ -54,22 +54,23 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
     #[inline]
     fn consume_op(&mut self) {
     unsafe{
-        let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
-
         // 2. shift everything left
         if !Unknown::is::<T>() {
-            let dst: *mut T = any_vec_raw.downcast_mut_unchecked::<T>().as_mut_slice().get_unchecked_mut(self.index);
+            let dst = self.bytes() as *mut T;
             let src = dst.add(1);
             ptr::copy(src, dst,self.last_index - self.index);
         } else {
-            let size = any_vec_raw.element_layout().size();
-            let dst = any_vec_raw.mem.as_ptr().add(size * self.index);
+            let size = self.any_vec_ptr.any_vec_raw().as_ref().element_layout().size();
+            let dst = self.bytes() as *mut u8;
             let src = dst.add(size);
             ptr::copy(src, dst,size * (self.last_index - self.index));
         }
 
         // 3. shrink len `self.any_vec.len -= 1`
-        any_vec_raw.len = self.last_index;
+        {
+            let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
+            any_vec_raw.len = self.last_index;
+        }
     }
     }
 }

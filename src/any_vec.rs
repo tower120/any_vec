@@ -8,6 +8,7 @@ use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
+use crate::element2::{Element, ElementMut, ElementRef};
 use crate::ops::any_vec_ptr::AnyVecPtr;
 use crate::traits::{Cloneable, Trait};
 
@@ -149,7 +150,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         self.raw.mem.as_ptr()
     }
 
-/*    #[inline]
+    #[inline]
     pub fn get(&self, index: usize) -> ElementRef<Traits>{
         self.raw.index_check(index);
         unsafe{
@@ -159,11 +160,10 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        ElementRef::new(
-            LazyClonedElement {
-                any_vec: NonNull::from(self),
-                index,
-                phantom: PhantomData
+        ElementRef(
+            Element{
+                any_vec: self,
+                element: self.as_bytes().add(self.element_layout().size() * index)
             }
         )
     }
@@ -178,14 +178,13 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits>{
-         ElementMut::new(
-            LazyClonedElement {
-                any_vec: NonNull::from(self),
-                index,
-                phantom: PhantomData
+         ElementMut(
+            Element{
+                any_vec: self,
+                element: self.as_bytes().add(self.element_layout().size() * index)
             }
         )
-    }*/
+    }
 
     /// # Panics
     ///

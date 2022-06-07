@@ -29,15 +29,15 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     }
 
     #[inline]
+    fn bytes(&self) -> *const u8 {
+        &self.value as *const _ as *const u8
+    }
+
+    #[inline]
     unsafe fn downcast_unchecked<U: 'static>(self) -> U {
         // rust don't see that types are the same after assert.
         let value = ManuallyDrop::new(self.value);
         let ptr = &*value as *const T as *const U;
         ptr::read(ptr)
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        &self.value as *const _ as *const u8
     }
 }
