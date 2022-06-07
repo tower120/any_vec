@@ -9,11 +9,11 @@ pub use temp::TempValue;
 
 use any_vec_ptr::AnyVecPtr;
 
-/// Lazily `swap_remove` element on consumption/drop.
+/// Lazily `remove` element on consumption/drop.
 ///
-/// This is created by [`AnyVec::swap_remove`].
+/// This is created by [`AnyVec::remove`].
 ///
-/// [`AnyVec::swap_remove`]: crate::AnyVec::swap_remove
+/// [`AnyVec::remove`]: crate::AnyVec::remove
 pub type Remove<'a, Traits> = TempValue<remove::Remove<'a, AnyVecPtr<Traits>>, Traits>;
 
 /// Lazily `swap_remove` element on consumption/drop.

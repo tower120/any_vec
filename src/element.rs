@@ -8,6 +8,7 @@ use crate::traits::{Cloneable, Trait};
 /// Pointer to [`AnyVec`] element.
 ///
 /// Crated with [`AnyVec::get`] -family.
+/// Accessed through [`ElementRef`] or [`ElementMut`].
 ///
 /// # Notes
 ///
@@ -76,5 +77,12 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValueCloneable for Element<'a, T
 unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, Traits>{}
 unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, Traits>{}
 
+/// Reference to ['AnyVec'] element.
+///
+/// Created by  ['AnyVec::get'].
 pub type ElementRef<'a, Traits> = refs::Ref<Element<'a, Traits>>;
+
+/// Mutable reference to ['AnyVec'] element.
+///
+/// Created by  ['AnyVec::get_mut'].
 pub type ElementMut<'a, Traits> = refs::Mut<Element<'a, Traits>>;

@@ -59,14 +59,15 @@
 //! [`AnyValueCloneable`]: any_value::AnyValueCloneable
 //! [`LazyClone`]: any_value::LazyClone
 //!
-//! ```rust
+//!```rust
+//! # use any_vec::any_value::{AnyValueCloneable, AnyValueWrapper};
 //! # use any_vec::AnyVec;
 //! # use any_vec::traits::*;
 //! let mut v1: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
-//! v1.push(String::from("0"));
+//! v1.push(AnyValueWrapper::new(String::from("0")));
 //!
 //! let mut v2: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
-//! let e = v.swap_remove(0);
+//! let e = v1.swap_remove(0);
 //! v2.push(e.lazy_clone());
 //! v2.push(e.lazy_clone());
 //! ```
@@ -75,7 +76,6 @@ mod any_vec;
 mod clone_type;
 mod any_vec_raw;
 mod any_vec_typed;
-pub mod element;
 
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
@@ -83,6 +83,7 @@ pub use any_vec_typed::AnyVecTyped;
 pub mod any_value;
 pub mod ops;
 pub mod refs;
+pub mod element;
 
 use std::ptr;
 

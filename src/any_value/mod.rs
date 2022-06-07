@@ -81,6 +81,21 @@ pub trait AnyValue {
     }
 }
 
+/// Helper function, which utilize type knowledge.
+pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
+    if !Unknown::is::<T::Type>() {
+        ptr::copy_nonoverlapping(
+            any_value.bytes() as *const T::Type,
+            out as *mut T::Type,
+            1);
+    } else {
+        copy_bytes_nonoverlapping(
+            any_value.bytes(),
+            out,
+            any_value.size());
+    }
+}
+
 pub trait AnyValueMut: AnyValue{
     #[inline]
     fn bytes_mut(&mut self) -> *mut u8{
@@ -99,21 +114,6 @@ pub trait AnyValueMut: AnyValue{
     #[inline]
     unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T{
         &mut *(self.bytes_mut() as *mut T)
-    }
-}
-
-/// Helper function, which utilize type knowledge.
-pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
-    if !Unknown::is::<T::Type>() {
-        ptr::copy_nonoverlapping(
-            any_value.bytes() as *const T::Type,
-            out as *mut T::Type,
-            1);
-    } else {
-        copy_bytes_nonoverlapping(
-            any_value.bytes(),
-            out,
-            any_value.size());
     }
 }
 

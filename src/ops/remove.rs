@@ -51,7 +51,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
     }
 
     #[inline]
-    fn consume_op(&mut self) {
+    fn consume(&mut self) {
     unsafe{
         // 2. shift everything left
         if !Unknown::is::<T>() {

@@ -46,7 +46,7 @@ pub mod traits{
     pub trait Cloneable{}
 }
 
-/// Trait for compile time check if T satisfy Traits constraints.
+/// Trait for compile time check - does `T` satisfy `Traits` constraints.
 ///
 /// Almost for sure you don't need to use it. It is public - just in case.
 /// In our tests we found niche case where it was needed:
@@ -200,7 +200,10 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
-        self.raw.insert(index, value);
+        self.raw.type_check(&value);
+        unsafe{
+            self.raw.insert_unchecked(index, value);
+        }
     }
 
     /// # Panics
@@ -209,7 +212,10 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// * Panics if out of memory.
     #[inline]
     pub fn push<V: AnyValue>(&mut self, value: V) {
-        self.raw.push(value);
+        self.raw.type_check(&value);
+        unsafe{
+            self.raw.push_unchecked(value);
+        }
     }
 
     /// # Panics
@@ -295,5 +301,18 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
     }
 }
 
+/// Typed view to &[`AnyVec`].
+///
+/// You can get it from [`AnyVec::downcast_ref`].
+///
+/// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
 pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
+
+/// Typed view to &mut [`AnyVec`].
+///
+/// You can get it from [`AnyVec::downcast_mut`].
+///
+/// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
 pub type AnyVecMut<'a, T> = refs::Mut<AnyVecTyped<'a, T>>;

@@ -141,7 +141,7 @@ impl AnyVecRaw {
     }
 
     #[inline]
-    fn type_check<V: AnyValue>(&self, value: &V){
+    pub(crate) fn type_check<V: AnyValue>(&self, value: &V){
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
@@ -153,8 +153,10 @@ impl AnyVecRaw {
         );
     }
 
-    pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
-        self.type_check(&value);
+    /// # Safety
+    ///
+    /// Type is not checked.
+    pub unsafe fn insert_unchecked<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
         if self.len == self.capacity{
@@ -194,10 +196,11 @@ impl AnyVecRaw {
         self.len += 1;
     }
 
+    /// # Safety
+    ///
+    /// Type is not checked.
     #[inline]
-    pub fn push<V: AnyValue>(&mut self, value: V) {
-        self.type_check(&value);
-
+    pub unsafe fn push_unchecked<V: AnyValue>(&mut self, value: V) {
         if self.len == self.capacity{
             self.grow();
         }

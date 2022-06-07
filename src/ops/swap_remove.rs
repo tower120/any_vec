@@ -52,7 +52,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for SwapRemove<'a, AnyV
     }
 
     #[inline]
-    fn consume_op(&mut self) {
+    fn consume(&mut self) {
     unsafe{
         // 2. overwrite with last element
         let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();

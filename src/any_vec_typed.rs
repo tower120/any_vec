@@ -8,9 +8,11 @@ use crate::traits::None;
 
 /// Concrete type [`AnyVec`] representation.
 ///
-/// You can access it through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
+/// Created with [`AnyVec::downcast_`]-family.
+/// Accessed through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
 ///
 /// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
 pub struct AnyVecTyped<'a, T: 'static>{
@@ -43,12 +45,16 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn insert(&mut self, index: usize, value: T){
-        self.this_mut().insert(index, AnyValueWrapper::new(value));
+        unsafe{
+            self.this_mut().insert_unchecked(index, AnyValueWrapper::new(value));
+        }
     }
 
     #[inline]
     pub fn push(&mut self, value: T){
-        self.this_mut().push(AnyValueWrapper::new(value));
+        unsafe{
+            self.this_mut().push_unchecked(AnyValueWrapper::new(value));
+        }
     }
 
     #[inline]

@@ -1,8 +1,14 @@
 # Changelog
 
 ## Unreleased
+### Added
+- `LazyClone` added.
+- `AnyVec` getters added.
+- `AnyValueMut` added.
+
 ### Changed
 - `any_value::AnyValue::downcast<T>` now return `Option<T>`
+- `traits::EmptyTrait` renamed to `traits::None`
 
 ## 0.6.0
 ### Added

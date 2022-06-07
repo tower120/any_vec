@@ -16,8 +16,8 @@ pub trait Operation {
 
     fn bytes(&self) -> *const u8;
 
-    // TODO: rename somehow
-    fn consume_op(&mut self);
+    /// Called after bytes move.
+    fn consume(&mut self);
 }
 
 /// Temporary existing value in memory.
@@ -70,7 +70,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
 
     unsafe fn move_into(mut self, out: *mut u8) {
         copy_bytes(&self, out);
-        self.op.consume_op();
+        self.op.consume();
         mem::forget(self);
     }
 }
@@ -104,7 +104,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
                 ptr::drop_in_place(element as *mut Op::Type);
             }
         }
-        self.op.consume_op();
+        self.op.consume();
     }
 }
 

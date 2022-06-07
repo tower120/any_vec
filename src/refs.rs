@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+/// Reference into 'T'.
 pub struct Ref<T>(
     pub(crate) T
 );
@@ -11,6 +12,7 @@ impl<T> Deref for Ref<T>{
     }
 }
 
+/// Mutable reference into 'T'.
 pub struct Mut<T>(
     pub(crate) T
 );
