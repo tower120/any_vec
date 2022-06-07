@@ -12,9 +12,9 @@ use crate::traits::{Cloneable, Trait};
 ///
 /// # Notes
 ///
-/// `Element` reimplement [`AnyValueMut`] `downcast_` family, in order to return `&'a T`,
-/// instead of `&T`.Without that, you would have to keep ElementRef alive,
-/// while casting to concrete type.
+/// `Element` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
+/// This is done, so you don't have to keep ElementRef/Mut alive, while casting to concrete type.
+/// [`AnyValueMut`] implemented too - for the sake of interface compatibility.
 pub struct Element<'a, Traits: ?Sized + Trait>{
     pub(crate) any_vec: &'a AnyVec<Traits>,
     pub(crate) element: *const u8
@@ -77,12 +77,12 @@ impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValueCloneable for Element<'a, T
 unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, Traits>{}
 unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, Traits>{}
 
-/// Reference to ['AnyVec'] element.
+/// Reference to [`AnyVec`] element.
 ///
-/// Created by  ['AnyVec::get'].
+/// Created by  [`AnyVec::get`].
 pub type ElementRef<'a, Traits> = refs::Ref<Element<'a, Traits>>;
 
-/// Mutable reference to ['AnyVec'] element.
+/// Mutable reference to [`AnyVec`] element.
 ///
-/// Created by  ['AnyVec::get_mut'].
+/// Created by  [`AnyVec::get_mut`].
 pub type ElementMut<'a, Traits> = refs::Mut<Element<'a, Traits>>;

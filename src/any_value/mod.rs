@@ -96,6 +96,7 @@ pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
     }
 }
 
+/// Type erased mutable value interface.
 pub trait AnyValueMut: AnyValue{
     #[inline]
     fn bytes_mut(&mut self) -> *mut u8{
@@ -117,6 +118,7 @@ pub trait AnyValueMut: AnyValue{
     }
 }
 
+/// [`LazyClone`] friendly [`AnyValue`].
 pub trait AnyValueCloneable: AnyValue {
     unsafe fn clone_into(&self, out: *mut u8);
 
