@@ -1,10 +1,8 @@
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::marker::PhantomData;
-use std::ptr::NonNull;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, LazyClone, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::{AnyVec, copy_bytes_nonoverlapping};
 use super::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::traits::{Cloneable, None, Trait};
 
@@ -32,7 +30,7 @@ pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn None>{
     phantom: PhantomData<Traits>
 }
 impl<Op: Operation, Traits: ?Sized + Trait> TempValue<Op, Traits>{
-    pub fn new(op: Op) -> Self {
+    pub(crate) fn new(op: Op) -> Self {
         Self{op, phantom: PhantomData}
     }
 

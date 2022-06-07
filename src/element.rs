@@ -1,7 +1,5 @@
 use std::any::TypeId;
-use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, LazyClone, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, Unknown};
 use crate::{AnyVec, refs};
 use crate::traits::{Cloneable, Trait};
 

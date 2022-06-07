@@ -1,9 +1,7 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::any::TypeId;
-use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped};
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 
@@ -163,34 +161,32 @@ impl AnyVecRaw {
             self.grow();
         }
 
-        unsafe{
-            // Compile time type optimization
-            if !Unknown::is::<V::Type>(){
-                let element = self.mem.cast::<V::Type>().as_ptr().add(index);
+        // Compile time type optimization
+        if !Unknown::is::<V::Type>(){
+            let element = self.mem.cast::<V::Type>().as_ptr().add(index);
 
-                // 1. shift right
-                ptr::copy(
-                    element,
-                    element.add(1),
-                    self.len - index
-                );
+            // 1. shift right
+            ptr::copy(
+                element,
+                element.add(1),
+                self.len - index
+            );
 
-                // 2. write value
-                value.move_into(element as *mut u8);
-            } else {
-                let element_size = self.element_layout.size();
-                let element = self.mem.as_ptr().add(element_size * index);
+            // 2. write value
+            value.move_into(element as *mut u8);
+        } else {
+            let element_size = self.element_layout.size();
+            let element = self.mem.as_ptr().add(element_size * index);
 
-                // 1. shift right
-                ptr::copy(
-                    element,
-                    element.add(element_size),
-                    element_size * (self.len - index)
-                );
+            // 1. shift right
+            ptr::copy(
+                element,
+                element.add(element_size),
+                element_size * (self.len - index)
+            );
 
-                // 2. write value
-                value.move_into(element);
-            }
+            // 2. write value
+            value.move_into(element);
         }
 
         self.len += 1;
@@ -205,18 +201,16 @@ impl AnyVecRaw {
             self.grow();
         }
 
-        unsafe{
-            // Compile time type optimization
-            let element =
-                if !Unknown::is::<V::Type>(){
-                     self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
-                } else {
-                    let element_size = self.element_layout.size();
-                    self.mem.as_ptr().add(element_size * self.len)
-                };
+        // Compile time type optimization
+        let element =
+            if !Unknown::is::<V::Type>(){
+                 self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
+            } else {
+                let element_size = self.element_layout.size();
+                self.mem.as_ptr().add(element_size * self.len)
+            };
 
-            value.move_into(element);
-        }
+        value.move_into(element);
 
         self.len += 1;
     }

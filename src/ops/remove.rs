@@ -1,13 +1,8 @@
-use std::mem::size_of;
 use std::marker::PhantomData;
-use std::{mem, ptr};
-use std::ptr::NonNull;
-use crate::{AnyVec, copy_bytes_nonoverlapping};
-use crate::any_value::{AnyValue, AnyValueCloneable, Unknown};
-use crate::any_vec_raw::AnyVecRaw;
+use std::ptr;
+use crate::any_value::Unknown;
 use crate::ops::any_vec_ptr::IAnyVecRawPtr;
 use crate::ops::temp::Operation;
-use crate::traits::Trait;
 
 pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>{
     any_vec_ptr: AnyVecPtr,

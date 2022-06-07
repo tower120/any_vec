@@ -1,8 +1,6 @@
 use std::any::TypeId;
-use std::mem;
 use std::mem::{ManuallyDrop, size_of};
 use std::ptr;
-use std::ptr::NonNull;
 use crate::any_value::AnyValue;
 
 /// Helper struct to convert concrete type to [`AnyValue`].

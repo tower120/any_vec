@@ -37,6 +37,40 @@ fn remove_test() {
 }
 
 #[test]
+fn swap_remove_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+
+    vec.push(String::from("0"));
+    vec.push(String::from("1"));
+    vec.push(String::from("2"));
+    vec.push(String::from("3"));
+    vec.push(String::from("4"));
+
+    let e: String = vec.swap_remove(1);
+    assert_eq!(e, String::from("1"));
+    assert_equal(vec.as_slice(), &[
+        String::from("0"),
+        String::from("4"),
+        String::from("2"),
+        String::from("3"),
+    ]);
+
+    vec.swap_remove(2);
+    assert_equal(vec.as_slice(), &[
+        String::from("0"),
+        String::from("4"),
+        String::from("3"),
+    ]);
+
+    vec.swap_remove(2);
+    assert_equal(vec.as_slice(), &[
+        String::from("0"),
+        String::from("4"),
+    ]);
+}
+
+#[test]
 pub fn downcast_mut_test(){
     let mut any_vec: AnyVec = AnyVec::new::<String>();
     let mut vec = any_vec.downcast_mut::<String>().unwrap();
@@ -53,15 +87,3 @@ pub fn downcast_ref_test(){
     assert_eq!(vec1.len(), 0);
     assert_eq!(vec2.len(), 0);
 }
-
-/*#[test]
-pub fn downcast_mut_ref_cast_test(){
-    let mut any_vec = AnyVec::new::<String>();
-    let vec_mut = any_vec.downcast_mut::<String>().unwrap();
-    // let vec_ref1: AnyVecRef<_> = vec_mut.into();
-    // let vec_ref2: AnyVecRef<_> = vec_ref1;
-    // let vec_ref3: AnyVecRef<_> = vec_ref1;
-    // assert_eq!(vec_ref1.len(), 0);
-    // assert_eq!(vec_ref2.len(), 0);
-    // assert_eq!(vec_ref3.len(), 0);
-}*/

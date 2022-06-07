@@ -9,7 +9,6 @@ pub use raw::AnyValueRaw;
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::MaybeUninit;
-use std::ptr::NonNull;
 use crate::clone_type::CloneFn;
 use crate::copy_bytes_nonoverlapping;
 

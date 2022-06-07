@@ -4,8 +4,6 @@ pub(crate) mod swap_remove;
 pub(crate) mod remove;
 
 pub use temp::TempValue;
-//pub use swap_remove::SwapRemove;
-//pub use remove::Remove;
 
 use any_vec_ptr::AnyVecPtr;
 

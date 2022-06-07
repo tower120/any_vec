@@ -1,3 +1,5 @@
+//! Type dispatched analog of `enum{*AnyVecRaw, *AnyVec<Traits>}`.
+
 use std::ptr::NonNull;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
