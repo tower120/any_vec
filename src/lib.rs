@@ -77,14 +77,12 @@ mod any_vec_raw;
 mod any_vec_typed;
 mod any_vec_mut;
 mod any_vec_ref;
-//mod element;
-mod element2;
+pub mod element;
 
 pub use crate::any_vec::{AnyVec, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use any_vec_mut::AnyVecMut;
 pub use any_vec_ref::AnyVecRef;
-//pub use element::{LazyClonedElement, ElementRef};
 
 pub mod any_value;
 pub mod ops;

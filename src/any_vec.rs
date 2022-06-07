@@ -8,7 +8,7 @@ use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
-use crate::element2::{Element, ElementMut, ElementRef};
+use crate::element::{Element, ElementMut, ElementRef};
 use crate::ops::any_vec_ptr::AnyVecPtr;
 use crate::traits::{Cloneable, Trait};
 
