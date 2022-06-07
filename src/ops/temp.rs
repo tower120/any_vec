@@ -66,6 +66,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
         self.op.bytes()
     }
 
+    #[inline]
     unsafe fn move_into(mut self, out: *mut u8) {
         copy_bytes(&self, out);
         self.op.consume();
@@ -80,6 +81,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValueMut for TempValue<Op, Traits
 impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, Traits>
     where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
 {
+    #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
         let any_vec = self.op.any_vec_ptr().any_vec().as_ref();
         clone_into(self, out, any_vec.clone_fn());

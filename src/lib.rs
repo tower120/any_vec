@@ -104,6 +104,24 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
     }
 }
 
+// This is faster then ptr::copy,
+// when count is runtime value, and count is small.
+#[inline]
+unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+    // MIRI hack
+    if cfg!(miri)
+        || count >= 128
+    {
+        ptr::copy(src, dst, count);
+        return;
+    }
+
+    for i in 0..count{
+        *dst.add(i) = *src.add(i);
+    }
+}
+
+
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
 #[allow(dead_code)]
 #[inline]

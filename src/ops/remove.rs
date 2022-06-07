@@ -57,7 +57,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
             let size = self.any_vec_ptr.any_vec_raw().as_ref().element_layout().size();
             let dst = self.bytes() as *mut u8;
             let src = dst.add(size);
-            ptr::copy(src, dst,size * (self.last_index - self.index));
+            crate::copy_bytes(src, dst,size * (self.last_index - self.index));
         }
 
         // 3. shrink len `self.any_vec.len -= 1`

@@ -179,7 +179,7 @@ impl AnyVecRaw {
             let element = self.mem.as_ptr().add(element_size * index);
 
             // 1. shift right
-            ptr::copy(
+            crate::copy_bytes(
                 element,
                 element.add(element_size),
                 element_size * (self.len - index)

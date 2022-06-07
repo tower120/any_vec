@@ -72,6 +72,7 @@ pub trait AnyValue {
     /// Will do compile-time optimisation if type/size known.
     ///
     /// [`size`]: Self::size
+    #[inline]
     unsafe fn move_into(self, out: *mut u8)
         where Self: Sized
     {
@@ -81,6 +82,7 @@ pub trait AnyValue {
 }
 
 /// Helper function, which utilize type knowledge.
+#[inline]
 pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
     if !Unknown::is::<T::Type>() {
         ptr::copy_nonoverlapping(
@@ -130,6 +132,7 @@ pub trait AnyValueCloneable: AnyValue {
 }
 
 /// Helper function, which utilize type knowledge.
+#[inline]
 pub(crate) unsafe fn clone_into(any_value: &impl AnyValue, out: *mut u8, clone_fn: Option<CloneFn>) {
     if let Some(clone_fn) = clone_fn{
         (clone_fn)(any_value.bytes(), out, 1);

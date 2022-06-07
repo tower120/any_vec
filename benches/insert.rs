@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::mem::size_of;
 use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
 use any_vec::any_value::{AnyValueRaw};
@@ -16,7 +17,11 @@ fn vec_insert_front(){
 fn any_vec_insert_front(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     for i in 0..SIZE{
-        let raw_value = unsafe{AnyValueRaw::new(NonNull::from(&i).cast::<u8>(), TypeId::of::<usize>())};
+        let raw_value = unsafe{AnyValueRaw::new(
+            NonNull::from(&i).cast::<u8>(),
+            size_of::<usize>(),
+            TypeId::of::<usize>()
+        )};
         any_vec.insert(0, raw_value);
     }
 }
@@ -39,7 +44,11 @@ fn vec_insert_back(){
 fn any_vec_insert_back(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     for i in 0..SIZE{
-        let raw_value = unsafe{AnyValueRaw::new(NonNull::from(&i).cast::<u8>(), TypeId::of::<usize>())};
+        let raw_value = unsafe{AnyValueRaw::new(
+            NonNull::from(&i).cast::<u8>(),
+            size_of::<usize>(),
+            TypeId::of::<usize>()
+        )};
         any_vec.insert(i, raw_value);
     }
 }
