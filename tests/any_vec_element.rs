@@ -60,6 +60,16 @@ fn any_vec_get_test(){
         assert_eq!(e1.downcast::<String>().unwrap(), String::from("1"));
     }
 
+    // Mutability test
+    {
+        let e = any_vec.downcast_mut::<String>().unwrap().as_mut_slice().get_mut(1).unwrap();
+        *e += "A";
+
+        let str = any_vec.get_mut(1).downcast_mut::<String>().unwrap();
+        *str += "B";
+
+        assert_eq!(any_vec.get(1).downcast_ref::<String>().unwrap(), &String::from("1AB"));
+    }
 }
 
 /*#[test]

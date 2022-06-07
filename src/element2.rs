@@ -5,9 +5,44 @@ use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, Laz
 use crate::AnyVec;
 use crate::traits::{Cloneable, Trait};
 
+/// # Notes
+///
+/// `Element` reimplement [`AnyValueMut`] `downcast_` family, in order to return `&'a T`,
+/// instead of `&T`.Without that, you would have to keep ElementRef alive,
+/// while casting to concrete type.
 pub struct Element<'a, Traits: ?Sized + Trait>{
     pub(crate) any_vec: &'a AnyVec<Traits>,
     pub(crate) element: *const u8
+}
+
+impl<'a, Traits: ?Sized + Trait> Element<'a, Traits>{
+    #[inline]
+    pub fn downcast_ref<T: 'static>(&self) -> Option<&'a T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_ref_unchecked::<T>() })
+        }
+    }
+
+    #[inline]
+    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &'a T{
+        &*(self.bytes() as *const T)
+    }
+
+    #[inline]
+    pub fn downcast_mut<T: 'static>(&mut self) -> Option<&'a mut T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_mut_unchecked::<T>() })
+        }
+    }
+
+    #[inline]
+    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &'a mut T{
+        &mut *(self.bytes_mut() as *mut T)
+    }
 }
 
 impl<'a, Traits: ?Sized + Trait> AnyValue for Element<'a, Traits>{
