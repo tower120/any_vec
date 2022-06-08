@@ -2,9 +2,9 @@
 
 ## Unreleased
 ### Added
-- `LazyClone` added.
+- `AnyValueClonable` and `LazyClone` added.
 - `AnyVec` getters added.
-- `AnyValueMut` added.
+- `AnyValueMut` added. All remove operations now return `AnyValueMut` + `AnyValueClonable`. 
 
 ### Changed
 - `any_value::AnyValue::downcast<T>` now return `Option<T>`.
