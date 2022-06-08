@@ -159,10 +159,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    pub fn get(&self, index: usize) -> ElementRef<Traits>{
-        self.raw.index_check(index);
-        unsafe{
-            self.get_unchecked(index)
+    pub fn get(&self, index: usize) -> Option<ElementRef<Traits>>{
+        if index < self.len(){
+            Some(unsafe{ self.get_unchecked(index) })
+        } else {
+            None
         }
     }
 
@@ -177,10 +178,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> ElementMut<Traits>{
-        self.raw.index_check(index);
-        unsafe{
-            self.get_mut_unchecked(index)
+    pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits>>{
+        if index < self.len(){
+            Some(unsafe{ self.get_mut_unchecked(index) })
+        } else {
+            None
         }
     }
 

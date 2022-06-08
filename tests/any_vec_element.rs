@@ -1,6 +1,6 @@
 use std::any::TypeId;
-use itertools::{any, assert_equal};
-use any_vec::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, LazyClone};
+use itertools::assert_equal;
+use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
 use any_vec::traits::Cloneable;
 
@@ -45,7 +45,7 @@ fn any_vec_get_test(){
         vec.push(String::from("2"));
     }
 
-    let e1_ref = any_vec.get(1);
+    let e1_ref = any_vec.get(1).unwrap();
     assert_eq!(e1_ref.downcast_ref::<String>().unwrap(), &String::from("1"));
     assert_eq!(e1_ref.value_typeid(), TypeId::of::<String>());
 
@@ -65,10 +65,10 @@ fn any_vec_get_test(){
         let e = any_vec.downcast_mut::<String>().unwrap().as_mut_slice().get_mut(1).unwrap();
         *e += "A";
 
-        let str = any_vec.get_mut(1).downcast_mut::<String>().unwrap();
+        let str = any_vec.get_mut(1).unwrap().downcast_mut::<String>().unwrap();
         *str += "B";
 
-        assert_eq!(any_vec.get(1).downcast_ref::<String>().unwrap(), &String::from("1AB"));
+        assert_eq!(any_vec.get(1).unwrap().downcast_ref::<String>().unwrap(), &String::from("1AB"));
     }
 }
 

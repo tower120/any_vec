@@ -2,7 +2,7 @@
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
-//! Or use [`AnyVec`]s type erased operations, which works with [`AnyValue`].
+//! Or use [`AnyVec`] type erased operations, which works with [`AnyValue`].
 //!
 //! [`AnyValue`]: any_value::AnyValue
 //!

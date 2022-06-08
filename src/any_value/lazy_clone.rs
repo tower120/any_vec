@@ -4,7 +4,7 @@ use crate::any_value::{AnyValue, AnyValueCloneable};
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
 /// Do clone on consumption.
 ///
-/// Source must outlive LazyClone. LazyClone let you
+/// Source must outlive `LazyClone`. `LazyClone` let you
 /// take element from one [`AnyVec`] and put it multiple times
 /// into another, without intermediate copies and cast to concrete type.
 ///
