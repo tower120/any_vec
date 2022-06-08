@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+### Added
+- `AnyValueClonable` and `LazyClone` added.
+- `AnyVec` getters added.
+- `AnyValueMut` added. All remove operations now return `AnyValueMut` + `AnyValueClonable`. 
+
+### Changed
+- `any_value::AnyValue::downcast<T>` now return `Option<T>`.
+- `traits::EmptyTrait` renamed to `traits::None`.
+- `AnyValue` interface changed.
+
 ## 0.6.0
 ### Added
 - `AnyVec` now can be Sync, Send, Clone. 

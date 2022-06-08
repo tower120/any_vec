@@ -7,20 +7,15 @@ use crate::any_value::Unknown;
 /// Source should be forgotten.
 pub struct AnyValueRaw{
     ptr: NonNull<u8>,
-    /*size: usize,*/
+    size: usize,
     typeid: TypeId
 }
 
 impl AnyValueRaw{
     #[inline]
-    pub unsafe fn new(ptr: NonNull<u8>, /*len: usize, */typeid: TypeId) -> Self{
-        Self{ptr, /*size: len,*/ typeid}
+    pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
+        Self{ptr, size, typeid}
     }
-
-/*    #[inline]
-    pub fn value_size(&self) -> usize{
-        self.size
-    }*/
 }
 
 impl AnyValue for AnyValueRaw{
@@ -32,7 +27,12 @@ impl AnyValue for AnyValueRaw{
     }
 
     #[inline]
-    unsafe fn consume_bytes<F: FnOnce(NonNull<u8>)>(self, f: F) {
-        f(self.ptr);
+    fn size(&self) -> usize {
+        self.size
+    }
+
+    #[inline]
+    fn bytes(&self) -> *const u8 {
+        self.ptr.as_ptr()
     }
 }

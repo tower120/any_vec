@@ -1,4 +1,5 @@
 use std::any::{TypeId};
+use std::mem::size_of;
 use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::{assert_equal};
@@ -38,19 +39,22 @@ fn any_value_raw_test() {
     unsafe{
         let str1 = "Hello".to_string();
         any_vec.push(AnyValueRaw::new(
-            NonNull::from(&str1).cast::<u8>(), TypeId::of::<String>()
+            NonNull::from(&str1).cast::<u8>(), size_of::<String>(),
+            TypeId::of::<String>()
         ));
         forget(str1);
 
         let str2 = " to ".to_string();
         any_vec.push(AnyValueRaw::new(
-            NonNull::from(&str2).cast::<u8>(), TypeId::of::<String>()
+            NonNull::from(&str2).cast::<u8>(), size_of::<String>(),
+            TypeId::of::<String>()
         ));
         forget(str2);
 
         let str3 = "world".to_string();
         any_vec.push(AnyValueRaw::new(
-            NonNull::from(&str3).cast::<u8>(), TypeId::of::<String>()
+            NonNull::from(&str3).cast::<u8>(), size_of::<String>(),
+            TypeId::of::<String>()
         ));
         forget(str3);
     }

@@ -1,12 +1,11 @@
 use std::{mem, ptr};
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::any::TypeId;
-use std::marker::PhantomData;
 use std::ptr::NonNull;
-use crate::{AnyVecMut, AnyVecRef, AnyVecTyped, copy_bytes_nonoverlapping};
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
-use crate::ops::{AnyValueTemp, Remove, SwapRemove};
+
+pub type DropFn = fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw {
     pub(crate) mem: NonNull<u8>,
@@ -14,7 +13,7 @@ pub struct AnyVecRaw {
     pub(crate) len: usize,  // in elements
     element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
-    pub(crate) drop_fn: Option<fn(ptr: *mut u8, len: usize)>
+    drop_fn: Option<DropFn>
 }
 
 impl AnyVecRaw {
@@ -45,6 +44,11 @@ impl AnyVecRaw {
         };
         this.set_capacity(capacity);
         this
+    }
+
+    #[inline]
+    pub fn drop_fn(&self) -> Option<DropFn>{
+        self.drop_fn
     }
 
     /// Unsafe, because type cloneability is not checked
@@ -84,43 +88,7 @@ impl AnyVecRaw {
         cloned
     }
 
-    #[inline]
-    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
-        if self.type_id == TypeId::of::<Element>() {
-            unsafe{ Some(self.downcast_ref_unchecked()) }
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
-        AnyVecRef{
-            any_vec_typed: (AnyVecTyped::new(
-                NonNull::new_unchecked(self as *const _ as *mut _)
-            ))
-        }
-    }
-
-    #[inline]
-    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element>> {
-        if self.type_id == TypeId::of::<Element>() {
-            unsafe{ Some(self.downcast_mut_unchecked()) }
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
-        AnyVecMut{
-            any_vec_typed: AnyVecTyped::new(NonNull::new_unchecked(self))
-        }
-    }
-
     /// This is the only function, which do allocations/deallocations.
-    /// Real capacity one element bigger. Last virtual element used by remove operations,
-    /// as temporary value location.
     fn set_capacity(&mut self, new_capacity: usize){
         // Never cut
         debug_assert!(self.len <= new_capacity);
@@ -166,12 +134,12 @@ impl AnyVecRaw {
     }
 
     #[inline]
-    fn index_check(&self, index: usize){
+    pub(crate) fn index_check(&self, index: usize){
         assert!(index < self.len, "Index out of range!");
     }
 
     #[inline]
-    fn type_check<V: AnyValue>(&self, value: &V){
+    pub(crate) fn type_check<V: AnyValue>(&self, value: &V){
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
@@ -183,112 +151,68 @@ impl AnyVecRaw {
         );
     }
 
-    pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
-        self.type_check(&value);
+    /// # Safety
+    ///
+    /// Type is not checked.
+    pub unsafe fn insert_unchecked<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
         if self.len == self.capacity{
             self.grow();
         }
 
-        unsafe{
-            // Compile time type optimization
-            if !Unknown::is::<V::Type>(){
-                let element = self.mem.cast::<V::Type>().as_ptr().add(index);
+        // Compile time type optimization
+        if !Unknown::is::<V::Type>(){
+            let element = self.mem.cast::<V::Type>().as_ptr().add(index);
 
-                // 1. shift right
-                ptr::copy(
-                    element,
-                    element.add(1),
-                    self.len - index
-                );
+            // 1. shift right
+            ptr::copy(
+                element,
+                element.add(1),
+                self.len - index
+            );
 
-                // 2. write value
-                value.consume_bytes(|value_bytes|{
-                    ptr::copy_nonoverlapping(
-                        value_bytes.cast::<V::Type>().as_ptr(),
-                        element,
-                        1
-                    );
-                });
-            } else {
-                let element_size = self.element_layout.size();
-                let element = self.mem.as_ptr().add(element_size * index);
+            // 2. write value
+            value.move_into(element as *mut u8);
+        } else {
+            let element_size = self.element_layout.size();
+            let element = self.mem.as_ptr().add(element_size * index);
 
-                // push right
-                ptr::copy(
-                    element,
-                    element.add(element_size),
-                    element_size * (self.len - index)
-                );
+            // 1. shift right
+            crate::copy_bytes(
+                element,
+                element.add(element_size),
+                element_size * (self.len - index)
+            );
 
-                value.consume_bytes(|value_bytes|{
-                    copy_bytes_nonoverlapping(
-                        value_bytes.as_ptr(),
-                        element,
-                        element_size
-                    );
-                });
-            }
+            // 2. write value
+            value.move_into(element);
         }
 
         self.len += 1;
     }
 
+    /// # Safety
+    ///
+    /// Type is not checked.
     #[inline]
-    pub fn push<V: AnyValue>(&mut self, value: V) {
-        self.type_check(&value);
-
+    pub unsafe fn push_unchecked<V: AnyValue>(&mut self, value: V) {
         if self.len == self.capacity{
             self.grow();
         }
 
-        unsafe{
-            // Compile time type optimization
+        // Compile time type optimization
+        let element =
             if !Unknown::is::<V::Type>(){
-                value.consume_bytes(|value_bytes|{
-                    ptr::copy_nonoverlapping(
-                        value_bytes.cast::<V::Type>().as_ptr(),
-                        self.mem.cast::<V::Type>().as_ptr().add(self.len),
-                        1
-                    );
-                });
+                 self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
             } else {
                 let element_size = self.element_layout.size();
-                let new_element = self.mem.as_ptr().add(element_size * self.len);
-                value.consume_bytes(|value_bytes|{
-                    copy_bytes_nonoverlapping(
-                        value_bytes.as_ptr(),
-                        new_element,
-                        element_size
-                    );
-                });
-            }
-        }
+                self.mem.as_ptr().add(element_size * self.len)
+            };
+
+        value.move_into(element);
 
         self.len += 1;
-    }
-
-    #[inline]
-    pub fn remove(&mut self, index: usize) -> AnyValueTemp<Remove> {
-        self.index_check(index);
-
-        AnyValueTemp(Remove {
-            any_vec: self,
-            index,
-            phantom: PhantomData
-        })
-    }
-
-    #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> AnyValueTemp<SwapRemove> {
-        self.index_check(index);
-
-        AnyValueTemp(SwapRemove {
-            any_vec: self,
-            index,
-            phantom: PhantomData
-        })
     }
 
     #[inline]
@@ -304,23 +228,6 @@ impl AnyVecRaw {
         }
     }
 
-    #[inline]
-    pub(crate) unsafe fn as_slice_unchecked<T>(&self) -> &[T]{
-        std::slice::from_raw_parts(
-            self.mem.as_ptr().cast::<T>(),
-            self.len,
-        )
-    }
-
-    #[inline]
-    pub(crate) unsafe fn as_mut_slice_unchecked<T>(&mut self) -> &mut[T]{
-        std::slice::from_raw_parts_mut(
-            self.mem.as_ptr().cast::<T>(),
-            self.len,
-        )
-    }
-
-    // TODO: move to AnyVec completely?
     /// Element TypeId
     #[inline]
     pub fn element_typeid(&self) -> TypeId{
@@ -331,11 +238,6 @@ impl AnyVecRaw {
     #[inline]
     pub fn element_layout(&self) -> Layout {
         self.element_layout
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.len
     }
 
     #[inline]

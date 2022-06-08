@@ -2,13 +2,16 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{AnyValueTemp, Remove, SwapRemove};
+use crate::ops::{remove, swap_remove, TempValue};
+use crate::ops::any_vec_ptr::AnyVecRawPtr;
 
 /// Concrete type [`AnyVec`] representation.
 ///
-/// You can access it through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
+/// Created with [`AnyVec::downcast_`]-family.
+/// Accessed through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
 ///
 /// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
 pub struct AnyVecTyped<'a, T: 'static>{
@@ -17,13 +20,8 @@ pub struct AnyVecTyped<'a, T: 'static>{
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static> Send for AnyVecTyped<'a, T>
-    where T: Send
-{}
-
-unsafe impl<'a, T: 'static> Sync for AnyVecTyped<'a, T>
-    where T: Sync
-{}
+unsafe impl<'a, T: 'static + Send> Send for AnyVecTyped<'a, T> {}
+unsafe impl<'a, T: 'static + Sync> Sync for AnyVecTyped<'a, T> {}
 
 impl<'a, T: 'static> AnyVecTyped<'a, T>{
     /// # Safety
@@ -35,41 +33,49 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    fn this(&self) -> &AnyVecRaw {
+    fn this(&self) -> &'a AnyVecRaw {
         unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
-    fn this_mut(&mut self) -> &mut AnyVecRaw {
+    fn this_mut(&mut self) -> &'a mut AnyVecRaw {
         unsafe{ self.any_vec.as_mut() }
     }
 
     #[inline]
     pub fn insert(&mut self, index: usize, value: T){
-        self.this_mut().insert(index, AnyValueWrapper::new(value));
+        unsafe{
+            self.this_mut().insert_unchecked(index, AnyValueWrapper::new(value));
+        }
     }
 
     #[inline]
     pub fn push(&mut self, value: T){
-        self.this_mut().push(AnyValueWrapper::new(value));
+        unsafe{
+            self.this_mut().push_unchecked(AnyValueWrapper::new(value));
+        }
     }
 
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        AnyValueTemp(Remove::<T>{
-            any_vec: self.this_mut(),
-            index,
-            phantom: PhantomData
-        }).downcast::<T>()
+        self.this().index_check(index);
+        unsafe{
+            TempValue::<_>::new(remove::Remove::<_, T>::new(
+                AnyVecRawPtr::from(self.any_vec),
+                index
+            )).downcast_unchecked::<T>()
+        }
     }
 
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> T {
-        AnyValueTemp(SwapRemove::<T>{
-            any_vec: self.this_mut(),
-            index,
-            phantom: PhantomData
-        }).downcast::<T>()
+        self.this().index_check(index);
+        unsafe{
+            TempValue::<_>::new(swap_remove::SwapRemove::<_, T>::new(
+                AnyVecRawPtr::from(self.any_vec),
+                index
+            )).downcast_unchecked::<T>()
+        }
     }
 
     #[inline]
@@ -78,22 +84,28 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    pub fn as_slice(&self) -> &[T] {
+    pub fn as_slice(&self) -> &'a [T] {
         unsafe{
-            self.this().as_slice_unchecked::<T>()
+            std::slice::from_raw_parts(
+                self.this().mem.as_ptr().cast::<T>(),
+                self.this().len,
+            )
         }
     }
 
     #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut[T] {
+    pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
-            self.this_mut().as_mut_slice_unchecked::<T>()
+            std::slice::from_raw_parts_mut(
+                self.this_mut().mem.as_ptr().cast::<T>(),
+                self.this().len,
+            )
         }
     }
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.this().len()
+        self.this().len
     }
 
     #[inline]

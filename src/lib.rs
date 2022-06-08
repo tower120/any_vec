@@ -2,7 +2,7 @@
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
-//! Or use [`AnyVec`]s type erased operations, which works with [`AnyValue`].
+//! Or use [`AnyVec`] type erased operations, which works with [`AnyValue`].
 //!
 //! [`AnyValue`]: any_value::AnyValue
 //!
@@ -50,21 +50,40 @@
 //! let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
 //!```
 //!
+//! # LazyClone
+//!
+//! Whenever possible, [`any_vec`] types implement [`AnyValueCloneable`], which
+//! can work with [`LazyClone`]:
+//!
+//! [`any_vec`]: crate
+//! [`AnyValueCloneable`]: any_value::AnyValueCloneable
+//! [`LazyClone`]: any_value::LazyClone
+//!
+//!```rust
+//! # use any_vec::any_value::{AnyValueCloneable, AnyValueWrapper};
+//! # use any_vec::AnyVec;
+//! # use any_vec::traits::*;
+//! let mut v1: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+//! v1.push(AnyValueWrapper::new(String::from("0")));
+//!
+//! let mut v2: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+//! let e = v1.swap_remove(0);
+//! v2.push(e.lazy_clone());
+//! v2.push(e.lazy_clone());
+//! ```
 
 mod any_vec;
 mod clone_type;
 mod any_vec_raw;
 mod any_vec_typed;
-mod any_vec_mut;
-mod any_vec_ref;
 
-pub use crate::any_vec::{AnyVec, traits, SatisfyTraits};
+pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
-pub use any_vec_mut::AnyVecMut;
-pub use any_vec_ref::AnyVecRef;
 
 pub mod any_value;
 pub mod ops;
+pub mod refs;
+pub mod element;
 
 use std::ptr;
 
@@ -84,6 +103,24 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
         *dst.add(i) = *src.add(i);
     }
 }
+
+// This is faster then ptr::copy,
+// when count is runtime value, and count is small.
+#[inline]
+unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+    // MIRI hack
+    if cfg!(miri)
+        || count >= 128
+    {
+        ptr::copy(src, dst, count);
+        return;
+    }
+
+    for i in 0..count{
+        *dst.add(i) = *src.add(i);
+    }
+}
+
 
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
 #[allow(dead_code)]
