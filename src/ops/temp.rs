@@ -30,10 +30,12 @@ pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn None>{
     phantom: PhantomData<Traits>
 }
 impl<Op: Operation, Traits: ?Sized + Trait> TempValue<Op, Traits>{
+    #[inline]
     pub(crate) fn new(op: Op) -> Self {
         Self{op, phantom: PhantomData}
     }
 
+    #[inline]
     fn any_vec_raw(&self) -> &AnyVecRaw{
         unsafe{ self.op.any_vec_ptr().any_vec_raw().as_ref() }
     }

@@ -67,6 +67,7 @@ impl<'a, Traits: ?Sized + Trait> AnyValue for Element<'a, Traits>{
 impl<'a, Traits: ?Sized + Trait> AnyValueMut for Element<'a, Traits>{}
 
 impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValueCloneable for Element<'a, Traits>{
+    #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
         clone_into(self, out, self.any_vec.clone_fn());
     }
