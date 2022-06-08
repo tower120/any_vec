@@ -33,6 +33,35 @@ Only destruct operations have additional overhead of indirect call.
     } 
 ```
 
+## Send, Sync, Clone
+
+You can make `AnyVec` `Send`able, `Sync`able, `Clone`able:
+
+```rust
+use any_vec::AnyVec;
+use any_vec::traits::*;
+let v1: AnyVec<dyn Cloneable + Sync + Send> = AnyVec::new::<String>();
+let v2 = v1.clone();
+ ```
+ This constraints will be applied compiletime to element type:
+```rust
+// This will fail to compile. 
+let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
+```
+## LazyClone
+
+ Whenever possible, `any_vec` type erased elements can be lazily cloned:
+
+```rust
+ let mut v1: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+ v1.push(AnyValueWrapper::new(String::from("0")));
+
+ let mut v2: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+ let e = v1.swap_remove(0);
+ v2.push(e.lazy_clone());
+ v2.push(e.lazy_clone());
+```
+
 #### N.B.
 
 *Currently, minimum rust version is 1.61. This is to simplify implementation.  
