@@ -52,9 +52,9 @@ impl AnyVecRaw {
     }
 
     /// Unsafe, because type cloneability is not checked
-    pub(crate) unsafe fn clone(&self, clone_fn: Option<CloneFn>) -> Self {
-        // 1. construct empty "prototype"
-        let mut cloned = Self{
+    #[inline]
+    pub(crate) fn clone_empty(&self) -> Self{
+        Self{
             mem: NonNull::<u8>::dangling(),
             capacity: 0,
             len: 0,
@@ -62,7 +62,13 @@ impl AnyVecRaw {
             type_id: self.type_id,
             drop_fn: self.drop_fn,
             //clone_fn: self.clone_fn
-        };
+        }
+    }
+
+    /// Unsafe, because type cloneability is not checked
+    pub(crate) unsafe fn clone(&self, clone_fn: Option<CloneFn>) -> Self {
+        // 1. construct empty "prototype"
+        let mut cloned = self.clone_empty();
 
         // 2. allocate
         // TODO: set only necessary capacity size.

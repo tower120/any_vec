@@ -45,6 +45,12 @@ impl<Traits: ?Sized + Trait> From<&mut AnyVec<Traits>> for AnyVecPtr<Traits> {
         Self{ptr: NonNull::from(reference)}
     }
 }
+impl<Traits: ?Sized + Trait> From<&AnyVec<Traits>> for AnyVecPtr<Traits> {
+    #[inline]
+    fn from(reference: &AnyVec<Traits>) -> Self {
+        Self{ptr: NonNull::from(reference)}
+    }
+}
 impl<Traits: ?Sized + Trait> Clone for AnyVecPtr<Traits>{
     #[inline]
     fn clone(&self) -> Self {

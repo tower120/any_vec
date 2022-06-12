@@ -3,7 +3,7 @@ use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{remove, swap_remove, TempValue};
-use crate::ops::any_vec_ptr::AnyVecRawPtr;
+use crate::any_vec_ptr::AnyVecRawPtr;
 
 /// Concrete type [`AnyVec`] representation.
 ///

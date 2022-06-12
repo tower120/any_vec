@@ -1,6 +1,7 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 use crate::{AnyVecTyped, refs};
 use crate::any_value::{AnyValue};
@@ -9,7 +10,8 @@ use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
-use crate::ops::any_vec_ptr::AnyVecPtr;
+use crate::any_vec_ptr::AnyVecPtr;
+use crate::iter::{Iter, IterMut, IterRef};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -102,6 +104,7 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn None>
 impl<Traits: ?Sized + Trait> AnyVec<Traits>
 {
     /// Element should implement requested Traits
+    #[inline]
     pub fn new<Element: 'static>() -> Self
         where Element: SatisfyTraits<Traits>
     {
@@ -116,6 +119,20 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
             clone_fn: <Traits as CloneType>::new(clone_fn),
+            phantom: PhantomData
+        }
+    }
+
+    /// Same as clone, but without data copy.
+    ///
+    /// Use it to construct [`AnyVec`] of the same type.
+    #[inline]
+    pub fn clone_empty(&self) -> Self
+        where Traits: Cloneable
+    {
+        Self{
+            raw: unsafe{ self.raw.clone_empty() },
+            clone_fn: self.clone_fn,
             phantom: PhantomData
         }
     }
@@ -159,6 +176,28 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
+    pub fn iter(&self) -> IterRef<Traits>{
+        Iter::new(NonNull::from(self), 0, self.len())
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut<Traits>{
+        let len = self.len();
+        Iter::new(NonNull::from(self), 0, len)
+    }
+
+    #[inline]
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<AnyVecPtr<Traits>>>{
+        let element = NonNull::new_unchecked(
+            self.as_bytes().add(self.element_layout().size() * index) as *mut u8
+        );
+        ManuallyDrop::new(Element::new(
+            AnyVecPtr::from(self),
+            element
+        ))
+    }
+
+    #[inline]
     pub fn get(&self, index: usize) -> Option<ElementRef<Traits>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked(index) })
@@ -169,12 +208,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        refs::Ref(
-            Element{
-                any_vec: self,
-                element: self.as_bytes().add(self.element_layout().size() * index)
-            }
-        )
+        refs::Ref(self.get_element(index))
     }
 
     #[inline]
@@ -188,12 +222,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits> {
-         refs::Mut(
-            Element{
-                any_vec: self,
-                element: self.as_bytes().add(self.element_layout().size() * index)
-            }
-        )
+        refs::Mut(self.get_element(index))
     }
 
     /// # Panics

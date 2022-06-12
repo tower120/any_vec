@@ -1,11 +1,12 @@
 mod temp;
-pub(crate) mod any_vec_ptr;
 pub(crate) mod swap_remove;
 pub(crate) mod remove;
+mod drain_filter;
+mod drain;
 
 pub use temp::TempValue;
 
-use any_vec_ptr::AnyVecPtr;
+use crate::any_vec_ptr::AnyVecPtr;
 
 /// Lazily `remove` element on consumption/drop.
 ///
