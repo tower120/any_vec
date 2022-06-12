@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::ptr::NonNull;
-use crate::any_vec_ptr::AnyVecPtr;
+use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
 use crate::element::{Element, ElementMut, ElementRef};
@@ -16,35 +16,34 @@ use crate::traits::Trait;
 
 /// [`AnyVec`] iterator
 pub struct Iter<'a,
-    Traits: ?Sized + Trait,
-    IterItem: IteratorItem<'a, Traits> = ElementIterItem<'a, Traits>>
+    AnyVecPtr: IAnyVecRawPtr,
+    IterItem: IteratorItem<'a, AnyVecPtr> = ElementIterItem<'a, AnyVecPtr>>
 {
-    pub(crate) any_vec: NonNull<AnyVec<Traits>>,
+    pub(crate) any_vec_ptr: AnyVecPtr,
 
     // TODO: try pointers, instead
     pub(crate) start: usize,
     pub(crate) end: usize,
 
-    // TODO: try just &'a AnyVec<Traits>
     phantom: PhantomData<(&'a AnyVecRaw, IterItem)>
 }
 
-pub trait IteratorItem<'a, Traits: ?Sized + Trait>{
+pub trait IteratorItem<'a, AnyVecPtr: IAnyVecRawPtr>{
     type Item;
-    fn element_to_item(element: Element<'a, AnyVecPtr<Traits>>) -> Self::Item;
+    fn element_to_item(element: Element<'a, AnyVecPtr>) -> Self::Item;
 }
 
-impl<'a, Traits: ?Sized + Trait, IterItem: IteratorItem<'a, Traits>>
-    Iter<'a, Traits, IterItem>
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>>
+    Iter<'a, AnyVecPtr, IterItem>
 {
     #[inline]
-    pub(crate) fn new(any_vec: NonNull<AnyVec<Traits>>, start: usize, end: usize) -> Self {
-        Self{any_vec, start, end, phantom: PhantomData}
+    pub(crate) fn new(any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
+        Self{any_vec_ptr, start, end, phantom: PhantomData}
     }
 }
 
-impl<'a, Traits: ?Sized + Trait, IterItem: IteratorItem<'a, Traits>> Iterator
-    for Iter<'a, Traits, IterItem>
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterator
+    for Iter<'a, AnyVecPtr, IterItem>
 {
     type Item = IterItem::Item;
 
@@ -54,11 +53,11 @@ impl<'a, Traits: ?Sized + Trait, IterItem: IteratorItem<'a, Traits>> Iterator
             None
         } else {
             unsafe{
-                let any_vec_raw = &self.any_vec.as_ref().raw;
+                let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
                 let size = any_vec_raw.element_layout().size();
                 let element_ptr = any_vec_raw.mem.as_ptr().add(size * self.start);
                 let element = Element::new(
-                    AnyVecPtr::from(self.any_vec),
+                    self.any_vec_ptr,
                     NonNull::new_unchecked(element_ptr)
                 );
 
@@ -76,44 +75,44 @@ impl<'a, Traits: ?Sized + Trait, IterItem: IteratorItem<'a, Traits>> Iterator
 }
 
 
-
-pub struct ElementIterItem<'a, Traits: ?Sized + Trait>(
-    pub(crate) PhantomData<Element<'a, AnyVecPtr<Traits>>>
+pub struct ElementIterItem<'a, AnyVecPtr: IAnyVecRawPtr>(
+    pub(crate) PhantomData<Element<'a, AnyVecPtr>>
 );
-impl<'a, Traits: ?Sized + Trait> IteratorItem<'a, Traits> for ElementIterItem<'a, Traits>{
-    type Item = Element<'a, AnyVecPtr<Traits>>;
+impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementIterItem<'a, AnyVecPtr>{
+    type Item = Element<'a, AnyVecPtr>;
 
     #[inline]
-    fn element_to_item(element: Element<'a, AnyVecPtr<Traits>>) -> Self::Item {
+    fn element_to_item(element: Element<'a, AnyVecPtr>) -> Self::Item {
         element
     }
 }
 
-pub struct ElementRefIterItem<'a, Traits: ?Sized + Trait>(
-    pub(crate) PhantomData<ElementRef<'a, Traits>>
+
+pub struct ElementRefIterItem<'a, AnyVecPtr: IAnyVecRawPtr>(
+    pub(crate) PhantomData<Element<'a, AnyVecPtr>>
 );
-impl<'a, Traits: ?Sized + Trait> IteratorItem<'a, Traits> for ElementRefIterItem<'a, Traits>{
-    type Item = ElementRef<'a, Traits>;
+impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementRefIterItem<'a, AnyVecPtr>{
+    type Item = Ref<ManuallyDrop<Element<'a, AnyVecPtr>>>;
 
     #[inline]
-    fn element_to_item(element: Element<'a, AnyVecPtr<Traits>>) -> Self::Item {
+    fn element_to_item(element: Element<'a, AnyVecPtr>) -> Self::Item {
         Ref(ManuallyDrop::new(element))
     }
 }
 
 
-pub struct ElementMutIterItem<'a, Traits: ?Sized + Trait>(
-    pub(crate) PhantomData<ElementMut<'a, Traits>>
+pub struct ElementMutIterItem<'a, AnyVecPtr: IAnyVecRawPtr>(
+    pub(crate) PhantomData<Element<'a, AnyVecPtr>>
 );
-impl<'a, Traits: ?Sized + Trait> IteratorItem<'a, Traits> for ElementMutIterItem<'a, Traits>{
-    type Item = ElementMut<'a, Traits>;
+impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementMutIterItem<'a, AnyVecPtr>{
+    type Item = Mut<ManuallyDrop<Element<'a, AnyVecPtr>>>;
 
     #[inline]
-    fn element_to_item(element: Element<'a, AnyVecPtr<Traits>>) -> Self::Item {
+    fn element_to_item(element: Element<'a, AnyVecPtr>) -> Self::Item {
         Mut(ManuallyDrop::new(element))
     }
 }
 
 //pub type Iter<'a, Traits>    = IterBase<'a, Traits, ElementIterItem<'a, Traits>>;
-pub type IterRef<'a, Traits> = Iter<'a, Traits, ElementRefIterItem<'a, Traits>>;
-pub type IterMut<'a, Traits> = Iter<'a, Traits, ElementMutIterItem<'a, Traits>>;
+pub type IterRef<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementRefIterItem<'a, AnyVecPtr<Traits>>>;
+pub type IterMut<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementMutIterItem<'a, AnyVecPtr<Traits>>>;
