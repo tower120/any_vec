@@ -177,13 +177,13 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub fn iter(&self) -> IterRef<Traits>{
-        Iter::new(NonNull::from(self), 0, self.len())
+        Iter::new(AnyVecPtr::from(self), 0, self.len())
     }
 
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<Traits>{
         let len = self.len();
-        Iter::new(NonNull::from(self), 0, len)
+        Iter::new(AnyVecPtr::from(self), 0, len)
     }
 
     #[inline]
