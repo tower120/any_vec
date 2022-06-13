@@ -8,9 +8,8 @@ use crate::AnyVec;
 use crate::traits::Trait;
 
 pub trait IAnyVecRawPtr: Copy{
-    // TODO: rename to Element
-    /// Known type of AnyVec
-    type Type: 'static/* = Unknown*/;
+    /// Known element type of AnyVec
+    type Element: 'static/* = Unknown*/;
     fn any_vec_raw(&self) -> NonNull<AnyVecRaw>;
 }
 pub trait IAnyVecPtr<Traits: ?Sized + Trait>: IAnyVecRawPtr{
@@ -40,7 +39,7 @@ impl<Type> Clone for AnyVecRawPtr<Type> {
 }
 
 impl<Type> IAnyVecRawPtr for AnyVecRawPtr<Type>{
-    type Type = Type;
+    type Element = Type;
 
     #[inline]
     fn any_vec_raw(&self) -> NonNull<AnyVecRaw> {
@@ -79,7 +78,7 @@ impl<Traits: ?Sized + Trait> Clone for AnyVecPtr<Traits>{
 impl<Traits: ?Sized + Trait> Copy for AnyVecPtr<Traits>{}
 
 impl<Traits: ?Sized + Trait> IAnyVecRawPtr for AnyVecPtr<Traits> {
-    type Type = Unknown;
+    type Element = Unknown;
 
     #[inline]
     fn any_vec_raw(&self) -> NonNull<AnyVecRaw> {

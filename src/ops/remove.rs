@@ -26,7 +26,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Remove<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = AnyVecPtr::Type;
+    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {

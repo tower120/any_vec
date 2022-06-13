@@ -1,3 +1,4 @@
+use std::iter::{FusedIterator, TrustedLen};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
@@ -56,11 +57,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
             unsafe{
                 let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
                 let element_ptr =
-                    if Unknown::is::<AnyVecPtr::Type>() {
+                    if Unknown::is::<AnyVecPtr::Element>() {
                         let size = any_vec_raw.element_layout().size();
                         any_vec_raw.mem.as_ptr().add(size * self.index)
                     } else {
-                        any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Type>()
+                        any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
                             .add(self.index) as *mut u8
                     };
                 let element = Element::new(
@@ -80,6 +81,19 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
         (size, Some(size))
     }
 }
+
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> ExactSizeIterator
+    for Iter<'a, AnyVecPtr, IterItem>
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.end - self.index
+    }
+}
+
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedIterator
+    for Iter<'a, AnyVecPtr, IterItem>
+{}
 
 
 pub struct ElementIterItem<'a, AnyVecPtr: IAnyVecRawPtr>(

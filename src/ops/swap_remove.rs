@@ -23,8 +23,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
         any_vec_raw.len = index;
 
         let element: *mut u8 = unsafe{
-            if !Unknown::is::<AnyVecPtr::Type>(){
-                any_vec_raw.mem.cast::<AnyVecPtr::Type>().as_ptr().add(index) as *mut u8
+            if !Unknown::is::<AnyVecPtr::Element>(){
+                any_vec_raw.mem.cast::<AnyVecPtr::Element>().as_ptr().add(index) as *mut u8
             } else {
                 any_vec_raw.mem.as_ptr().add(any_vec_raw.element_layout().size() * index)
             }
@@ -35,7 +35,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = AnyVecPtr::Type;
+    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {

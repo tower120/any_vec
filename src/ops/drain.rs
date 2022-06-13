@@ -53,17 +53,18 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
     #[inline]
     fn ptr_at(&self, index: usize) -> *mut u8 {
     unsafe{
-        if Unknown::is::<AnyVecPtr::Type>(){
+        if Unknown::is::<AnyVecPtr::Element>(){
             self.any_vec_raw().mem.as_ptr()
                 .add(self.any_vec_raw().element_layout().size() * index)
         } else {
-            self.any_vec_raw().mem.as_ptr().cast::<AnyVecPtr::Type>()
+            self.any_vec_raw().mem.as_ptr().cast::<AnyVecPtr::Element>()
                 .add(index) as *mut u8
         }
     }
     }
 }
 
+// TODO: try deref to iter instead?
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterator
     for Drain<'a, AnyVecPtr>
 {
@@ -79,14 +80,14 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 {
     fn drop(&mut self) {
         // 1. drop the rest of the elements
-        if Unknown::is::<AnyVecPtr::Type>(){
+        if Unknown::is::<AnyVecPtr::Element>(){
              if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
                  (drop_fn)(self.ptr_at(self.iter.index), self.iter.end - self.iter.index);
             }
-        } else if mem::needs_drop::<AnyVecPtr::Type>(){
+        } else if mem::needs_drop::<AnyVecPtr::Element>(){
             for index in self.iter.index..self.iter.end{
                 unsafe{
-                    ptr::drop_in_place(self.ptr_at(index) as *mut AnyVecPtr::Type);
+                    ptr::drop_in_place(self.ptr_at(index) as *mut AnyVecPtr::Element);
                 }
             }
         }
@@ -99,7 +100,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 
             let src = self.ptr_at(self.iter.end);
             let dst = self.ptr_at(self.start);
-            if Unknown::is::<AnyVecPtr::Type>(){
+            if Unknown::is::<AnyVecPtr::Element>(){
                 ptr::copy(
                     src,
                     dst,
@@ -107,8 +108,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
                 );
             } else {
                 ptr::copy(
-                    src as * const AnyVecPtr::Type,
-                    dst as *mut AnyVecPtr::Type,
+                    src as * const AnyVecPtr::Element,
+                    dst as *mut AnyVecPtr::Element,
                     copy_count
                 );
             }
