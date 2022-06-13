@@ -1,15 +1,12 @@
 use std::iter::{FusedIterator};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
 use std::ptr::NonNull;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::AnyVec;
-use crate::element::{Element, ElementMut, ElementRef};
+use crate::element::{Element};
 use crate::refs::{Mut, Ref};
-use crate::traits::Trait;
 
 // TODO :Additional [`AnyVec`] Iterator operations.
 /*pub trait AnyVecIterator: Iterator{

@@ -1,19 +1,11 @@
-use crate::any_value::{AnyValue, AnyValueMut, Unknown};
-use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+use crate::any_value::{Unknown};
 use std::{mem, ptr};
-use std::cmp::{min, Ordering};
-use std::iter::{Chain, Cloned, Copied, Cycle, Enumerate, Filter, FilterMap, FlatMap, Flatten, Fuse, FusedIterator, Inspect, Intersperse, IntersperseWith, Map, MapWhile, Peekable, Product, Rev, Scan, Skip, SkipWhile, StepBy, Sum, Take, TakeWhile, TrustedRandomAccessNoCoerce, Zip};
-use std::ops::{Deref, DerefMut, Residual, Try};
-use std::ptr::NonNull;
-use std::thread::current;
-use crate::AnyVec;
+use std::cmp::{min};
+use std::iter::{FusedIterator};
 use crate::element::{Element};
-use crate::any_vec_ptr::{AnyVecRawPtr, IAnyVecPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::iter::Iter;
-use crate::refs::Ref;
-use crate::traits::Trait;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {

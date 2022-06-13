@@ -8,7 +8,7 @@ use std::slice;
 use crate::{AnyVecTyped, into_range, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain, drain};
+use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
@@ -132,7 +132,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub fn clone_empty(&self) -> Self {
         Self {
-            raw: unsafe{ self.raw.clone_empty() },
+            raw: self.raw.clone_empty(),
             clone_fn: self.clone_fn,
             phantom: PhantomData
         }

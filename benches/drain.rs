@@ -6,6 +6,10 @@ use any_vec::AnyVec;
 use crate::utils::bench_custom;
 
 // TODO: drain in both reverse and front.
+
+const SIZE: usize = 10000;
+const DRAIN_SIZE: usize = 40;
+
 type Element = String;
 static VALUE: Element = String::new();
 
