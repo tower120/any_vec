@@ -71,6 +71,53 @@ fn swap_remove_test() {
 }
 
 #[test]
+fn drain_all_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+    vec.push(String::from("0"));
+    vec.push(String::from("1"));
+    vec.push(String::from("2"));
+    vec.push(String::from("3"));
+
+    let mut vec2 = Vec::new();
+    for e in vec.drain(..){
+        vec2.push(e);
+    }
+    assert_eq!(any_vec.len(), 0);
+    assert_equal(vec2, [
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3"),
+    ]);
+}
+
+#[test]
+fn any_vec_drain_in_the_middle_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+    vec.push(String::from("0"));
+    vec.push(String::from("1"));
+    vec.push(String::from("2"));
+    vec.push(String::from("3"));
+    vec.push(String::from("4"));
+
+    let mut vec2 = Vec::new();
+    for e in vec.drain(1..3){
+        vec2.push(e);
+    }
+    assert_equal(vec2, [
+        String::from("1"),
+        String::from("2"),
+    ]);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("3"),
+        String::from("4"),
+    ]);
+}
+
+#[test]
 pub fn downcast_mut_test(){
     let mut any_vec: AnyVec = AnyVec::new::<String>();
     let mut vec = any_vec.downcast_mut::<String>().unwrap();

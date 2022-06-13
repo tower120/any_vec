@@ -8,7 +8,10 @@ use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::traits::{Cloneable, Trait};
 
-/// Pointer to [`AnyVec`] element.
+// Typed operations will never use type-erased Element, so there is no
+// need in type-known-based optimizations.
+
+/// Owning pointer to [`AnyVec`] element.
 ///
 /// Crated with [`AnyVec::get`] -family.
 /// Accessed through [`ElementRef`] or [`ElementMut`].
@@ -64,7 +67,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Element<'a, AnyVecPtr>{
     }
 }
 
-// TODO: specialized drop for known type
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Element<'a, AnyVecPtr>{
     #[inline]
     fn drop(&mut self) {
@@ -107,14 +109,14 @@ impl<'a, Traits: ?Sized + Cloneable + Trait>
 unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, AnyVecPtr<Traits>>{}
 unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, AnyVecPtr<Traits>>{}
 
-/// Reference to [`AnyVec`] element.
+/// Reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get`].
 pub type ElementRef<'a, Traits> = refs::Ref<ManuallyDrop<
     Element<'a, AnyVecPtr<Traits>>
 >>;
 
-/// Mutable reference to [`AnyVec`] element.
+/// Mutable reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get_mut`].
 pub type ElementMut<'a, Traits> = refs::Mut<ManuallyDrop<

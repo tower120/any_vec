@@ -88,6 +88,7 @@ pub mod refs;
 pub mod element;
 
 use std::ptr;
+use std::ops::{Bound, Range, RangeBounds};
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
@@ -151,4 +152,24 @@ unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
         *src_pos = *dst_pos;
         *dst_pos = tmp;
     }
+}
+
+#[inline]
+fn into_range(
+    len: usize,
+    range: impl RangeBounds<usize>
+) -> Range<usize> {
+    let start = match range.start_bound() {
+        Bound::Included(i) => *i,
+        Bound::Excluded(i) => *i + 1,
+        Bound::Unbounded => 0,
+    };
+    let end = match range.end_bound() {
+        Bound::Included(i) => *i + 1,
+        Bound::Excluded(i) => *i,
+        Bound::Unbounded => len,
+    };
+    assert!(start <= end);
+    assert!(end <= len);
+    start..end
 }

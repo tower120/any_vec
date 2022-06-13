@@ -2,11 +2,13 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
+use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
-use crate::{AnyVecTyped, refs};
+use std::slice;
+use crate::{AnyVecTyped, into_range, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
+use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
@@ -125,12 +127,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     /// Same as clone, but without data copy.
     ///
+    /// Since it does not copy underlying data, it works with any [`AnyVec`].
     /// Use it to construct [`AnyVec`] of the same type.
     #[inline]
-    pub fn clone_empty(&self) -> Self
-        where Traits: Cloneable
-    {
-        Self{
+    pub fn clone_empty(&self) -> Self {
+        Self {
             raw: unsafe{ self.raw.clone_empty() },
             clone_fn: self.clone_fn,
             phantom: PhantomData
@@ -289,6 +290,30 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
             AnyVecPtr::from(self),
             index
         ))
+    }
+
+    /// Removes the specified range from the vector in bulk, returning all removed
+    /// elements as an iterator. If the iterator is dropped before being fully consumed,
+    /// it drops the remaining removed elements.
+    ///
+    /// The returned iterator keeps a mutable borrow on the vector.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point is greater than the end point or if the end point
+    /// is greater than the length of the vector.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices in and past the range.
+    ///
+    /// [`mem::forget`]: std::mem::forget
+    ///
+    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
+        let Range{start, end} = into_range(self.len(), range);
+        Drain::new(AnyVecPtr::from(self), start, end)
     }
 
     #[inline]

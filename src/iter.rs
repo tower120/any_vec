@@ -22,7 +22,7 @@ pub struct Iter<'a,
     pub(crate) any_vec_ptr: AnyVecPtr,
 
     // TODO: try pointers, instead
-    pub(crate) start: usize,
+    pub(crate) index: usize,
     pub(crate) end: usize,
 
     phantom: PhantomData<(&'a AnyVecRaw, IterItem)>
@@ -38,7 +38,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>>
 {
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
-        Self{any_vec_ptr, start, end, phantom: PhantomData}
+        Self{any_vec_ptr, index: start, end, phantom: PhantomData}
     }
 }
 
@@ -47,21 +47,22 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
 {
     type Item = IterItem::Item;
 
+    // TODO: type optimized traverse?
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.start == self.end{
+        if self.index == self.end{
             None
         } else {
             unsafe{
                 let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
                 let size = any_vec_raw.element_layout().size();
-                let element_ptr = any_vec_raw.mem.as_ptr().add(size * self.start);
+                let element_ptr = any_vec_raw.mem.as_ptr().add(size * self.index);
                 let element = Element::new(
                     self.any_vec_ptr,
                     NonNull::new_unchecked(element_ptr)
                 );
 
-                self.start += 1;
+                self.index += 1;
                 Some(IterItem::element_to_item(element))
             }
         }
@@ -69,7 +70,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let size = self.end - self.start;
+        let size = self.end - self.index;
         (size, Some(size))
     }
 }

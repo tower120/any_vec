@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
+use crate::into_range;
+use crate::ops::drain::Drain;
 
 /// Concrete type [`AnyVec`] representation.
 ///
@@ -76,6 +79,17 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
                 index
             )).downcast_unchecked::<T>()
         }
+    }
+
+    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> impl Iterator<Item = T> {
+        let Range{start, end} = into_range(self.len(), range);
+        Drain::<_, T>::new(
+            AnyVecRawPtr::from(self.any_vec),
+            start,
+            end
+        ).map(|e| unsafe{
+            e.downcast_unchecked::<T>()
+        })
     }
 
     #[inline]

@@ -2,6 +2,7 @@ use crate::any_value::{AnyValue, AnyValueMut, Unknown};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::{mem, ptr};
+use std::cmp::min;
 use std::ptr::NonNull;
 use std::thread::current;
 use crate::AnyVec;
@@ -12,12 +13,10 @@ use crate::iter::Iter;
 use crate::refs::Ref;
 use crate::traits::Trait;
 
-struct Drain<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static>
+pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>
 {
-    any_vec_ptr: AnyVecPtr,
+    iter: Iter<'a, AnyVecPtr>,
     start: usize,
-    current: usize,
-    end: usize,
     original_len: usize,
     phantom: PhantomData<&'a mut T>
 }
@@ -34,10 +33,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drain<'a, AnyVecPtr, T>
         any_vec_raw.len = start;
 
         Self{
-            any_vec_ptr,
+            iter: Iter::new(any_vec_ptr, start, end),
             start,
-            current: start,
-            end,
             original_len,
             phantom: PhantomData
         }
@@ -45,12 +42,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drain<'a, AnyVecPtr, T>
 
     #[inline]
     fn any_vec_raw(&self) -> &AnyVecRaw{
-        unsafe { self.any_vec_ptr.any_vec_raw().as_ref() }
+        unsafe { self.iter.any_vec_ptr.any_vec_raw().as_ref() }
     }
 
     #[inline]
     fn any_vec_raw_mut(&mut self) -> &mut AnyVecRaw{
-        unsafe { self.any_vec_ptr.any_vec_raw().as_mut() }
+        unsafe { self.iter.any_vec_ptr.any_vec_raw().as_mut() }
     }
 
     #[inline]
@@ -74,19 +71,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Iterator
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current == self.end{
-            return None;
-        }
-
-        let element = unsafe{
-            let element_ptr = NonNull::new_unchecked(
-                self.ptr_at(self.current)
-            );
-            Element::new(self.any_vec_ptr, element_ptr)
-        };
-
-        self.current += 1;
-        Some(element)
+        self.iter.next()
     }
 }
 
@@ -96,10 +81,10 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drop for Drain<'a, AnyVecPtr, T>
         // 1. drop the rest of the elements
         if Unknown::is::<T>(){
              if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
-                 (drop_fn)(self.ptr_at(self.current), self.end - self.current);
+                 (drop_fn)(self.ptr_at(self.iter.index), self.iter.end - self.iter.index);
             }
         } else if mem::needs_drop::<T>(){
-            for index in self.current..self.end{
+            for index in self.iter.index..self.iter.end{
                 unsafe{
                     ptr::drop_in_place(self.ptr_at(index) as *mut T);
                 }
@@ -107,13 +92,26 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drop for Drain<'a, AnyVecPtr, T>
         }
 
         // 2. mem move
-        let distance = self.end - self.start;
+        let distance = self.iter.end - self.start;
         unsafe{
-            ptr::copy(
-                self.ptr_at(self.end),
-                self.ptr_at(self.start),
-                distance
-            );
+            let elements_left = self.original_len - self.iter.end;
+            let copy_count = min(distance, elements_left);
+
+            let src = self.ptr_at(self.iter.end);
+            let dst = self.ptr_at(self.start);
+            if Unknown::is::<T>(){
+                ptr::copy(
+                    src,
+                    dst,
+                    self.any_vec_raw().element_layout().size() * copy_count
+                );
+            } else {
+                ptr::copy(
+                    src as * const T,
+                    dst as *mut T,
+                    copy_count
+                );
+            }
         }
 
         // 3. len

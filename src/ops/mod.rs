@@ -1,8 +1,8 @@
 mod temp;
 pub(crate) mod swap_remove;
 pub(crate) mod remove;
+pub(crate) mod drain;
 mod drain_filter;
-mod drain;
 
 pub use temp::TempValue;
 
@@ -21,3 +21,10 @@ pub type Remove<'a, Traits> = TempValue<remove::Remove<'a, AnyVecPtr<Traits>>, T
 ///
 /// [`AnyVec::swap_remove`]: crate::AnyVec::swap_remove
 pub type SwapRemove<'a, Traits> = TempValue<swap_remove::SwapRemove<'a, AnyVecPtr<Traits>>, Traits>;
+
+/// Same as [`std::vec::Drain`].
+///
+/// This is created by [`AnyVec::drain`].
+///
+/// [`AnyVec::drain`]: crate::AnyVec::drain
+pub type Drain<'a, Traits> = drain::Drain<'a, AnyVecPtr<Traits>>;

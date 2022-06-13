@@ -51,7 +51,6 @@ impl AnyVecRaw {
         self.drop_fn
     }
 
-    /// Unsafe, because type cloneability is not checked
     #[inline]
     pub(crate) fn clone_empty(&self) -> Self{
         Self{
