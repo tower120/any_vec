@@ -1,9 +1,17 @@
 use std::any::TypeId;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, Unknown};
-use crate::{AnyVec, refs};
+use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
+use std::ptr::NonNull;
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
+use crate::{refs};
+use crate::any_vec_raw::AnyVecRaw;
+use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::traits::{Cloneable, Trait};
 
-/// Pointer to [`AnyVec`] element.
+// Typed operations will never use type-erased Element, so there is no
+// need in type-known-based optimizations.
+
+/// Owning pointer to [`AnyVec`] element.
 ///
 /// Crated with [`AnyVec::get`] -family.
 /// Accessed through [`ElementRef`] or [`ElementMut`].
@@ -13,12 +21,26 @@ use crate::traits::{Cloneable, Trait};
 /// `Element` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
 /// This is done, so you don't have to keep ElementRef/Mut alive, while casting to concrete type.
 /// [`AnyValueMut`] implemented too - for the sake of interface compatibility.
-pub struct Element<'a, Traits: ?Sized + Trait>{
-    pub(crate) any_vec: &'a AnyVec<Traits>,
-    pub(crate) element: *const u8
+///
+/// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::get`]: crate::AnyVec::get
+pub struct Element<'a, AnyVecPtr: IAnyVecRawPtr>{
+    any_vec_ptr: AnyVecPtr,
+    element: NonNull<u8>,
+    phantom: PhantomData<&'a mut AnyVecRaw>
 }
 
-impl<'a, Traits: ?Sized + Trait> Element<'a, Traits>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Element<'a, AnyVecPtr>{
+    #[inline]
+    pub fn new(any_vec_ptr: AnyVecPtr, element: NonNull<u8>) -> Self {
+        Self{any_vec_ptr, element, phantom: PhantomData}
+    }
+
+    #[inline]
+    fn any_vec_raw(&self) -> &'a AnyVecRaw{
+        unsafe { self.any_vec_ptr.any_vec_raw().as_ref() }
+    }
+
     #[inline]
     pub fn downcast_ref<T: 'static>(&self) -> Option<&'a T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -48,40 +70,62 @@ impl<'a, Traits: ?Sized + Trait> Element<'a, Traits>{
     }
 }
 
-impl<'a, Traits: ?Sized + Trait> AnyValue for Element<'a, Traits>{
-    type Type = Unknown;
-
-    fn value_typeid(&self) -> TypeId {
-        self.any_vec.element_typeid()
-    }
-
-    fn size(&self) -> usize {
-        self.any_vec.element_layout().size()
-    }
-
-    fn bytes(&self) -> *const u8 {
-        self.element
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Element<'a, AnyVecPtr>{
+    #[inline]
+    fn drop(&mut self) {
+        if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
+            (drop_fn)(self.element.as_ptr(), 1);
+        }
     }
 }
 
-impl<'a, Traits: ?Sized + Trait> AnyValueMut for Element<'a, Traits>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for Element<'a, AnyVecPtr>{
+    type Type = AnyVecPtr::Element;
 
-impl<'a, Traits: ?Sized + Cloneable + Trait> AnyValueCloneable for Element<'a, Traits>{
+    #[inline]
+    fn value_typeid(&self) -> TypeId {
+        self.any_vec_raw().element_typeid()
+    }
+
+    #[inline]
+    fn size(&self) -> usize {
+        self.any_vec_raw().element_layout().size()
+    }
+
+    #[inline]
+    fn bytes(&self) -> *const u8 {
+        self.element.as_ptr()
+    }
+}
+
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for Element<'a, AnyVecPtr>{}
+
+impl<'a, Traits: ?Sized + Cloneable + Trait>
+    AnyValueCloneable for Element<'a, AnyVecPtr<Traits>>
+{
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        clone_into(self, out, self.any_vec.clone_fn());
+        clone_into(self, out, self.any_vec_ptr.any_vec().as_ref().clone_fn());
     }
 }
 
-unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, Traits>{}
-unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, Traits>{}
+unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, AnyVecPtr<Traits>>{}
 
-/// Reference to [`AnyVec`] element.
+/// Reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get`].
-pub type ElementRef<'a, Traits> = refs::Ref<Element<'a, Traits>>;
+///
+/// [`AnyVec::get`]: crate::AnyVec::get
+pub type ElementRef<'a, Traits> = refs::Ref<ManuallyDrop<
+    Element<'a, AnyVecPtr<Traits>>
+>>;
 
-/// Mutable reference to [`AnyVec`] element.
+/// Mutable reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get_mut`].
-pub type ElementMut<'a, Traits> = refs::Mut<Element<'a, Traits>>;
+///
+/// [`AnyVec::get_mut`]: crate::AnyVec::get_mut
+pub type ElementMut<'a, Traits> = refs::Mut<ManuallyDrop<
+    Element<'a, AnyVecPtr<Traits>>
+>>;

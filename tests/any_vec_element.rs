@@ -72,7 +72,49 @@ fn any_vec_get_test(){
     }
 }
 
-/*#[test]
+#[test]
+fn any_vec_iter_test(){
+    let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+    {
+        let mut vec = any_vec.downcast_mut::<String>().unwrap();
+        vec.push(String::from("0"));
+        vec.push(String::from("1"));
+        vec.push(String::from("2"));
+    }
+
+    assert_equal(
+        any_vec.iter().map(|e|e.downcast_ref::<String>().unwrap()),
+        any_vec.downcast_ref::<String>().unwrap().as_slice()
+    );
+
+    let mut any_vec2 = any_vec.clone_empty();
+    for e in any_vec.iter(){
+        any_vec2.push(e.lazy_clone());
+    }
+
+    assert_equal(
+        any_vec.downcast_ref::<String>().unwrap().as_slice(),
+        any_vec2.downcast_ref::<String>().unwrap().as_slice()
+    );
+
+    for mut e in any_vec2.iter_mut(){
+        *e.downcast_mut::<String>().unwrap() = String::from("100");
+    }
+    assert_equal(
+        any_vec2.downcast_ref::<String>().unwrap().as_slice(),
+        &[String::from("100"), String::from("100"), String::from("100")]
+    );
+
+    // This should not compile
+    /*{
+        let iter = any_vec.iter();
+        let mut iter_mut = any_vec.iter_mut();
+        iter_mut.next().unwrap().downcast_mut::<String>();
+        iter.next().unwrap().downcast::<String>();
+    }*/
+}
+
+#[test]
 fn any_vec_push_to_self_test(){
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     {
@@ -82,6 +124,20 @@ fn any_vec_push_to_self_test(){
         vec.push(String::from("2"));
     }
 
-    let e = any_vec.get(1);
-    any_vec.push((*e).clone());
-}*/
+    let mut intermediate = any_vec.clone_empty();
+    intermediate.push(any_vec.get(1).unwrap().lazy_clone());
+    let e = intermediate.get(0).unwrap();
+
+    any_vec.push(e.lazy_clone());
+    any_vec.push(e.lazy_clone());
+    assert_equal(
+        any_vec.downcast_ref::<String>().unwrap().as_slice(),
+        &[
+            String::from("0"),
+            String::from("1"),
+            String::from("2"),
+            String::from("1"),
+            String::from("1")
+        ]
+    );
+}

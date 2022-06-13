@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+### Added
+- `AnyVec::drain`.
+- `AnyVec` iterators.
+- `AnyVec::clone_empty`, to construct `AnyVec` of the same type.
+- `IntoIterator` implemented.
+
 ## 0.7.0
 ### Added
 - `AnyValueClonable` and `LazyClone` added.

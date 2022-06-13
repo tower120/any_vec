@@ -1,15 +1,19 @@
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
+use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
-use crate::{AnyVecTyped, refs};
+use std::slice;
+use crate::{AnyVecTyped, into_range, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove};
+use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
-use crate::ops::any_vec_ptr::AnyVecPtr;
+use crate::any_vec_ptr::AnyVecPtr;
+use crate::iter::{Iter, IterMut, IterRef};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -102,6 +106,7 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn None>
 impl<Traits: ?Sized + Trait> AnyVec<Traits>
 {
     /// Element should implement requested Traits
+    #[inline]
     pub fn new<Element: 'static>() -> Self
         where Element: SatisfyTraits<Traits>
     {
@@ -116,6 +121,19 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         Self{
             raw: AnyVecRaw::with_capacity::<Element>(capacity),
             clone_fn: <Traits as CloneType>::new(clone_fn),
+            phantom: PhantomData
+        }
+    }
+
+    /// Same as clone, but without data copy.
+    ///
+    /// Since it does not copy underlying data, it works with any [`AnyVec`].
+    /// Use it to construct [`AnyVec`] of the same type.
+    #[inline]
+    pub fn clone_empty(&self) -> Self {
+        Self {
+            raw: self.raw.clone_empty(),
+            clone_fn: self.clone_fn,
             phantom: PhantomData
         }
     }
@@ -159,6 +177,28 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
+    pub fn iter(&self) -> IterRef<Traits>{
+        Iter::new(AnyVecPtr::from(self), 0, self.len())
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut<Traits>{
+        let len = self.len();
+        Iter::new(AnyVecPtr::from(self), 0, len)
+    }
+
+    #[inline]
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<AnyVecPtr<Traits>>>{
+        let element = NonNull::new_unchecked(
+            self.as_bytes().add(self.element_layout().size() * index) as *mut u8
+        );
+        ManuallyDrop::new(Element::new(
+            AnyVecPtr::from(self),
+            element
+        ))
+    }
+
+    #[inline]
     pub fn get(&self, index: usize) -> Option<ElementRef<Traits>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked(index) })
@@ -169,31 +209,21 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        refs::Ref(
-            Element{
-                any_vec: self,
-                element: self.as_bytes().add(self.element_layout().size() * index)
-            }
-        )
+        refs::Ref(self.get_element(index))
     }
 
     #[inline]
     pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits>>{
         if index < self.len(){
-            Some(unsafe{ self.get_mut_unchecked(index) })
+            Some(unsafe{ self.get_unchecked_mut(index) })
         } else {
             None
         }
     }
 
     #[inline]
-    pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits> {
-         refs::Mut(
-            Element{
-                any_vec: self,
-                element: self.as_bytes().add(self.element_layout().size() * index)
-            }
-        )
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits> {
+        refs::Mut(self.get_element(index))
     }
 
     /// # Panics
@@ -262,6 +292,30 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         ))
     }
 
+    /// Removes the specified range from the vector in bulk, returning all removed
+    /// elements as an iterator. If the iterator is dropped before being fully consumed,
+    /// it drops the remaining removed elements.
+    ///
+    /// The returned iterator keeps a mutable borrow on the vector.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the starting point is greater than the end point or if the end point
+    /// is greater than the length of the vector.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices in and past the range.
+    ///
+    /// [`mem::forget`]: std::mem::forget
+    ///
+    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
+        let Range{start, end} = into_range(self.len(), range);
+        Drain::new(AnyVecPtr::from(self), start, end)
+    }
+
     #[inline]
     pub fn clear(&mut self){
         self.raw.clear()
@@ -303,6 +357,26 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
     }
 }
 
+impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a AnyVec<Traits>{
+    type Item = ElementRef<'a, Traits>;
+    type IntoIter = IterRef<'a, Traits>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
+    type Item = ElementMut<'a, Traits>;
+    type IntoIter = IterMut<'a, Traits>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 /// Typed view to &[`AnyVec`].
 ///
 /// You can get it from [`AnyVec::downcast_ref`].
@@ -311,6 +385,16 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
 pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
 
+impl<'a, T: 'static> IntoIterator for AnyVecRef<'a, T>{
+    type Item = &'a T;
+    type IntoIter = slice::Iter<'a, T>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 /// Typed view to &mut [`AnyVec`].
 ///
 /// You can get it from [`AnyVec::downcast_mut`].
@@ -318,3 +402,13 @@ pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
 pub type AnyVecMut<'a, T> = refs::Mut<AnyVecTyped<'a, T>>;
+
+impl<'a, T: 'static> IntoIterator for AnyVecMut<'a, T>{
+    type Item = &'a mut T;
+    type IntoIter = slice::IterMut<'a, T>;
+
+    #[inline]
+    fn into_iter(mut self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}

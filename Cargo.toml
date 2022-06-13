@@ -33,3 +33,7 @@ harness = false
 [[bench]]
 name = "swap_remove"
 harness = false
+
+[[bench]]
+name = "drain"
+harness = false

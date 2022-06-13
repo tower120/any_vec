@@ -74,11 +74,14 @@
 
 mod any_vec;
 mod clone_type;
+mod any_vec_ptr;
 mod any_vec_raw;
 mod any_vec_typed;
+mod iter;
 
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
+pub use iter::{Iter, IterRef, IterMut};
 
 pub mod any_value;
 pub mod ops;
@@ -86,6 +89,7 @@ pub mod refs;
 pub mod element;
 
 use std::ptr;
+use std::ops::{Bound, Range, RangeBounds};
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
@@ -149,4 +153,24 @@ unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
         *src_pos = *dst_pos;
         *dst_pos = tmp;
     }
+}
+
+#[inline]
+fn into_range(
+    len: usize,
+    range: impl RangeBounds<usize>
+) -> Range<usize> {
+    let start = match range.start_bound() {
+        Bound::Included(i) => *i,
+        Bound::Excluded(i) => *i + 1,
+        Bound::Unbounded => 0,
+    };
+    let end = match range.end_bound() {
+        Bound::Included(i) => *i + 1,
+        Bound::Excluded(i) => *i,
+        Bound::Unbounded => len,
+    };
+    assert!(start <= end);
+    assert!(end <= len);
+    start..end
 }

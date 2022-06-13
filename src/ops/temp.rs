@@ -3,7 +3,7 @@ use std::{mem, ptr};
 use std::marker::PhantomData;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
-use super::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::traits::{Cloneable, None, Trait};
 
 pub trait Operation {

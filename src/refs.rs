@@ -1,6 +1,5 @@
 use std::ops::{Deref, DerefMut};
 
-// TODO: Clone?
 /// Reference into 'T'.
 pub struct Ref<T>(
     pub(crate) T

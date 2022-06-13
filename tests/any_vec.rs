@@ -2,7 +2,7 @@ use std::any::{TypeId};
 use std::mem::size_of;
 use std::mem::forget;
 use std::ptr::NonNull;
-use itertools::{assert_equal};
+use itertools::assert_equal;
 use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
 
@@ -188,6 +188,51 @@ fn any_vec_swap_remove_push_test() {
 }
 
 #[test]
+fn any_vec_drain_all_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("2")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+
+    let mut any_vec2: AnyVec = AnyVec::new::<String>();
+    for e in any_vec.drain(..){
+        any_vec2.push(e);
+    }
+    assert_eq!(any_vec.len(), 0);
+    assert_equal(any_vec2.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3"),
+    ]);
+}
+
+#[test]
+fn any_vec_drain_in_the_middle_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("2")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
+
+    let mut any_vec2: AnyVec = AnyVec::new::<String>();
+    for e in any_vec.drain(1..3){
+        any_vec2.push(e);
+    }
+    assert_equal(any_vec2.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("1"),
+        String::from("2"),
+    ]);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("3"),
+        String::from("4"),
+    ]);
+}
+
+#[test]
 fn any_vec_insert_front(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();
@@ -205,4 +250,21 @@ fn any_vec_insert_back(){
         vec.insert(i, i);
     }
     assert_equal(vec.as_slice().iter().copied(), 0..100);
+}
+
+#[test]
+fn any_vec_into_iter_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    {
+        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+        vec.push(1);
+        vec.push(10);
+        vec.push(100);
+    }
+
+    let mut sum = 0;
+    for e in &any_vec{
+        sum += e.downcast_ref::<usize>().unwrap();
+    }
+    assert_eq!(sum, 111);
 }
