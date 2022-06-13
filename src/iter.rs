@@ -1,4 +1,4 @@
-use std::iter::{FusedIterator, TrustedLen};
+use std::iter::{FusedIterator};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
@@ -135,5 +135,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementMutIte
 }
 
 //pub type Iter<'a, Traits>    = IterBase<'a, Traits, ElementIterItem<'a, Traits>>;
+
+/// Mutable reference [`AnyVec`] iterator.
 pub type IterRef<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementRefIterItem<'a, AnyVecPtr<Traits>>>;
+
+/// Reference [`AnyVec`] iterator.
 pub type IterMut<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementMutIterItem<'a, AnyVecPtr<Traits>>>;

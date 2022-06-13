@@ -215,14 +215,14 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits>>{
         if index < self.len(){
-            Some(unsafe{ self.get_mut_unchecked(index) })
+            Some(unsafe{ self.get_unchecked_mut(index) })
         } else {
             None
         }
     }
 
     #[inline]
-    pub unsafe fn get_mut_unchecked(&mut self, index: usize) -> ElementMut<Traits> {
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits> {
         refs::Mut(self.get_element(index))
     }
 

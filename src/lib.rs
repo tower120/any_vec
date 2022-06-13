@@ -81,6 +81,7 @@ mod iter;
 
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
+pub use iter::{/*Iter, */IterRef, IterMut};
 
 pub mod any_value;
 pub mod ops;

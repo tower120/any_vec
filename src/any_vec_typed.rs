@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
+use std::slice;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{remove, swap_remove, TempValue};
@@ -98,9 +99,39 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
+    pub fn iter(&self) -> slice::Iter<'a, T> {
+        self.as_slice().iter()
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> slice::IterMut<'a, T> {
+        self.as_mut_slice().iter_mut()
+    }
+
+    #[inline]
+    pub fn get(&self, index: usize) -> Option<&'a T> {
+        self.as_slice().get(index)
+    }
+
+    #[inline]
+    pub unsafe fn get_unchecked(&self, index: usize) -> &'a T {
+        self.as_slice().get_unchecked(index)
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, index: usize) -> Option<&'a mut T>{
+        self.as_mut_slice().get_mut(index)
+    }
+
+    #[inline]
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &'a mut T {
+        self.as_mut_slice().get_unchecked_mut(index)
+    }
+
+    #[inline]
     pub fn as_slice(&self) -> &'a [T] {
         unsafe{
-            std::slice::from_raw_parts(
+            slice::from_raw_parts(
                 self.this().mem.as_ptr().cast::<T>(),
                 self.this().len,
             )
@@ -110,7 +141,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
-            std::slice::from_raw_parts_mut(
+            slice::from_raw_parts_mut(
                 self.this_mut().mem.as_ptr().cast::<T>(),
                 self.this().len,
             )
