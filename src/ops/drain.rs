@@ -13,15 +13,15 @@ use crate::iter::Iter;
 use crate::refs::Ref;
 use crate::traits::Trait;
 
-pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>
+pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
     iter: Iter<'a, AnyVecPtr>,
     start: usize,
     original_len: usize,
-    phantom: PhantomData<&'a mut T>
+    phantom: PhantomData<&'a mut AnyVecRaw>
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drain<'a, AnyVecPtr, T>
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
 {
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
@@ -53,19 +53,19 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drain<'a, AnyVecPtr, T>
     #[inline]
     fn ptr_at(&self, index: usize) -> *mut u8 {
     unsafe{
-        if Unknown::is::<T>(){
+        if Unknown::is::<AnyVecPtr::Type>(){
             self.any_vec_raw().mem.as_ptr()
                 .add(self.any_vec_raw().element_layout().size() * index)
         } else {
-            self.any_vec_raw().mem.as_ptr().cast::<T>()
+            self.any_vec_raw().mem.as_ptr().cast::<AnyVecPtr::Type>()
                 .add(index) as *mut u8
         }
     }
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Iterator
-    for Drain<'a, AnyVecPtr, T>
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterator
+    for Drain<'a, AnyVecPtr>
 {
     type Item = Element<'a, AnyVecPtr>;
 
@@ -75,18 +75,18 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Iterator
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drop for Drain<'a, AnyVecPtr, T>
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 {
     fn drop(&mut self) {
         // 1. drop the rest of the elements
-        if Unknown::is::<T>(){
+        if Unknown::is::<AnyVecPtr::Type>(){
              if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
                  (drop_fn)(self.ptr_at(self.iter.index), self.iter.end - self.iter.index);
             }
-        } else if mem::needs_drop::<T>(){
+        } else if mem::needs_drop::<AnyVecPtr::Type>(){
             for index in self.iter.index..self.iter.end{
                 unsafe{
-                    ptr::drop_in_place(self.ptr_at(index) as *mut T);
+                    ptr::drop_in_place(self.ptr_at(index) as *mut AnyVecPtr::Type);
                 }
             }
         }
@@ -99,7 +99,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drop for Drain<'a, AnyVecPtr, T>
 
             let src = self.ptr_at(self.iter.end);
             let dst = self.ptr_at(self.start);
-            if Unknown::is::<T>(){
+            if Unknown::is::<AnyVecPtr::Type>(){
                 ptr::copy(
                     src,
                     dst,
@@ -107,8 +107,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Drop for Drain<'a, AnyVecPtr, T>
                 );
             } else {
                 ptr::copy(
-                    src as * const T,
-                    dst as *mut T,
+                    src as * const AnyVecPtr::Type,
+                    dst as *mut AnyVecPtr::Type,
                     copy_count
                 );
             }

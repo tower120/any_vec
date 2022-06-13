@@ -3,16 +3,17 @@ use std::ptr;
 use crate::copy_bytes_nonoverlapping;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
+use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::temp::Operation;
 
-pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>{
+pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: *mut u8,
     last_index: usize,
-    phantom: PhantomData<&'a mut T>,
+    phantom: PhantomData<&'a mut AnyVecRaw>,
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> SwapRemove<'a, AnyVecPtr, T>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, index: usize) -> Self{
         let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
@@ -22,8 +23,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> SwapRemove<'a, AnyVecPtr, T>{
         any_vec_raw.len = index;
 
         let element: *mut u8 = unsafe{
-            if !Unknown::is::<T>(){
-                any_vec_raw.mem.cast::<T>().as_ptr().add(index) as *mut u8
+            if !Unknown::is::<AnyVecPtr::Type>(){
+                any_vec_raw.mem.cast::<AnyVecPtr::Type>().as_ptr().add(index) as *mut u8
             } else {
                 any_vec_raw.mem.as_ptr().add(any_vec_raw.element_layout().size() * index)
             }
@@ -32,9 +33,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> SwapRemove<'a, AnyVecPtr, T>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for SwapRemove<'a, AnyVecPtr, T>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = T;
+    type Type = AnyVecPtr::Type;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {
@@ -52,17 +53,17 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for SwapRemove<'a, AnyV
         // 2. overwrite with last element
         let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
         let last_element =
-            if !Unknown::is::<T>() {
-                any_vec_raw.mem.cast::<T>().as_ptr().add(self.last_index) as *const u8
+            if !Unknown::is::<Self::Type>() {
+                any_vec_raw.mem.cast::<Self::Type>().as_ptr().add(self.last_index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.last_index)
             };
 
         if self.element as *const u8 != last_element {
-            if !Unknown::is::<T>() {
+            if !Unknown::is::<Self::Type>() {
                 ptr::copy_nonoverlapping
-                    (last_element as *const T, self.element as *mut T, 1);
+                    (last_element as *const Self::Type, self.element as *mut Self::Type, 1);
             } else {
                 copy_bytes_nonoverlapping
                     (last_element, self.element, any_vec_raw.element_layout().size());

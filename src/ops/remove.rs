@@ -2,16 +2,17 @@ use std::marker::PhantomData;
 use std::ptr;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
+use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::temp::Operation;
 
-pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static = Unknown>{
+pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     index: usize,
     last_index: usize,
-    phantom: PhantomData<&'a mut T>
+    phantom: PhantomData<&'a mut AnyVecRaw>
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Remove<'a, AnyVecPtr, T>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Remove<'a, AnyVecPtr>{
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, index: usize) -> Self{
         // 1. mem::forget and element drop panic "safety".
@@ -23,9 +24,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Remove<'a, AnyVecPtr, T>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPtr, T>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = T;
+    type Type = AnyVecPtr::Type;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {
@@ -36,8 +37,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
     fn bytes(&self) -> *const u8 {
         unsafe{
             let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
-            if !Unknown::is::<T>(){
-                any_vec_raw.mem.cast::<T>().as_ptr().add(self.index) as *const u8
+            if !Unknown::is::<Self::Type>(){
+                any_vec_raw.mem.cast::<Self::Type>().as_ptr()
+                    .add(self.index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.index)
@@ -49,8 +51,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, T: 'static> Operation for Remove<'a, AnyVecPt
     fn consume(&mut self) {
     unsafe{
         // 2. shift everything left
-        if !Unknown::is::<T>() {
-            let dst = self.bytes() as *mut T;
+        if !Unknown::is::<Self::Type>() {
+            let dst = self.bytes() as *mut Self::Type;
             let src = dst.add(1);
             ptr::copy(src, dst,self.last_index - self.index);
         } else {

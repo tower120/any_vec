@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::ptr::NonNull;
+use crate::any_value::Unknown;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
@@ -47,7 +48,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
 {
     type Item = IterItem::Item;
 
-    // TODO: type optimized traverse?
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.end{
@@ -55,8 +55,14 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
         } else {
             unsafe{
                 let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
-                let size = any_vec_raw.element_layout().size();
-                let element_ptr = any_vec_raw.mem.as_ptr().add(size * self.index);
+                let element_ptr =
+                    if Unknown::is::<AnyVecPtr::Type>() {
+                        let size = any_vec_raw.element_layout().size();
+                        any_vec_raw.mem.as_ptr().add(size * self.index)
+                    } else {
+                        any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Type>()
+                            .add(self.index) as *mut u8
+                    };
                 let element = Element::new(
                     self.any_vec_ptr,
                     NonNull::new_unchecked(element_ptr)

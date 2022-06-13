@@ -63,8 +63,8 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     pub fn remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(remove::Remove::<_, T>::new(
-                AnyVecRawPtr::from(self.any_vec),
+            TempValue::<_>::new(remove::Remove::new(
+                AnyVecRawPtr::<T>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -74,8 +74,8 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     pub fn swap_remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(swap_remove::SwapRemove::<_, T>::new(
-                AnyVecRawPtr::from(self.any_vec),
+            TempValue::<_>::new(swap_remove::SwapRemove::new(
+                AnyVecRawPtr::<T>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -83,8 +83,8 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> impl Iterator<Item = T> {
         let Range{start, end} = into_range(self.len(), range);
-        Drain::<_, T>::new(
-            AnyVecRawPtr::from(self.any_vec),
+        Drain::new(
+            AnyVecRawPtr::<T>::from(self.any_vec),
             start,
             end
         ).map(|e| unsafe{
