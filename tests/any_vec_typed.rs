@@ -134,3 +134,18 @@ pub fn downcast_ref_test(){
     assert_eq!(vec1.len(), 0);
     assert_eq!(vec2.len(), 0);
 }
+
+#[test]
+fn any_vec_into_iter_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+    vec.push(1);
+    vec.push(10);
+    vec.push(100);
+
+    let mut sum = 0;
+    for e in vec{
+        sum += *e;
+    }
+    assert_eq!(sum, 111);
+}

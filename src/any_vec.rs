@@ -8,7 +8,7 @@ use std::slice;
 use crate::{AnyVecTyped, into_range, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain};
+use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain, drain};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
@@ -357,6 +357,26 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
     }
 }
 
+impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a AnyVec<Traits>{
+    type Item = ElementRef<'a, Traits>;
+    type IntoIter = IterRef<'a, Traits>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
+    type Item = ElementMut<'a, Traits>;
+    type IntoIter = IterMut<'a, Traits>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 /// Typed view to &[`AnyVec`].
 ///
 /// You can get it from [`AnyVec::downcast_ref`].
@@ -365,6 +385,16 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
 pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
 
+impl<'a, T: 'static> IntoIterator for AnyVecRef<'a, T>{
+    type Item = &'a T;
+    type IntoIter = slice::Iter<'a, T>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 /// Typed view to &mut [`AnyVec`].
 ///
 /// You can get it from [`AnyVec::downcast_mut`].
@@ -372,3 +402,13 @@ pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
 pub type AnyVecMut<'a, T> = refs::Mut<AnyVecTyped<'a, T>>;
+
+impl<'a, T: 'static> IntoIterator for AnyVecMut<'a, T>{
+    type Item = &'a mut T;
+    type IntoIter = slice::IterMut<'a, T>;
+
+    #[inline]
+    fn into_iter(mut self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}

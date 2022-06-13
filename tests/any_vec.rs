@@ -251,3 +251,20 @@ fn any_vec_insert_back(){
     }
     assert_equal(vec.as_slice().iter().copied(), 0..100);
 }
+
+#[test]
+fn any_vec_into_iter_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    {
+        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+        vec.push(1);
+        vec.push(10);
+        vec.push(100);
+    }
+
+    let mut sum = 0;
+    for e in &any_vec{
+        sum += e.downcast_ref::<usize>().unwrap();
+    }
+    assert_eq!(sum, 111);
+}

@@ -17,8 +17,7 @@ pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
     iter: Iter<'a, AnyVecPtr>,
     start: usize,
-    original_len: usize,
-    phantom: PhantomData<&'a mut AnyVecRaw>
+    original_len: usize
 }
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
@@ -35,8 +34,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
         Self{
             iter: Iter::new(any_vec_ptr, start, end),
             start,
-            original_len,
-            phantom: PhantomData
+            original_len
         }
     }
 
