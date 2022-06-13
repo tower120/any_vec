@@ -7,6 +7,7 @@ use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::element::{Element};
 use crate::refs::{Mut, Ref};
+use crate::traits::Trait;
 
 // TODO :Additional [`AnyVec`] Iterator operations.
 /*pub trait AnyVecIterator: Iterator{
@@ -91,6 +92,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> ExactS
 impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedIterator
     for Iter<'a, AnyVecPtr, IterItem>
 {}
+
+unsafe impl<'a, Traits: ?Sized + Send + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Send
+    for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
+
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Sync
+    for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
 
 
 pub struct ElementIterItem<'a, AnyVecPtr: IAnyVecRawPtr>(
