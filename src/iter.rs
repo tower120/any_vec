@@ -14,7 +14,9 @@ use crate::traits::Trait;
     fn lazy_cloned(self) -> impl
 }*/
 
-/// [`AnyVec`] iterator
+/// [`AnyVec`] iterator.
+///
+/// [`AnyVec`]: crate::AnyVec
 pub struct Iter<'a,
     AnyVecPtr: IAnyVecRawPtr,
     IterItem: IteratorItem<'a, AnyVecPtr> = ElementIterItem<'a, AnyVecPtr>>
@@ -93,9 +95,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
     for Iter<'a, AnyVecPtr, IterItem>
 {}
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Send + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Send
     for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Sync + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Sync
     for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
 
@@ -141,7 +145,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementMutIte
 //pub type Iter<'a, Traits>    = IterBase<'a, Traits, ElementIterItem<'a, Traits>>;
 
 /// Mutable reference [`AnyVec`] iterator.
+///
+/// [`AnyVec`]: crate::AnyVec
 pub type IterRef<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementRefIterItem<'a, AnyVecPtr<Traits>>>;
 
 /// Reference [`AnyVec`] iterator.
+///
+/// [`AnyVec`]: crate::AnyVec
 pub type IterMut<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementMutIterItem<'a, AnyVecPtr<Traits>>>;

@@ -21,6 +21,9 @@ use crate::traits::{Cloneable, Trait};
 /// `Element` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
 /// This is done, so you don't have to keep ElementRef/Mut alive, while casting to concrete type.
 /// [`AnyValueMut`] implemented too - for the sake of interface compatibility.
+///
+/// [`AnyVec`]: crate::AnyVec
+/// [`AnyVec::get`]: crate::AnyVec::get
 pub struct Element<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: NonNull<u8>,
@@ -77,7 +80,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Element<'a, AnyVecPtr>{
 }
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for Element<'a, AnyVecPtr>{
-    type Type = Unknown;
+    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
@@ -112,6 +115,8 @@ unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, AnyVecPtr<Tr
 /// Reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get`].
+///
+/// [`AnyVec::get`]: crate::AnyVec::get
 pub type ElementRef<'a, Traits> = refs::Ref<ManuallyDrop<
     Element<'a, AnyVecPtr<Traits>>
 >>;
@@ -119,6 +124,8 @@ pub type ElementRef<'a, Traits> = refs::Ref<ManuallyDrop<
 /// Mutable reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get_mut`].
+///
+/// [`AnyVec::get_mut`]: crate::AnyVec::get_mut
 pub type ElementMut<'a, Traits> = refs::Mut<ManuallyDrop<
     Element<'a, AnyVecPtr<Traits>>
 >>;
