@@ -2,7 +2,9 @@ use crate::any_value::{AnyValue, AnyValueMut, Unknown};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::{mem, ptr};
-use std::cmp::min;
+use std::cmp::{min, Ordering};
+use std::iter::{Chain, Cloned, Copied, Cycle, Enumerate, Filter, FilterMap, FlatMap, Flatten, Fuse, FusedIterator, Inspect, Intersperse, IntersperseWith, Map, MapWhile, Peekable, Product, Rev, Scan, Skip, SkipWhile, StepBy, Sum, Take, TakeWhile, TrustedRandomAccessNoCoerce, Zip};
+use std::ops::{Deref, DerefMut, Residual, Try};
 use std::ptr::NonNull;
 use std::thread::current;
 use crate::AnyVec;
@@ -62,7 +64,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
     }
 }
 
-// TODO: try deref to iter instead?
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterator
     for Drain<'a, AnyVecPtr>
 {
@@ -72,7 +73,24 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterator
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
+impl<'a, AnyVecPtr: IAnyVecRawPtr> ExactSizeIterator
+    for Drain<'a, AnyVecPtr>
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
+}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> FusedIterator
+    for Drain<'a, AnyVecPtr>
+{}
+
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 {
