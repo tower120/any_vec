@@ -1,3 +1,4 @@
+use std::iter::{FusedIterator, Map};
 use std::marker::PhantomData;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
@@ -82,7 +83,9 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         }
     }
 
-    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> impl Iterator<Item = T> {
+    pub fn drain(&mut self, range: impl RangeBounds<usize>)
+        -> impl ExactSizeIterator<Item = T> + FusedIterator
+    {
         let Range{start, end} = into_range(self.len(), range);
         Drain::new(
             AnyVecRawPtr::<T>::from(self.any_vec),

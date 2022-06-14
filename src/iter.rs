@@ -95,6 +95,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
     for Iter<'a, AnyVecPtr, IterItem>
 {}
 
+// According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
 #[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Send + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Send
     for Iter<'a, AnyVecPtr<Traits>, IterItem> {}

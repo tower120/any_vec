@@ -6,6 +6,7 @@ use crate::element::{Element};
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::iter::Iter;
+use crate::any_vec_ptr;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
@@ -21,6 +22,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
         debug_assert!(start <= end);
         let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
         let original_len = any_vec_raw.len;
+        debug_assert!(end <= original_len);
 
         // mem::forget and element drop panic "safety".
         any_vec_raw.len = start;
@@ -87,43 +89,30 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> FusedIterator
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 {
     fn drop(&mut self) {
+        use any_vec_ptr::utils::*;
+
         // 1. drop the rest of the elements
-        if Unknown::is::<AnyVecPtr::Element>(){
-             if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
-                 (drop_fn)(self.ptr_at(self.iter.index), self.iter.end - self.iter.index);
-            }
-        } else if mem::needs_drop::<AnyVecPtr::Element>(){
-            for index in self.iter.index..self.iter.end{
-                unsafe{
-                    ptr::drop_in_place(self.ptr_at(index) as *mut AnyVecPtr::Element);
-                }
-            }
+        unsafe{
+            drop_elements_range(
+                self.iter.any_vec_ptr,
+                self.iter.index,
+                self.iter.end
+            );
         }
 
         // 2. mem move
-        let distance = self.iter.end - self.start;
         unsafe{
             let elements_left = self.original_len - self.iter.end;
-            let copy_count = min(distance, elements_left);
-
-            let src = self.ptr_at(self.iter.end);
-            let dst = self.ptr_at(self.start);
-            if Unknown::is::<AnyVecPtr::Element>(){
-                ptr::copy(
-                    src,
-                    dst,
-                    self.any_vec_raw().element_layout().size() * copy_count
-                );
-            } else {
-                ptr::copy(
-                    src as * const AnyVecPtr::Element,
-                    dst as *mut AnyVecPtr::Element,
-                    copy_count
-                );
-            }
+            move_elements_at(
+                self.iter.any_vec_ptr,
+                self.iter.end,
+                self.start,
+                elements_left
+            );
         }
 
         // 3. len
+        let distance = self.iter.end - self.start;
         self.any_vec_raw_mut().len = self.original_len - distance;
     }
 }

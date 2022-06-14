@@ -91,3 +91,70 @@ impl<Traits: ?Sized + Trait> IAnyVecPtr<Traits> for AnyVecPtr<Traits> {
         self.ptr
     }
 }
+
+
+/// Type knowledge optimized operations.
+pub(crate) mod utils{
+    use std::{mem, ptr};
+    use crate::any_value::Unknown;
+    use crate::any_vec_ptr::IAnyVecRawPtr;
+
+    #[inline]
+    pub unsafe fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
+        -> *mut u8
+    {
+        let any_vec_raw = any_vec_ptr.any_vec_raw().as_mut();
+
+        if Unknown::is::<AnyVecPtr::Element>(){
+            any_vec_raw.mem.as_ptr()
+                .add(any_vec_raw.element_layout().size() * index)
+        } else {
+            any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
+                .add(index) as *mut u8
+        }
+    }
+
+    #[inline]
+    pub unsafe fn move_elements_at<AnyVecPtr: IAnyVecRawPtr>
+        (any_vec_ptr: AnyVecPtr, src_index: usize, dst_index: usize, len: usize)
+    {
+        let src = element_ptr_at(any_vec_ptr, src_index);
+        let dst = element_ptr_at(any_vec_ptr, dst_index);
+        if Unknown::is::<AnyVecPtr::Element>(){
+            let any_vec_raw = any_vec_ptr.any_vec_raw().as_ref();
+            ptr::copy(
+                src,
+                dst,
+                any_vec_raw.element_layout().size() * len
+            );
+        } else {
+            ptr::copy(
+                src as * const AnyVecPtr::Element,
+                dst as *mut AnyVecPtr::Element,
+                len
+            );
+        }
+    }
+
+    #[inline]
+    pub unsafe fn drop_elements_range<AnyVecPtr: IAnyVecRawPtr>
+        (any_vec_ptr: AnyVecPtr, start_index: usize, end_index: usize)
+    {
+        debug_assert!(start_index <= end_index);
+
+        if Unknown::is::<AnyVecPtr::Element>(){
+            let any_vec_raw = any_vec_ptr.any_vec_raw().as_ref();
+            if let Some(drop_fn) = any_vec_raw.drop_fn(){
+                (drop_fn)(
+                    element_ptr_at(any_vec_ptr, start_index),
+                    end_index - start_index
+                );
+            }
+        } else if mem::needs_drop::<AnyVecPtr::Element>(){
+            // drop as slice. This is marginally faster then one by one.
+            let start_ptr = element_ptr_at(any_vec_ptr, start_index) as *mut AnyVecPtr::Element;
+            let to_drop = ptr::slice_from_raw_parts_mut(start_ptr, end_index - start_index);
+            ptr::drop_in_place(to_drop);
+        }
+    }
+}
