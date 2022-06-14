@@ -14,6 +14,7 @@ use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
+use crate::ops::splice::Splice;
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -314,6 +315,21 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
         let Range{start, end} = into_range(self.len(), range);
         Drain::new(AnyVecPtr::from(self), start, end)
+    }
+
+    /// # Panics
+    ///
+    /// Panics if the starting point is greater than the end point or if
+    /// the end point is greater than the length of the vector.
+    ///
+    pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
+        -> Splice<AnyVecPtr<Traits>, I::IntoIter>
+    where
+        I::IntoIter: ExactSizeIterator,
+        I::Item: AnyValue
+    {
+        let Range{start, end} = into_range(self.len(), range);
+        Splice::new(AnyVecPtr::from(self), start, end, replace_with.into_iter())
     }
 
     #[inline]

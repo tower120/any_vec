@@ -1,10 +1,6 @@
-use crate::any_value::{Unknown};
-use std::{mem, ptr};
-use std::cmp::{min};
 use std::iter::{FusedIterator};
 use crate::element::{Element};
 use crate::any_vec_ptr::IAnyVecRawPtr;
-use crate::any_vec_raw::AnyVecRaw;
 use crate::iter::Iter;
 use crate::any_vec_ptr;
 
@@ -32,29 +28,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
             start,
             original_len
         }
-    }
-
-    #[inline]
-    fn any_vec_raw(&self) -> &AnyVecRaw{
-        unsafe { self.iter.any_vec_ptr.any_vec_raw().as_ref() }
-    }
-
-    #[inline]
-    fn any_vec_raw_mut(&mut self) -> &mut AnyVecRaw{
-        unsafe { self.iter.any_vec_ptr.any_vec_raw().as_mut() }
-    }
-
-    #[inline]
-    fn ptr_at(&self, index: usize) -> *mut u8 {
-    unsafe{
-        if Unknown::is::<AnyVecPtr::Element>(){
-            self.any_vec_raw().mem.as_ptr()
-                .add(self.any_vec_raw().element_layout().size() * index)
-        } else {
-            self.any_vec_raw().mem.as_ptr().cast::<AnyVecPtr::Element>()
-                .add(index) as *mut u8
-        }
-    }
     }
 }
 
@@ -113,6 +86,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 
         // 3. len
         let distance = self.iter.end - self.start;
-        self.any_vec_raw_mut().len = self.original_len - distance;
+        let any_vec_raw = unsafe{ self.iter.any_vec_ptr.any_vec_raw().as_mut() };
+        any_vec_raw.len = self.original_len - distance;
     }
 }

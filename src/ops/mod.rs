@@ -2,6 +2,7 @@ mod temp;
 pub(crate) mod swap_remove;
 pub(crate) mod remove;
 pub(crate) mod drain;
+pub(crate) mod splice;
 
 pub use temp::TempValue;
 
