@@ -96,13 +96,25 @@ impl<Traits: ?Sized + Trait> IAnyVecPtr<Traits> for AnyVecPtr<Traits> {
 /// Type knowledge optimized operations.
 pub(crate) mod utils{
     use std::{mem, ptr};
+    use std::mem::size_of;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
 
     #[inline]
-    pub unsafe fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
-        -> *mut u8
+    pub fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
     {
+        if Unknown::is::<AnyVecPtr::Element>(){
+            let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_ref() };
+            any_vec_raw.element_layout().size()
+        } else {
+            size_of::<AnyVecPtr::Element>()
+        }
+    }
+
+    #[inline]
+    pub fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
+        -> *mut u8
+    { unsafe{
         let any_vec_raw = any_vec_ptr.any_vec_raw().as_mut();
 
         if Unknown::is::<AnyVecPtr::Element>(){
@@ -112,7 +124,7 @@ pub(crate) mod utils{
             any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
                 .add(index) as *mut u8
         }
-    }
+    } }
 
     #[inline]
     pub unsafe fn move_elements_at<AnyVecPtr: IAnyVecRawPtr>

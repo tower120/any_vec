@@ -312,6 +312,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     ///
     /// [`mem::forget`]: std::mem::forget
     ///
+    #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
         let Range{start, end} = into_range(self.len(), range);
         Drain::new(AnyVecPtr::from(self), start, end)
@@ -322,6 +323,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     /// Panics if the starting point is greater than the end point or if
     /// the end point is greater than the length of the vector.
     ///
+    #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
         -> Splice<AnyVecPtr<Traits>, I::IntoIter>
     where

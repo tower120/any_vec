@@ -9,6 +9,7 @@ use crate::ops::{remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::ops::drain::Drain;
+use crate::ops::splice::Splice;
 
 /// Concrete type [`AnyVec`] representation.
 ///
@@ -83,6 +84,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         }
     }
 
+    #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>)
         -> impl ExactSizeIterator<Item = T> + FusedIterator
     {
@@ -91,6 +93,27 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
             AnyVecRawPtr::<T>::from(self.any_vec),
             start,
             end
+        ).map(|e| unsafe{
+            e.downcast_unchecked::<T>()
+        })
+    }
+
+    #[inline]
+    pub fn splice<I>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
+        -> impl ExactSizeIterator<Item = T> + FusedIterator
+    where
+        I: IntoIterator<Item = T>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let Range{start, end} = into_range(self.len(), range);
+        let replace_with = replace_with.into_iter()
+            .map(|e| AnyValueWrapper::new(e));
+
+        Splice::new(
+            AnyVecRawPtr::<T>::from(self.any_vec),
+            start,
+            end,
+            replace_with
         ).map(|e| unsafe{
             e.downcast_unchecked::<T>()
         })

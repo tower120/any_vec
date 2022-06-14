@@ -84,21 +84,24 @@ where
 {
     fn drop(&mut self) {
         use any_vec_ptr::utils::*;
-        let any_vec_raw = unsafe{self.iter.any_vec_ptr.any_vec_raw().as_mut()};
+        let any_vec_ptr = self.iter.any_vec_ptr;
 
         let elements_left = self.original_len - self.iter.end;
         let replace_end = self.start + self.replace_with.len();
         let new_len = replace_end + elements_left;
 
         // 0. capacity.
-        if new_len > any_vec_raw.capacity(){
-            any_vec_raw.grow();
+        {
+            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw().as_mut()};
+            if new_len > any_vec_raw.capacity(){
+                any_vec_raw.grow();
+            }
         }
 
         // 1. drop elements.
         unsafe{
             drop_elements_range(
-                self.iter.any_vec_ptr,
+                any_vec_ptr,
                 self.iter.index,
                 self.iter.end
             );
@@ -107,19 +110,17 @@ where
         // 2. move elements
         unsafe{
             move_elements_at(
-                self.iter.any_vec_ptr,
+                any_vec_ptr,
                 self.iter.end,
                 replace_end,
                 elements_left
             );
         }
 
-        // TODO: type-optimization
         // 3. move replace_with in
         unsafe{
-            let element_size = any_vec_raw.element_layout().size();
-            let mut ptr = any_vec_raw.mem.as_ptr().add(element_size * self.start);
-
+            let element_size = element_size(any_vec_ptr);
+            let mut ptr = element_ptr_at(any_vec_ptr, self.start);
             while let Some(replace_element) = self.replace_with.next() {
                 replace_element.move_into(ptr);
                 ptr = ptr.add(element_size);
@@ -127,6 +128,9 @@ where
         }
 
         // 4. restore len
-        any_vec_raw.len = new_len;
+        {
+            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw().as_mut()};
+            any_vec_raw.len = new_len;
+        }
     }
 }
