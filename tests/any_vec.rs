@@ -246,10 +246,12 @@ fn any_vec_splice_test() {
     any_vec.push(AnyValueWrapper::new(String::from("4")));
 
     let mut any_vec2: AnyVec = AnyVec::new::<String>();
-    for e in any_vec.splice(1..4, [
+    let drained = any_vec.splice(1..4, [
         AnyValueWrapper::new(String::from("100")),
         AnyValueWrapper::new(String::from("200"))
-    ]){
+    ]);
+    assert_eq!(drained.len(), 2);   // Test ExactSizeIterator
+    for e in drained{
         any_vec2.push(e);
     }
     assert_equal(any_vec2.downcast_ref::<String>().unwrap().as_slice(), &[

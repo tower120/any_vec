@@ -3,6 +3,7 @@ use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::{any_vec_ptr, Iter};
 use crate::any_value::AnyValue;
 use crate::element::Element;
+use crate::ops::element_iter::Operation;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
 where
@@ -41,40 +42,24 @@ where
     }
 }
 
-// TODO: make impl macro for
-impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Iterator
-    for Splice<'a, AnyVecPtr, ReplaceIter>
+impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Operation
+for
+    Splice<'a, AnyVecPtr, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue
 {
-    type Item = Element<'a, AnyVecPtr>;
+    type Iter = Iter<'a, AnyVecPtr>;
 
     #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+    fn iter(&self) -> &Self::Iter {
+        &self.iter
     }
 
     #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
-    }
-}
-impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> ExactSizeIterator
-    for Splice<'a, AnyVecPtr, ReplaceIter>
-where
-    ReplaceIter::Item: AnyValue
-{
-    #[inline]
-    fn len(&self) -> usize {
-        self.iter.len()
+    fn iter_mut(&mut self) -> &mut Self::Iter {
+        &mut self.iter
     }
 }
-impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> FusedIterator
-    for Splice<'a, AnyVecPtr, ReplaceIter>
-where
-    ReplaceIter::Item: AnyValue
-{}
-
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Drop
 for

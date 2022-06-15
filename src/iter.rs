@@ -15,6 +15,15 @@ use crate::traits::Trait;
     fn lazy_cloned(self) -> impl
 }*/
 
+pub trait ElementIterator:
+    DoubleEndedIterator + ExactSizeIterator + FusedIterator
+{}
+
+impl<T> ElementIterator for T
+where
+    T: DoubleEndedIterator + ExactSizeIterator + FusedIterator
+{}
+
 /// [`AnyVec`] iterator.
 ///
 /// [`AnyVec`]: crate::AnyVec

@@ -8,13 +8,13 @@ use std::slice;
 use crate::{AnyVecTyped, into_range, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, SwapRemove, remove, Remove, swap_remove, Drain};
+use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
+use crate::ops::{ElementIter, Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
-use crate::ops::splice::Splice;
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -315,7 +315,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
         let Range{start, end} = into_range(self.len(), range);
-        Drain::new(AnyVecPtr::from(self), start, end)
+        ElementIter(drain::Drain::new(
+            AnyVecPtr::from(self),
+            start,
+            end
+        ))
     }
 
     /// # Panics
@@ -325,13 +329,18 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     ///
     #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
-        -> Splice<AnyVecPtr<Traits>, I::IntoIter>
+        -> Splice<Traits, I::IntoIter>
     where
         I::IntoIter: ExactSizeIterator,
         I::Item: AnyValue
     {
         let Range{start, end} = into_range(self.len(), range);
-        Splice::new(AnyVecPtr::from(self), start, end, replace_with.into_iter())
+        ElementIter(splice::Splice::new(
+            AnyVecPtr::from(self),
+            start,
+            end,
+            replace_with.into_iter()
+        ))
     }
 
     #[inline]

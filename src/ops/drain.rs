@@ -3,6 +3,7 @@ use crate::element::{Element};
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::iter::Iter;
 use crate::any_vec_ptr;
+use crate::ops::element_iter::Operation;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
@@ -31,33 +32,22 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterator
-    for Drain<'a, AnyVecPtr>
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation
+for
+    Drain<'a, AnyVecPtr>
 {
-    type Item = Element<'a, AnyVecPtr>;
+    type Iter = Iter<'a, AnyVecPtr>;
 
     #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+    fn iter(&self) -> &Self::Iter {
+        &self.iter
     }
 
     #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+    fn iter_mut(&mut self) -> &mut Self::Iter {
+        &mut self.iter
     }
 }
-impl<'a, AnyVecPtr: IAnyVecRawPtr> ExactSizeIterator
-    for Drain<'a, AnyVecPtr>
-{
-    #[inline]
-    fn len(&self) -> usize {
-        self.iter.len()
-    }
-}
-impl<'a, AnyVecPtr: IAnyVecRawPtr> FusedIterator
-    for Drain<'a, AnyVecPtr>
-{}
-
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 {

@@ -1,10 +1,12 @@
 mod temp;
+mod element_iter;
 pub(crate) mod swap_remove;
 pub(crate) mod remove;
 pub(crate) mod drain;
 pub(crate) mod splice;
 
 pub use temp::TempValue;
+pub use element_iter::ElementIter;
 
 use crate::any_vec_ptr::AnyVecPtr;
 
@@ -27,4 +29,7 @@ pub type SwapRemove<'a, Traits> = TempValue<swap_remove::SwapRemove<'a, AnyVecPt
 /// This is created by [`AnyVec::drain`].
 ///
 /// [`AnyVec::drain`]: crate::AnyVec::drain
-pub type Drain<'a, Traits> = drain::Drain<'a, AnyVecPtr<Traits>>;
+pub type Drain<'a, Traits> = ElementIter<drain::Drain<'a, AnyVecPtr<Traits>>>;
+
+// TODO: description!!!
+pub type Splice<'a, Traits, I> = ElementIter<splice::Splice<'a, AnyVecPtr<Traits>, I>>;
