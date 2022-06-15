@@ -4,6 +4,7 @@ use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::element::{Element};
 use crate::refs::{Mut, Ref};
@@ -54,24 +55,14 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
         if self.index == self.end{
             None
         } else {
-            unsafe{
-                let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
-                let element_ptr =
-                    if Unknown::is::<AnyVecPtr::Element>() {
-                        let size = any_vec_raw.element_layout().size();
-                        any_vec_raw.mem.as_ptr().add(size * self.index)
-                    } else {
-                        any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
-                            .add(self.index) as *mut u8
-                    };
-                let element = Element::new(
-                    self.any_vec_ptr,
-                    NonNull::new_unchecked(element_ptr)
-                );
+            let element_ptr = element_ptr_at(self.any_vec_ptr, self.index);
+            let element = Element::new(
+                self.any_vec_ptr,
+                unsafe{NonNull::new_unchecked(element_ptr)}
+            );
 
-                self.index += 1;
-                Some(IterItem::element_to_item(element))
-            }
+            self.index += 1;
+            Some(IterItem::element_to_item(element))
         }
     }
 
@@ -79,6 +70,26 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
     fn size_hint(&self) -> (usize, Option<usize>) {
         let size = self.end - self.index;
         (size, Some(size))
+    }
+}
+
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> DoubleEndedIterator
+    for Iter<'a, AnyVecPtr, IterItem>
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.end == self.index{
+            None
+        } else {
+            self.end -= 1;
+            let element_ptr = element_ptr_at(self.any_vec_ptr, self.end);
+            let element = Element::new(
+                self.any_vec_ptr,
+                unsafe{NonNull::new_unchecked(element_ptr)}
+            );
+
+            Some(IterItem::element_to_item(element))
+        }
     }
 }
 
