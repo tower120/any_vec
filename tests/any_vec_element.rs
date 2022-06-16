@@ -1,6 +1,6 @@
 use std::any::TypeId;
-use itertools::{assert_equal, Itertools};
-use any_vec::any_value::{AnyValue, AnyValueCloneable, AnyValueWrapper, LazyClone};
+use itertools::{assert_equal};
+use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
 use any_vec::traits::Cloneable;
 
