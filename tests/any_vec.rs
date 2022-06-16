@@ -233,6 +233,37 @@ fn any_vec_drain_in_the_middle_test() {
 }
 
 #[test]
+fn any_vec_splice_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("2")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
+
+    let mut any_vec2: AnyVec = AnyVec::new::<String>();
+    let drained = any_vec.splice(1..4, [
+        AnyValueWrapper::new(String::from("100")),
+        AnyValueWrapper::new(String::from("200"))
+    ]);
+    assert_eq!(drained.len(), 3);   // Test ExactSizeIterator
+    for e in drained{
+        any_vec2.push(e);
+    }
+    assert_equal(any_vec2.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("1"),
+        String::from("2"),
+        String::from("3"),
+    ]);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("100"),
+        String::from("200"),
+        String::from("4"),
+    ]);
+}
+
+#[test]
 fn any_vec_insert_front(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();

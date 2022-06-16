@@ -31,6 +31,9 @@
 //!
 //!```
 //!
+//! N.B. [`AnyVecTyped`] operations may be somewhat faster, due to the fact that
+//! compiler able to do better optimisation with full type knowledge.
+//!
 //! # Send, Sync, Clone
 //!
 //! You can make [`AnyVec`] [`Send`]able, [`Sync`]able, [`Cloneable`]:
@@ -78,14 +81,14 @@ mod any_vec_ptr;
 mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
+mod refs;
 
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
-pub use iter::{Iter, IterRef, IterMut};
+pub use iter::{ElementIterator, Iter, IterRef, IterMut};
 
 pub mod any_value;
 pub mod ops;
-pub mod refs;
 pub mod element;
 
 use std::ptr;

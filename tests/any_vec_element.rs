@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use itertools::assert_equal;
+use itertools::{assert_equal};
 use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
 use any_vec::traits::Cloneable;
@@ -139,5 +139,25 @@ fn any_vec_push_to_self_test(){
             String::from("1"),
             String::from("1")
         ]
+    );
+}
+
+#[test]
+fn any_vec_double_ended_iterator_test(){
+    let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+    {
+        let mut vec = any_vec.downcast_mut::<String>().unwrap();
+        vec.push(String::from("0"));
+        vec.push(String::from("1"));
+        vec.push(String::from("2"));
+    }
+
+    assert_equal(
+        any_vec.iter().rev().map(|e|e.downcast_ref::<String>().unwrap()),
+        [
+            String::from("2"),
+            String::from("1"),
+            String::from("0"),
+        ].iter()
     );
 }

@@ -148,9 +148,10 @@ impl AnyVecRaw {
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
+    // TODO: hide and make reserve!!
     #[cold]
     #[inline(never)]
-    fn grow(&mut self){
+    pub(crate) fn grow(&mut self){
         self.set_capacity(
              if self.capacity == 0 {2} else {self.capacity * 2}
         );
