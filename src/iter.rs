@@ -2,7 +2,7 @@ use std::iter::{FusedIterator};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
-use crate::any_value::Unknown;
+use crate::any_value::{LazyClone, Unknown};
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
@@ -26,7 +26,12 @@ where
 
 /// [`AnyVec`] iterator.
 ///
+/// Return [`Element`], [`ElementRef`] or [`ElementMut`] items, depending on `IterItem`.
+///
 /// [`AnyVec`]: crate::AnyVec
+/// [`Element`]: crate::element::Element
+/// [`ElementRef`]: crate::element::ElementRef
+/// [`ElementMut`]: crate::element::ElementMut
 pub struct Iter<'a,
     AnyVecPtr: IAnyVecRawPtr,
     IterItem: IteratorItem<'a, AnyVecPtr> = ElementIterItem<'a, AnyVecPtr>>
@@ -165,12 +170,14 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementMutIte
 
 //pub type Iter<'a, Traits>    = IterBase<'a, Traits, ElementIterItem<'a, Traits>>;
 
-/// Mutable reference [`AnyVec`] iterator.
+/// Reference [`AnyVec`] iterator. Return [`ElementRef`] items.
 ///
 /// [`AnyVec`]: crate::AnyVec
+/// [`ElementRef`]: crate::element::ElementRef
 pub type IterRef<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementRefIterItem<'a, AnyVecPtr<Traits>>>;
 
-/// Reference [`AnyVec`] iterator.
+/// Mutable reference [`AnyVec`] iterator. Return [`ElementMut`] items.
 ///
 /// [`AnyVec`]: crate::AnyVec
+/// [`ElementMut`]: crate::element::ElementMut
 pub type IterMut<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementMutIterItem<'a, AnyVecPtr<Traits>>>;

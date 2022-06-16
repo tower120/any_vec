@@ -1,20 +1,21 @@
 use std::iter::FusedIterator;
-use crate::Iter;
 use crate::traits::Trait;
 
-pub trait Operation{
+pub trait Iterable {
     type Iter: Iterator;
     fn iter(&self) -> &Self::Iter;
     fn iter_mut(&mut self) -> &mut Self::Iter;
 }
 
 /// Iterator over [`AnyVec`] slice. Will do some action on destruction.
-pub struct ElementIter<Op: Operation>(pub(crate) Op);
+///
+/// [`AnyVec`]: crate::AnyVec
+pub struct Iter<I: Iterable>(pub(crate) I);
 
-impl<Op: Operation> Iterator
-    for ElementIter<Op>
+impl<I: Iterable> Iterator
+    for Iter<I>
 {
-    type Item = <Op::Iter as Iterator>::Item;
+    type Item = <I::Iter as Iterator>::Item;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -27,10 +28,10 @@ impl<Op: Operation> Iterator
     }
 }
 
-impl<Op: Operation> DoubleEndedIterator
-    for ElementIter<Op>
+impl<I: Iterable> DoubleEndedIterator
+    for Iter<I>
 where
-    Op::Iter: DoubleEndedIterator
+    I::Iter: DoubleEndedIterator
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -38,11 +39,11 @@ where
     }
 }
 
-impl<Op: Operation> ExactSizeIterator
+impl<I: Iterable> ExactSizeIterator
 for
-    ElementIter<Op>
+    Iter<I>
 where
-    Op::Iter: ExactSizeIterator
+    I::Iter: ExactSizeIterator
 {
     #[inline]
     fn len(&self) -> usize {
@@ -50,9 +51,9 @@ where
     }
 }
 
-impl<Op: Operation> FusedIterator
+impl<I: Iterable> FusedIterator
 for
-    ElementIter<Op>
+    Iter<I>
 where
-    Op::Iter: FusedIterator
+    I::Iter: FusedIterator
 {}

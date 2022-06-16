@@ -3,7 +3,7 @@ use crate::element::{Element};
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::iter::Iter;
 use crate::any_vec_ptr;
-use crate::ops::element_iter::Operation;
+use crate::ops::iter::Iterable;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
@@ -32,7 +32,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Iterable
 for
     Drain<'a, AnyVecPtr>
 {

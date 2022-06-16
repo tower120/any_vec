@@ -3,7 +3,7 @@ use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::{any_vec_ptr, Iter};
 use crate::any_value::AnyValue;
 use crate::element::Element;
-use crate::ops::element_iter::Operation;
+use crate::ops::iter::Iterable;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
 where
@@ -42,7 +42,7 @@ where
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Operation
+impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Iterable
 for
     Splice<'a, AnyVecPtr, ReplaceIter>
 where

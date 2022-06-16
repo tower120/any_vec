@@ -13,9 +13,6 @@ use crate::traits::{Cloneable, Trait};
 
 /// Owning pointer to [`AnyVec`] element.
 ///
-/// Crated with [`AnyVec::get`] -family.
-/// Accessed through [`ElementRef`] or [`ElementMut`].
-///
 /// # Notes
 ///
 /// `Element` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).

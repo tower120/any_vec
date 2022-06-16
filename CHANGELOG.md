@@ -3,9 +3,15 @@
 ## Unreleased
 ### Added
 - `AnyVec::drain`.
+- `AnyVecTyped::drain`.
+- `AnyVec::slice`.
+- `AnyVecTyped::slice`.
 - `AnyVec` iterators.
 - `AnyVec::clone_empty`, to construct `AnyVec` of the same type.
 - `IntoIterator` implemented.
+
+### Changed
+- `crate::refs` being implementation details, hided.
 
 ## 0.7.0
 ### Added

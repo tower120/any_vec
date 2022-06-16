@@ -5,11 +5,11 @@ use std::mem::ManuallyDrop;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
-use crate::{AnyVecTyped, into_range, refs};
+use crate::{AnyVecTyped, into_range, ops, refs};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
-use crate::ops::{ElementIter, Drain, Splice, drain, splice};
+use crate::ops::{Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{Element, ElementMut, ElementRef};
@@ -315,17 +315,33 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
         let Range{start, end} = into_range(self.len(), range);
-        ElementIter(drain::Drain::new(
+        ops::Iter(drain::Drain::new(
             AnyVecPtr::from(self),
             start,
             end
         ))
     }
 
+    /// Creates a splicing iterator that replaces the specified range in the vector
+    /// with the given `replace_with` iterator and yields the removed items.
+    /// `replace_with` does not need to be the same length as `range`.
+    ///
+    /// `range` is removed even if the iterator is not consumed until the end.
+    ///
+    /// The returned iterator keeps a mutable borrow on the vector.
+    ///
     /// # Panics
     ///
     /// Panics if the starting point is greater than the end point or if
     /// the end point is greater than the length of the vector.
+    ///
+    /// # Leaking
+    ///
+    /// If the returned iterator goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector may have lost and leaked
+    /// elements with indices in and past the range.
+    ///
+    /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
@@ -335,7 +351,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         I::Item: AnyValue
     {
         let Range{start, end} = into_range(self.len(), range);
-        ElementIter(splice::Splice::new(
+        ops::Iter(splice::Splice::new(
             AnyVecPtr::from(self),
             start,
             end,
