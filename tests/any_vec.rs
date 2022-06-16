@@ -1,14 +1,10 @@
 use std::any::{TypeId};
-use std::cmp;
 use std::mem::size_of;
 use std::mem::forget;
-use std::ops::Range;
 use std::ptr::NonNull;
 use itertools::assert_equal;
-use rand::Rng;
 use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
-use any_vec::any_value::AnyValue;
 
 #[allow(dead_code)]
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
@@ -250,7 +246,7 @@ fn any_vec_splice_test() {
         AnyValueWrapper::new(String::from("100")),
         AnyValueWrapper::new(String::from("200"))
     ]);
-    assert_eq!(drained.len(), 2);   // Test ExactSizeIterator
+    assert_eq!(drained.len(), 3);   // Test ExactSizeIterator
     for e in drained{
         any_vec2.push(e);
     }
