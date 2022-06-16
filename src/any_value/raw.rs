@@ -5,6 +5,21 @@ use crate::any_value::Unknown;
 
 /// Non owning byte ptr wrapper.
 /// Source should be forgotten.
+///
+/// # Example
+/// ```rust
+/// # use any_vec::AnyVec;
+/// let s = String::from("Hello!");
+/// let raw_value = unsafe{AnyValueRaw::new(
+///     NonNull::from(&s).cast::<u8>(),
+///     size_of::<String>(),
+///     TypeId::of::<String>()
+/// )};
+/// mem::forget(s);
+///
+/// let mut any_vec: AnyVec = AnyVec::new::<String>();
+/// any_vec.push(raw_value);
+/// ```
 pub struct AnyValueRaw{
     ptr: NonNull<u8>,
     size: usize,
