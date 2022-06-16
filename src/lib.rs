@@ -31,6 +31,9 @@
 //!
 //!```
 //!
+//! N.B. [`AnyVecTyped`] operations may be somewhat faster, due to the fact that
+//! compiler able to do better optimisation with full type knowledge.
+//!
 //! # Send, Sync, Clone
 //!
 //! You can make [`AnyVec`] [`Send`]able, [`Sync`]able, [`Cloneable`]:

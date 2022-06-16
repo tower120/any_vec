@@ -1,4 +1,3 @@
-use std::iter::{FusedIterator};
 use std::marker::PhantomData;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;

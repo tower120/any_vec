@@ -1,5 +1,4 @@
 use std::iter::FusedIterator;
-use crate::traits::Trait;
 
 pub trait Iterable {
     type Iter: Iterator;

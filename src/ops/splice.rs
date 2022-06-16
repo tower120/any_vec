@@ -1,8 +1,6 @@
-use std::iter::FusedIterator;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::{any_vec_ptr, Iter};
 use crate::any_value::AnyValue;
-use crate::element::Element;
 use crate::ops::iter::Iterable;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
