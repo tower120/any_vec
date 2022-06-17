@@ -12,7 +12,7 @@ use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
 use crate::ops::{Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
-use crate::element::{Element, ElementMut, ElementRef};
+use crate::element::{AnyElement, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
 use crate::traits::{Cloneable, Trait};
@@ -189,11 +189,11 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<AnyVecPtr<Traits>>>{
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<AnyElement<AnyVecPtr<Traits>>>{
         let element = NonNull::new_unchecked(
             self.as_bytes().add(self.element_layout().size() * index) as *mut u8
         );
-        ManuallyDrop::new(Element::new(
+        ManuallyDrop::new(AnyElement::new(
             AnyVecPtr::from(self),
             element
         ))
@@ -210,7 +210,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        refs::Ref(self.get_element(index))
+        ElementRef(self.get_element(index))
     }
 
     #[inline]
@@ -224,7 +224,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits> {
-        refs::Mut(self.get_element(index))
+        ElementMut(self.get_element(index))
     }
 
     /// # Panics

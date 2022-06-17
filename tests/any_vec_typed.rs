@@ -149,3 +149,16 @@ fn any_vec_into_iter_test() {
     }
     assert_eq!(sum, 111);
 }
+
+#[test]
+fn any_vec_index_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+    vec.push(1);
+    vec.push(10);
+    vec.push(100);
+
+    assert_eq!(vec[1], 10);
+    assert_eq!(vec[..], [1, 10, 100]);
+    assert_eq!(vec[1..3], [10, 100]);
+}

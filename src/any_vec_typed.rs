@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
-use std::ops::{Range, RangeBounds};
+use std::ops::{Index, IndexMut, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
+use std::slice::SliceIndex;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{Iter, remove, swap_remove, TempValue};
@@ -182,5 +183,21 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub fn capacity(&self) -> usize {
         self.this().capacity()
+    }
+}
+
+impl<'a, T: 'static, I: SliceIndex<[T]>> Index<I> for AnyVecTyped<'a, T> {
+    type Output = I::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
+        self.as_slice().index(index)
+    }
+}
+
+impl<'a, T: 'static, I: SliceIndex<[T]>> IndexMut<I> for AnyVecTyped<'a, T> {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        self.as_mut_slice().index_mut(index)
     }
 }

@@ -1,10 +1,12 @@
 use std::any::{TypeId};
-use std::mem::size_of;
+use std::mem::{ManuallyDrop, size_of};
 use std::mem::forget;
+use std::ops::Deref;
 use std::ptr::NonNull;
 use itertools::assert_equal;
 use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
+use any_vec::element::{AnyElement, Element, ElementRef};
 
 #[allow(dead_code)]
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {

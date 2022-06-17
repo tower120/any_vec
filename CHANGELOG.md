@@ -2,6 +2,9 @@
 
 ## Unreleased
 ### Added
+- non-consuming iterators now cloneable.
+- `AnyVec` `Index` implemented.
+- `AnyVecTyped` `Index` implemented.
 - `AnyVec::drain`.
 - `AnyVecTyped::drain`.
 - `AnyVec::slice`.
