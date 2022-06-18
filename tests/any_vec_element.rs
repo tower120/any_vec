@@ -140,8 +140,8 @@ fn any_vec_iter_clone_test(){
     {
         e.downcast_ref::<usize>().unwrap()
     }
-    assert_eq!(any_vec.iter().clone().map(into_usize).sum::<usize>(), 3);
-    assert_eq!(any_vec.iter_mut().clone().map(into_usize).sum::<usize>(), 3);
+    assert_eq!(any_vec.iter().clone().map(into_usize).sum::<usize>(), 111);
+    assert_eq!(any_vec.iter_mut().clone().map(into_usize).sum::<usize>(), 111);
 }
 
 #[test]

@@ -131,8 +131,10 @@ pub fn downcast_ref_test(){
     any_vec.clear();
     let vec1 = any_vec.downcast_ref::<String>().unwrap();
     let vec2 = any_vec.downcast_ref::<String>().unwrap();
+    let vec3 = vec2.clone();
     assert_eq!(vec1.len(), 0);
     assert_eq!(vec2.len(), 0);
+    assert_eq!(vec3.len(), 0);
 }
 
 #[test]
@@ -150,6 +152,7 @@ fn any_vec_into_iter_test() {
     assert_eq!(sum, 111);
 }
 
+/*
 #[test]
 fn any_vec_index_test() {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
@@ -162,3 +165,4 @@ fn any_vec_index_test() {
     assert_eq!(vec[..], [1, 10, 100]);
     assert_eq!(vec[1..3], [10, 100]);
 }
+ */

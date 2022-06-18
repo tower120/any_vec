@@ -8,7 +8,12 @@ use crate::any_value::Unknown;
 ///
 /// # Example
 /// ```rust
+/// # use std::any::TypeId;
+/// # use std::mem;
+/// # use std::mem::size_of;
+/// # use std::ptr::NonNull;
 /// # use any_vec::AnyVec;
+/// # use any_vec::any_value::AnyValueRaw;
 /// let s = String::from("Hello!");
 /// let raw_value = unsafe{AnyValueRaw::new(
 ///     NonNull::from(&s).cast::<u8>(),

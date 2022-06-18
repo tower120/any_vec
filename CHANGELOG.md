@@ -2,9 +2,9 @@
 
 ## Unreleased
 ### Added
+- `AnyVecRef` now cloneable.
+- `ElementRef` now cloneable.
 - non-consuming iterators now cloneable.
-- `AnyVec` `Index` implemented.
-- `AnyVecTyped` `Index` implemented.
 - `AnyVec::drain`.
 - `AnyVecTyped::drain`.
 - `AnyVec::slice`.
