@@ -119,6 +119,7 @@ where
     }
 }
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Send + Trait, ReplaceIter: ExactSizeIterator> Send
 for
     Splice<'a, AnyVecPtr<Traits>, ReplaceIter>
@@ -126,6 +127,7 @@ where
     ReplaceIter::Item: AnyValue + Send
 {}
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Type: Send, ReplaceIter: ExactSizeIterator> Send
 for
     Splice<'a, AnyVecRawPtr<Type>, ReplaceIter>
@@ -134,6 +136,7 @@ where
 {}
 
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Sync + Trait, ReplaceIter: ExactSizeIterator> Sync
 for
     Splice<'a, AnyVecPtr<Traits>, ReplaceIter>
@@ -141,6 +144,7 @@ where
     ReplaceIter::Item: AnyValue + Sync
 {}
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Type: Sync, ReplaceIter: ExactSizeIterator> Sync
 for
     Splice<'a, AnyVecRawPtr<Type>, ReplaceIter>

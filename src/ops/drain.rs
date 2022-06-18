@@ -80,8 +80,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
     }
 }
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Drain<'a, AnyVecPtr<Traits>>{}
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Type: Sync> Sync for Drain<'a, AnyVecRawPtr<Type>>{}
 
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Drain<'a, AnyVecPtr<Traits>>{}
+#[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Type: Send> Send for Drain<'a, AnyVecRawPtr<Type>>{}

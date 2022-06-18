@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
-use std::ops::{Index, IndexMut, Range, RangeBounds};
+use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
-use std::slice::SliceIndex;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{Iter, remove, swap_remove, TempValue};

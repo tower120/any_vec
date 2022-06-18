@@ -2,7 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
-use std::ops::{Deref, Index, Range, RangeBounds};
+use std::ops::{Deref, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
 use crate::{AnyVecTyped, into_range, ops, refs};
@@ -189,7 +189,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<ElementPointer<AnyVecPtr<Traits>>>{
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<Traits>>{
         let element = NonNull::new_unchecked(
             self.as_bytes().add(self.element_layout().size() * index) as *mut u8
         );
@@ -446,7 +446,6 @@ impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
-//pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
 pub struct AnyVecRef<'a, T: 'static>(pub(crate) AnyVecTyped<'a, T>);
 impl<'a, T: 'static> Clone for AnyVecRef<'a, T>{
     #[inline]
