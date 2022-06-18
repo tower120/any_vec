@@ -2,7 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
-use std::ops::{Range, RangeBounds};
+use std::ops::{Deref, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
 use crate::{AnyVecTyped, into_range, ops, refs};
@@ -12,7 +12,7 @@ use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
 use crate::ops::{Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
-use crate::element::{Element, ElementMut, ElementRef};
+use crate::element::{ElementPointer, Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
 use crate::traits::{Cloneable, Trait};
@@ -155,7 +155,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
-        refs::Ref(AnyVecTyped::new(NonNull::from(&self.raw)))
+        AnyVecRef(AnyVecTyped::new(NonNull::from(&self.raw)))
     }
 
     #[inline]
@@ -189,14 +189,24 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     }
 
     #[inline]
-    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<AnyVecPtr<Traits>>>{
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<Traits>>{
         let element = NonNull::new_unchecked(
             self.as_bytes().add(self.element_layout().size() * index) as *mut u8
         );
-        ManuallyDrop::new(Element::new(
+        ManuallyDrop::new(ElementPointer::new(
             AnyVecPtr::from(self),
             element
         ))
+    }
+
+    /// Return reference to element at `index` with bounds check.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at(&self, index: usize) -> ElementRef<Traits>{
+        self.get(index).unwrap()
     }
 
     #[inline]
@@ -210,7 +220,17 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
-        refs::Ref(self.get_element(index))
+        ElementRef(self.get_element(index))
+    }
+
+    /// Return reference to element at `index` with bounds check.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at_mut(&mut self, index: usize) -> ElementMut<Traits>{
+        self.get_mut(index).unwrap()
     }
 
     #[inline]
@@ -224,7 +244,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits> {
-        refs::Mut(self.get_element(index))
+        ElementMut(self.get_element(index))
     }
 
     /// # Panics
@@ -426,8 +446,21 @@ impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
-pub type AnyVecRef<'a, T> = refs::Ref<AnyVecTyped<'a, T>>;
+pub struct AnyVecRef<'a, T: 'static>(pub(crate) AnyVecTyped<'a, T>);
+impl<'a, T: 'static> Clone for AnyVecRef<'a, T>{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+impl<'a, T: 'static> Deref for AnyVecRef<'a, T>{
+    type Target = AnyVecTyped<'a, T>;
 
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 impl<'a, T: 'static> IntoIterator for AnyVecRef<'a, T>{
     type Item = &'a T;
     type IntoIter = slice::Iter<'a, T>;

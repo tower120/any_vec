@@ -38,6 +38,12 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         Self{any_vec, phantom: PhantomData}
     }
 
+    /// AnyVecTyped should not be Clone, because it can be both & and &mut.
+    #[inline]
+    pub(crate) fn clone(&self) -> Self {
+        Self{any_vec: self.any_vec, phantom: PhantomData}
+    }
+
     #[inline]
     fn this(&self) -> &'a AnyVecRaw {
         unsafe{ self.any_vec.as_ref() }
@@ -134,6 +140,14 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         self.as_mut_slice().iter_mut()
     }
 
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at(&self, index: usize) -> &'a T{
+        self.get(index).unwrap()
+    }
+
     #[inline]
     pub fn get(&self, index: usize) -> Option<&'a T> {
         self.as_slice().get(index)
@@ -142,6 +156,14 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> &'a T {
         self.as_slice().get_unchecked(index)
+    }
+
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at_mut(&mut self, index: usize) -> &'a mut T{
+        self.get_mut(index).unwrap()
     }
 
     #[inline]
@@ -184,3 +206,22 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         self.this().capacity()
     }
 }
+
+// Do not implement Index, since we can't do the same for AnyVec
+/*
+impl<'a, T: 'static, I: SliceIndex<[T]>> Index<I> for AnyVecTyped<'a, T> {
+    type Output = I::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &'a Self::Output {
+        self.as_slice().index(index)
+    }
+}
+
+impl<'a, T: 'static, I: SliceIndex<[T]>> IndexMut<I> for AnyVecTyped<'a, T> {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &'a mut Self::Output {
+        self.as_mut_slice().index_mut(index)
+    }
+}
+ */

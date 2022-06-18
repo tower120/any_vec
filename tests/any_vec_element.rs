@@ -1,8 +1,10 @@
 use std::any::TypeId;
+use std::ops::Deref;
 use itertools::{assert_equal};
 use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
-use any_vec::traits::Cloneable;
+use any_vec::element::Element;
+use any_vec::traits::{Cloneable, Trait};
 
 #[test]
 fn lazy_clone_test(){
@@ -105,6 +107,14 @@ fn any_vec_iter_test(){
         &[String::from("100"), String::from("100"), String::from("100")]
     );
 
+    // test ElementRef cloneability
+    {
+        let r1 = any_vec.get(1).unwrap();
+        let r2 = r1.clone();
+        assert_eq!(r1.downcast_ref::<String>().unwrap(), &String::from("1"));
+        assert_eq!(r2.downcast_ref::<String>().unwrap(), &String::from("1"));
+    }
+
     // This should not compile
     /*{
         let iter = any_vec.iter();
@@ -112,6 +122,26 @@ fn any_vec_iter_test(){
         iter_mut.next().unwrap().downcast_mut::<String>();
         iter.next().unwrap().downcast::<String>();
     }*/
+}
+
+#[test]
+fn any_vec_iter_clone_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    {
+        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+        vec.push(1);
+        vec.push(10);
+        vec.push(100);
+    }
+
+    fn into_usize<'a, E, Traits: ?Sized + Trait>(e: E) -> &'a usize
+    where
+        E: Deref<Target = Element<'a,Traits>>
+    {
+        e.downcast_ref::<usize>().unwrap()
+    }
+    assert_eq!(any_vec.iter().clone().map(into_usize).sum::<usize>(), 111);
+    assert_eq!(any_vec.iter_mut().clone().map(into_usize).sum::<usize>(), 111);
 }
 
 #[test]

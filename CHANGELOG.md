@@ -2,6 +2,10 @@
 
 ## Unreleased
 ### Added
+- Added `AnyVec::at` - ergonomic version of `get`.
+- `AnyVecRef` now cloneable.
+- `ElementRef` now cloneable.
+- non-consuming iterators now cloneable.
 - `AnyVec::drain`.
 - `AnyVecTyped::drain`.
 - `AnyVec::slice`.

@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+// TODO: remove, as unused
 /// Reference into 'T'.
 pub struct Ref<T>(
     pub(crate) T

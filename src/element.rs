@@ -1,17 +1,21 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
-use crate::{refs};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
-use crate::traits::{Cloneable, Trait};
+use crate::traits::{Cloneable, None, Trait};
 
 // Typed operations will never use type-erased Element, so there is no
 // need in type-known-based optimizations.
 
+// TODO: hide. Derive AnyValue staff in Element.
+//
 /// Owning pointer to [`AnyVec`] element.
+///
+/// This is public, just so you can see what [`Element`] can do.
 ///
 /// # Notes
 ///
@@ -21,16 +25,22 @@ use crate::traits::{Cloneable, Trait};
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::get`]: crate::AnyVec::get
-pub struct Element<'a, AnyVecPtr: IAnyVecRawPtr>{
+pub struct ElementPointer<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: NonNull<u8>,
     phantom: PhantomData<&'a mut AnyVecRaw>
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Element<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
     #[inline]
-    pub fn new(any_vec_ptr: AnyVecPtr, element: NonNull<u8>) -> Self {
+    pub(crate) fn new(any_vec_ptr: AnyVecPtr, element: NonNull<u8>) -> Self {
         Self{any_vec_ptr, element, phantom: PhantomData}
+    }
+
+    /// ElementPointer should not be `Clone`, because it can be both & and &mut.
+    #[inline]
+    pub(crate) fn clone(&self) -> Self {
+        Self::new(self.any_vec_ptr, self.element)
     }
 
     #[inline]
@@ -67,7 +77,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Element<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Element<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn drop(&mut self) {
         if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
@@ -76,7 +86,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Element<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for Element<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     type Type = AnyVecPtr::Element;
 
     #[inline]
@@ -95,10 +105,10 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for Element<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for Element<'a, AnyVecPtr>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
 
 impl<'a, Traits: ?Sized + Cloneable + Trait>
-    AnyValueCloneable for Element<'a, AnyVecPtr<Traits>>
+    AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits>>
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
@@ -106,23 +116,58 @@ impl<'a, Traits: ?Sized + Cloneable + Trait>
     }
 }
 
-unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Element<'a, AnyVecPtr<Traits>>{}
-unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Element<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for ElementPointer<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for ElementPointer<'a, AnyVecPtr<Traits>>{}
+
+
+/// [`AnyVec`] element.
+///
+/// [`AnyVec`]: crate::AnyVec
+pub type Element<'a, Traits> = ElementPointer<'a, AnyVecPtr<Traits>>;
+
 
 /// Reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get`].
 ///
 /// [`AnyVec::get`]: crate::AnyVec::get
-pub type ElementRef<'a, Traits> = refs::Ref<ManuallyDrop<
-    Element<'a, AnyVecPtr<Traits>>
->>;
+pub struct ElementRef<'a, Traits: ?Sized + Trait = dyn None>(
+    pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits>>>
+);
+impl<'a, Traits: ?Sized + Trait> Deref for ElementRef<'a, Traits>{
+    type Target = Element<'a, Traits>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<'a, Traits: ?Sized + Trait> Clone for ElementRef<'a, Traits>{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self(ManuallyDrop::new(self.0.clone()))
+    }
+}
 
 /// Mutable reference to [`Element`].
 ///
 /// Created by  [`AnyVec::get_mut`].
 ///
 /// [`AnyVec::get_mut`]: crate::AnyVec::get_mut
-pub type ElementMut<'a, Traits> = refs::Mut<ManuallyDrop<
-    Element<'a, AnyVecPtr<Traits>>
->>;
+pub struct ElementMut<'a, Traits: ?Sized + Trait = dyn None>(
+    pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits>>>
+);
+impl<'a, Traits: ?Sized + Trait> Deref for ElementMut<'a, Traits>{
+    type Target = Element<'a, Traits>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<'a, Traits: ?Sized + Trait> DerefMut for ElementMut<'a, Traits>{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}

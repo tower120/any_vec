@@ -1,5 +1,5 @@
 use std::any::{TypeId};
-use std::mem::size_of;
+use std::mem::{size_of};
 use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::assert_equal;
