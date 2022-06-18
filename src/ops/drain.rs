@@ -1,7 +1,8 @@
-use crate::any_vec_ptr::IAnyVecRawPtr;
+use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
 use crate::iter::Iter;
 use crate::any_vec_ptr;
 use crate::ops::iter::Iterable;
+use crate::traits::Trait;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
@@ -78,3 +79,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
         any_vec_raw.len = self.original_len - distance;
     }
 }
+
+unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Drain<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Type: Sync> Sync for Drain<'a, AnyVecRawPtr<Type>>{}
+
+unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Drain<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Type: Send> Send for Drain<'a, AnyVecRawPtr<Type>>{}

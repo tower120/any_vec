@@ -141,6 +141,14 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         self.as_mut_slice().iter_mut()
     }
 
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at(&self, index: usize) -> &'a T{
+        self.get(index).unwrap()
+    }
+
     #[inline]
     pub fn get(&self, index: usize) -> Option<&'a T> {
         self.as_slice().get(index)
@@ -149,6 +157,14 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> &'a T {
         self.as_slice().get_unchecked(index)
+    }
+
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at_mut(&mut self, index: usize) -> &'a mut T{
+        self.get_mut(index).unwrap()
     }
 
     #[inline]

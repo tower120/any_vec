@@ -199,6 +199,16 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
         ))
     }
 
+    /// Return reference to element at `index` with bounds check.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at(&self, index: usize) -> ElementRef<Traits>{
+        self.get(index).unwrap()
+    }
+
     #[inline]
     pub fn get(&self, index: usize) -> Option<ElementRef<Traits>>{
         if index < self.len(){
@@ -211,6 +221,16 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
         ElementRef(self.get_element(index))
+    }
+
+    /// Return reference to element at `index` with bounds check.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    #[inline]
+    pub fn at_mut(&mut self, index: usize) -> ElementMut<Traits>{
+        self.get_mut(index).unwrap()
     }
 
     #[inline]
