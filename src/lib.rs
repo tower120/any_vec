@@ -81,7 +81,6 @@ mod any_vec_ptr;
 mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
-mod refs;
 
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;

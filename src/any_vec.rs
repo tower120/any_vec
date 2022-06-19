@@ -2,10 +2,10 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
-use std::ops::{Deref, Range, RangeBounds};
+use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
-use crate::{AnyVecTyped, into_range, ops, refs};
+use crate::{AnyVecTyped, into_range, ops};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
@@ -169,7 +169,7 @@ impl<Traits: ?Sized + Trait> AnyVec<Traits>
 
     #[inline]
     pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
-        refs::Mut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
+        AnyVecMut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
     }
 
     #[inline]
@@ -477,8 +477,21 @@ impl<'a, T: 'static> IntoIterator for AnyVecRef<'a, T>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
-pub type AnyVecMut<'a, T> = refs::Mut<AnyVecTyped<'a, T>>;
+pub struct AnyVecMut<'a, T: 'static>(pub(crate) AnyVecTyped<'a, T>);
+impl<'a, T: 'static> Deref for AnyVecMut<'a, T>{
+    type Target = AnyVecTyped<'a, T>;
 
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<'a, T: 'static> DerefMut for AnyVecMut<'a, T>{
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 impl<'a, T: 'static> IntoIterator for AnyVecMut<'a, T>{
     type Item = &'a mut T;
     type IntoIter = slice::IterMut<'a, T>;

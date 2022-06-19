@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0
 ### Added
 - Added `AnyVec::at` - ergonomic version of `get`.
 - `AnyVecRef` now cloneable.
