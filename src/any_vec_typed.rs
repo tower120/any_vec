@@ -8,6 +8,7 @@ use crate::ops::{Iter, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::iter::ElementIterator;
+use crate::mem::Mem;
 use crate::ops::drain::Drain;
 use crate::ops::splice::Splice;
 
@@ -20,21 +21,21 @@ use crate::ops::splice::Splice;
 /// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
-pub struct AnyVecTyped<'a, T: 'static>{
+pub struct AnyVecTyped<'a, T: 'static, M: Mem>{
     // NonNull - to have one struct for both & and &mut
-    any_vec: NonNull<AnyVecRaw>,
+    any_vec: NonNull<AnyVecRaw<M>>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static + Send> Send for AnyVecTyped<'a, T> {}
-unsafe impl<'a, T: 'static + Sync> Sync for AnyVecTyped<'a, T> {}
+unsafe impl<'a, T: 'static + Send, M: Mem> Send for AnyVecTyped<'a, T, M> {}
+unsafe impl<'a, T: 'static + Sync, M: Mem> Sync for AnyVecTyped<'a, T, M> {}
 
-impl<'a, T: 'static> AnyVecTyped<'a, T>{
+impl<'a, T: 'static, M: Mem> AnyVecTyped<'a, T, M>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
     #[inline]
-    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw>) -> Self {
+    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw<M>>) -> Self {
         Self{any_vec, phantom: PhantomData}
     }
 
@@ -45,12 +46,12 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    fn this(&self) -> &'a AnyVecRaw {
+    fn this(&self) -> &'a AnyVecRaw<M> {
         unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
-    fn this_mut(&mut self) -> &'a mut AnyVecRaw {
+    fn this_mut(&mut self) -> &'a mut AnyVecRaw<M> {
         unsafe{ self.any_vec.as_mut() }
     }
 
@@ -73,7 +74,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         self.this().index_check(index);
         unsafe{
             TempValue::<_>::new(remove::Remove::new(
-                AnyVecRawPtr::<T>::from(self.any_vec),
+                AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -84,7 +85,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
         self.this().index_check(index);
         unsafe{
             TempValue::<_>::new(swap_remove::SwapRemove::new(
-                AnyVecRawPtr::<T>::from(self.any_vec),
+                AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -96,7 +97,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     {
         let Range{start, end} = into_range(self.len(), range);
         Iter(Drain::new(
-            AnyVecRawPtr::<T>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.any_vec),
             start,
             end
         )).map(|e| unsafe{
@@ -116,7 +117,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
             .map(|e| AnyValueWrapper::new(e));
 
         Iter(Splice::new(
-            AnyVecRawPtr::<T>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.any_vec),
             start,
             end,
             replace_with
@@ -190,7 +191,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
             slice::from_raw_parts_mut(
-                self.this_mut().mem.as_ptr().cast::<T>(),
+                self.this_mut().mem.as_mut_ptr().cast::<T>(),
                 self.this().len,
             )
         }

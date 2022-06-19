@@ -6,6 +6,8 @@ use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
+use crate::mem;
+use crate::mem::Mem;
 use crate::traits::{Cloneable, None, Trait};
 
 // Typed operations will never use type-erased Element, so there is no
@@ -25,13 +27,13 @@ use crate::traits::{Cloneable, None, Trait};
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::get`]: crate::AnyVec::get
-pub struct ElementPointer<'a, AnyVecPtr: IAnyVecRawPtr>{
+pub struct ElementPointer<'a, M: Mem, AnyVecPtr: IAnyVecRawPtr<M>>{
     any_vec_ptr: AnyVecPtr,
     element: NonNull<u8>,
-    phantom: PhantomData<&'a mut AnyVecRaw>
+    phantom: PhantomData<&'a mut AnyVecRaw<M>>
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
+impl<'a, M: Mem, AnyVecPtr: IAnyVecRawPtr<M>> ElementPointer<'a, AnyVecPtr, M>{
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, element: NonNull<u8>) -> Self {
         Self{any_vec_ptr, element, phantom: PhantomData}
@@ -44,7 +46,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
     }
 
     #[inline]
-    fn any_vec_raw(&self) -> &'a AnyVecRaw{
+    fn any_vec_raw(&self) -> &'a AnyVecRaw<M>{
         unsafe { self.any_vec_ptr.any_vec_raw().as_ref() }
     }
 
@@ -77,7 +79,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
+impl<'a, M: Mem, AnyVecPtr: IAnyVecRawPtr<M>> Drop for ElementPointer<'a, M, AnyVecPtr>{
     #[inline]
     fn drop(&mut self) {
         if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
@@ -86,7 +88,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
+impl<'a, M: Mem, AnyVecPtr: IAnyVecRawPtr<M>> AnyValue for ElementPointer<'a, M, AnyVecPtr>{
     type Type = AnyVecPtr::Element;
 
     #[inline]
@@ -105,10 +107,10 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
+impl<'a, M: Mem, AnyVecPtr: IAnyVecRawPtr<M>> AnyValueMut for ElementPointer<'a, M, AnyVecPtr<M>>{}
 
-impl<'a, Traits: ?Sized + Cloneable + Trait>
-    AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits>>
+impl<'a, M: Mem, Traits: ?Sized + Cloneable + Trait>
+    AnyValueCloneable for ElementPointer<'a, M, AnyVecPtr<Traits, M>>
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
@@ -116,14 +118,14 @@ impl<'a, Traits: ?Sized + Cloneable + Trait>
     }
 }
 
-unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for ElementPointer<'a, AnyVecPtr<Traits>>{}
-unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for ElementPointer<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: Mem> Send for ElementPointer<'a, M, AnyVecPtr<Traits, M>>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: Mem> Sync for ElementPointer<'a, M, AnyVecPtr<Traits, M>>{}
 
 
 /// [`AnyVec`] element.
 ///
 /// [`AnyVec`]: crate::AnyVec
-pub type Element<'a, Traits> = ElementPointer<'a, AnyVecPtr<Traits>>;
+pub type Element<'a, Traits, M> = ElementPointer<'a, M, AnyVecPtr<Traits, M>>;
 
 
 /// Reference to [`Element`].
@@ -131,18 +133,18 @@ pub type Element<'a, Traits> = ElementPointer<'a, AnyVecPtr<Traits>>;
 /// Created by  [`AnyVec::get`].
 ///
 /// [`AnyVec::get`]: crate::AnyVec::get
-pub struct ElementRef<'a, Traits: ?Sized + Trait = dyn None>(
-    pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits>>>
+pub struct ElementRef<'a, Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>(
+    pub(crate) ManuallyDrop<ElementPointer<'a, M, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait> Deref for ElementRef<'a, Traits>{
-    type Target = Element<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementRef<'a, Traits, M>{
+    type Target = Element<'a, Traits, M>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl<'a, Traits: ?Sized + Trait> Clone for ElementRef<'a, Traits>{
+impl<'a, Traits: ?Sized + Trait, M: Mem> Clone for ElementRef<'a, Traits, M>{
     #[inline]
     fn clone(&self) -> Self {
         Self(ManuallyDrop::new(self.0.clone()))
@@ -154,18 +156,18 @@ impl<'a, Traits: ?Sized + Trait> Clone for ElementRef<'a, Traits>{
 /// Created by  [`AnyVec::get_mut`].
 ///
 /// [`AnyVec::get_mut`]: crate::AnyVec::get_mut
-pub struct ElementMut<'a, Traits: ?Sized + Trait = dyn None>(
-    pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits>>>
+pub struct ElementMut<'a, Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>(
+    pub(crate) ManuallyDrop<ElementPointer<'a, M, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait> Deref for ElementMut<'a, Traits>{
-    type Target = Element<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementMut<'a, Traits, M>{
+    type Target = Element<'a, Traits, M>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
-impl<'a, Traits: ?Sized + Trait> DerefMut for ElementMut<'a, Traits>{
+impl<'a, Traits: ?Sized + Trait, M: Mem> DerefMut for ElementMut<'a, Traits, M>{
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0

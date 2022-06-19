@@ -89,6 +89,7 @@ pub use iter::{ElementIterator, Iter, IterRef, IterMut};
 pub mod any_value;
 pub mod ops;
 pub mod element;
+mod mem;
 
 use std::ptr;
 use std::ops::{Bound, Range, RangeBounds};

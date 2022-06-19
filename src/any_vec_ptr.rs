@@ -5,30 +5,31 @@ use std::ptr::NonNull;
 use crate::any_value::Unknown;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
+use crate::mem::Mem;
 use crate::traits::Trait;
 
-pub trait IAnyVecRawPtr: Copy{
+pub trait IAnyVecRawPtr<M: Mem>: Copy{
     /// Known element type of AnyVec
     type Element: 'static/* = Unknown*/;
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw>;
+    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>>;
 }
-pub trait IAnyVecPtr<Traits: ?Sized + Trait>: IAnyVecRawPtr{
-    fn any_vec(&self) -> NonNull<AnyVec<Traits>>;
+pub trait IAnyVecPtr<Traits: ?Sized + Trait, M: Mem>: IAnyVecRawPtr<M>{
+    fn any_vec(&self) -> NonNull<AnyVec<Traits, M>>;
 }
 
 
-pub struct AnyVecRawPtr<Type: 'static>{
-    ptr: NonNull<AnyVecRaw>,
+pub struct AnyVecRawPtr<Type: 'static, M: Mem>{
+    ptr: NonNull<AnyVecRaw<M>>,
     phantom: PhantomData<*mut Type>
 }
-impl<Type> From<NonNull<AnyVecRaw>> for AnyVecRawPtr<Type>{
+impl<Type, M: Mem> From<NonNull<AnyVecRaw<M>>> for AnyVecRawPtr<Type, M>{
     #[inline]
-    fn from(ptr: NonNull<AnyVecRaw>) -> Self {
+    fn from(ptr: NonNull<AnyVecRaw<M>>) -> Self {
         Self{ptr, phantom: PhantomData}
     }
 }
-impl<Type> Copy for AnyVecRawPtr<Type> {}
-impl<Type> Clone for AnyVecRawPtr<Type> {
+impl<Type, M: Mem> Copy for AnyVecRawPtr<Type, M> {}
+impl<Type, M: Mem> Clone for AnyVecRawPtr<Type, M> {
     #[inline]
     fn clone(&self) -> Self {
         Self{
@@ -38,56 +39,56 @@ impl<Type> Clone for AnyVecRawPtr<Type> {
     }
 }
 
-impl<Type> IAnyVecRawPtr for AnyVecRawPtr<Type>{
+impl<Type, M: Mem> IAnyVecRawPtr<M> for AnyVecRawPtr<Type, M>{
     type Element = Type;
 
     #[inline]
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw> {
+    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
         self.ptr
     }
 }
 
 
-pub struct AnyVecPtr<Traits: ?Sized + Trait>{
-    ptr: NonNull<AnyVec<Traits>>
+pub struct AnyVecPtr<Traits: ?Sized + Trait, M: Mem>{
+    ptr: NonNull<AnyVec<Traits, M>>
 }
-impl<Traits: ?Sized + Trait> From<NonNull<AnyVec<Traits>>> for AnyVecPtr<Traits> {
+impl<Traits: ?Sized + Trait, M: Mem> From<NonNull<AnyVec<Traits, M>>> for AnyVecPtr<Traits, M> {
     #[inline]
     fn from(ptr: NonNull<AnyVec<Traits>>) -> Self {
         Self{ptr}
     }
 }
-impl<Traits: ?Sized + Trait> From<&mut AnyVec<Traits>> for AnyVecPtr<Traits> {
+impl<Traits: ?Sized + Trait, M: Mem> From<&mut AnyVec<Traits, M>> for AnyVecPtr<Traits, M> {
     #[inline]
     fn from(reference: &mut AnyVec<Traits>) -> Self {
         Self{ptr: NonNull::from(reference)}
     }
 }
-impl<Traits: ?Sized + Trait> From<&AnyVec<Traits>> for AnyVecPtr<Traits> {
+impl<Traits: ?Sized + Trait, M: Mem> From<&AnyVec<Traits, M>> for AnyVecPtr<Traits, M> {
     #[inline]
     fn from(reference: &AnyVec<Traits>) -> Self {
         Self{ptr: NonNull::from(reference)}
     }
 }
-impl<Traits: ?Sized + Trait> Clone for AnyVecPtr<Traits>{
+impl<Traits: ?Sized + Trait, M: Mem> Clone for AnyVecPtr<Traits, M>{
     #[inline]
     fn clone(&self) -> Self {
         Self{ptr: self.ptr}
     }
 }
-impl<Traits: ?Sized + Trait> Copy for AnyVecPtr<Traits>{}
+impl<Traits: ?Sized + Trait, M: Mem> Copy for AnyVecPtr<Traits, M>{}
 
-impl<Traits: ?Sized + Trait> IAnyVecRawPtr for AnyVecPtr<Traits> {
+impl<Traits: ?Sized + Trait, M: Mem> IAnyVecRawPtr<M> for AnyVecPtr<Traits, M> {
     type Element = Unknown;
 
     #[inline]
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw> {
+    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
         NonNull::from(unsafe{&self.ptr.as_ref().raw})
     }
 }
-impl<Traits: ?Sized + Trait> IAnyVecPtr<Traits> for AnyVecPtr<Traits> {
+impl<Traits: ?Sized + Trait, M: Mem> IAnyVecPtr<Traits, M> for AnyVecPtr<Traits, M> {
     #[inline]
-    fn any_vec(&self) -> NonNull<AnyVec<Traits>> {
+    fn any_vec(&self) -> NonNull<AnyVec<Traits, M>> {
         self.ptr
     }
 }
