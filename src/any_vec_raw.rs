@@ -18,22 +18,22 @@ pub struct AnyVecRaw<M: Mem> {
 
 impl<M: Mem> AnyVecRaw<M> {
     #[inline]
-    pub fn with_capacity_in<Element: 'static>(capacity: usize, mut mem_builder: M::Builder) -> Self {
-        let mem = mem_builder.build(Layout::new::<Element>(), capacity);
+    pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M::Builder) -> Self {
+        let mem = mem_builder.build(Layout::new::<T>(), capacity);
         Self{
             mem_builder,
             mem,
             len: 0,
-            type_id: TypeId::of::<Element>(),
+            type_id: TypeId::of::<T>(),
             drop_fn:
-                if !mem::needs_drop::<Element>(){
+                if !mem::needs_drop::<T>(){
                     None
                 } else{
                     Some(|mut ptr: *mut u8, len: usize|{
                         for _ in 0..len{
                             unsafe{
-                                ptr::drop_in_place(ptr as *mut Element);
-                                ptr = ptr.add(mem::size_of::<Element>());
+                                ptr::drop_in_place(ptr as *mut T);
+                                ptr = ptr.add(mem::size_of::<T>());
                             }
                         }
                     })

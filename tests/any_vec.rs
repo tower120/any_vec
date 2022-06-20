@@ -284,6 +284,54 @@ fn any_vec_insert_back(){
 }
 
 #[test]
+fn reserve_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve(4);
+    assert_eq!(any_vec.capacity(), 4);
+
+    any_vec.reserve(6);
+    assert_eq!(any_vec.capacity(), 8);
+}
+
+#[test]
+fn reserve_exact_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(4);
+    assert_eq!(any_vec.capacity(), 4);
+
+    any_vec.reserve_exact(6);
+    assert_eq!(any_vec.capacity(), 6);
+}
+
+#[test]
+fn shrink_to_fit_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(10);
+    assert_eq!(any_vec.capacity(), 10);
+
+    any_vec.shrink_to_fit();
+    assert_eq!(any_vec.capacity(), 0);
+}
+
+#[test]
+fn shrink_to_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(10);
+    assert_eq!(any_vec.capacity(), 10);
+
+    any_vec.shrink_to(5);
+    assert_eq!(any_vec.capacity(), 5);
+}
+
+#[test]
 fn any_vec_into_iter_test() {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     {

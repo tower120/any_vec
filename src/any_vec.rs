@@ -94,7 +94,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can make AnyVec [`Send`]-able, [`Sync`]-able, [`Cloneable`], by
 /// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`traits`].
 ///
-/// Some operations return [`TempValue<Operation, Traits>`], which internally holds &mut to [`AnyVec`].
+/// Some operations return [`TempValue<Operation>`], which internally holds &mut to [`AnyVec`].
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
@@ -111,41 +111,41 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     ///
     /// `Mem::Builder` should be Default constructible.
     #[inline]
-    pub fn new<Element: 'static>() -> Self
+    pub fn new<T: 'static>() -> Self
     where
-        Element: SatisfyTraits<Traits>,
+        T: SatisfyTraits<Traits>,
         M::Builder: Default
     {
-        Self::new_in::<Element>(Default::default())
+        Self::new_in::<T>(Default::default())
     }
 
     /// Element should implement requested Traits
     #[inline]
-    pub fn new_in<Element: 'static>(mem_builder: M::Builder) -> Self
-        where Element: SatisfyTraits<Traits>
+    pub fn new_in<T: 'static>(mem_builder: M::Builder) -> Self
+        where T: SatisfyTraits<Traits>
     {
-        Self::with_capacity_in::<Element>(0, mem_builder)
+        Self::with_capacity_in::<T>(0, mem_builder)
     }
 
     /// Element should implement requested Traits
     ///
     /// `Mem::Builder` should be Default constructible.
     #[inline]
-    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
+    pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
-        Element: SatisfyTraits<Traits>,
+        T: SatisfyTraits<Traits>,
         M::Builder: Default
     {
-        Self::with_capacity_in::<Element>(capacity, Default::default())
+        Self::with_capacity_in::<T>(capacity, Default::default())
     }
 
     /// Element should implement requested Traits
-    pub fn with_capacity_in<Element: 'static>(capacity: usize, mem_builder: M::Builder) -> Self
-        where Element: SatisfyTraits<Traits>
+    pub fn with_capacity_in<T: 'static>(capacity: usize, mem_builder: M::Builder) -> Self
+        where T: SatisfyTraits<Traits>
     {
-        let clone_fn = <Element as CloneFnTrait<Traits>>::CLONE_FN;
+        let clone_fn = <T as CloneFnTrait<Traits>>::CLONE_FN;
         Self{
-            raw: AnyVecRaw::with_capacity_in::<Element>(capacity, mem_builder),
+            raw: AnyVecRaw::with_capacity_in::<T>(capacity, mem_builder),
             clone_fn: <Traits as CloneType>::new(clone_fn),
             phantom: PhantomData
         }
@@ -167,6 +167,26 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     #[inline]
     pub(crate) fn clone_fn(&self) -> Option<CloneFn>{
         <Traits as CloneType>::get(self.clone_fn)
+    }
+
+    #[inline]
+    pub fn reserve(&mut self, additional: usize){
+        self.raw.reserve(additional)
+    }
+
+    #[inline]
+    pub fn reserve_exact(&mut self, additional: usize){
+        self.raw.reserve_exact(additional)
+    }
+
+    #[inline]
+    pub fn shrink_to_fit(&mut self){
+        self.raw.shrink_to_fit()
+    }
+
+    #[inline]
+    pub fn shrink_to(&mut self, min_capacity: usize){
+        self.raw.shrink_to(min_capacity)
     }
 
     #[inline]
@@ -277,6 +297,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     /// * Panics if type mismatch.
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
+    #[inline]
     pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
         self.raw.type_check(&value);
         unsafe{
