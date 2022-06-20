@@ -56,6 +56,26 @@ impl<'a, T: 'static, M: Mem + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
+    pub fn reserve(&mut self, additional: usize){
+        self.this_mut().reserve(additional)
+    }
+
+    #[inline]
+    pub fn reserve_exact(&mut self, additional: usize){
+        self.this_mut().reserve_exact(additional)
+    }
+
+    #[inline]
+    pub fn shrink_to_fit(&mut self){
+        self.this_mut().shrink_to_fit()
+    }
+
+    #[inline]
+    pub fn shrink_to(&mut self, min_capacity: usize){
+        self.this_mut().shrink_to(min_capacity)
+    }
+
+    #[inline]
     pub fn insert(&mut self, index: usize, value: T){
         unsafe{
             self.this_mut().insert_unchecked(index, AnyValueWrapper::new(value));
