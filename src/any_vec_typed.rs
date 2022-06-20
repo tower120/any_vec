@@ -8,7 +8,7 @@ use crate::ops::{Iter, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::iter::ElementIterator;
-use crate::mem::{Mem, MemResizable};
+use crate::mem::{MemBuilder, Mem, MemResizable};
 use crate::ops::drain::Drain;
 use crate::ops::splice::Splice;
 
@@ -21,16 +21,16 @@ use crate::ops::splice::Splice;
 /// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
-pub struct AnyVecTyped<'a, T: 'static, M: Mem + 'a>{
+pub struct AnyVecTyped<'a, T: 'static, M: MemBuilder + 'a>{
     // NonNull - to have one struct for both & and &mut
     any_vec: NonNull<AnyVecRaw<M>>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static + Send, M: Mem> Send for AnyVecTyped<'a, T, M> {}
-unsafe impl<'a, T: 'static + Sync, M: Mem> Sync for AnyVecTyped<'a, T, M> {}
+unsafe impl<'a, T: 'static + Send, M: MemBuilder> Send for AnyVecTyped<'a, T, M> {}
+unsafe impl<'a, T: 'static + Sync, M: MemBuilder> Sync for AnyVecTyped<'a, T, M> {}
 
-impl<'a, T: 'static, M: Mem + 'a> AnyVecTyped<'a, T, M>{
+impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
@@ -57,28 +57,28 @@ impl<'a, T: 'static, M: Mem + 'a> AnyVecTyped<'a, T, M>{
 
     #[inline]
     pub fn reserve(&mut self, additional: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.this_mut().reserve(additional)
     }
 
     #[inline]
     pub fn reserve_exact(&mut self, additional: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.this_mut().reserve_exact(additional)
     }
 
     #[inline]
     pub fn shrink_to_fit(&mut self)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.this_mut().shrink_to_fit()
     }
 
     #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.this_mut().shrink_to(min_capacity)
     }

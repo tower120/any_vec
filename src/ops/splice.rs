@@ -1,7 +1,7 @@
 use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{any_vec_ptr, Iter};
 use crate::any_value::AnyValue;
-use crate::mem::Mem;
+use crate::mem::MemBuilder;
 use crate::ops::iter::Iterable;
 use crate::traits::Trait;
 
@@ -120,14 +120,14 @@ where
 
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: Mem, ReplaceIter: ExactSizeIterator> Send
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder, ReplaceIter: ExactSizeIterator> Send
 for
     Splice<'a, AnyVecPtr<Traits, M>, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue + Send
 {}
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Send, M: Mem, ReplaceIter: ExactSizeIterator> Send
+unsafe impl<'a, Type: Send, M: MemBuilder, ReplaceIter: ExactSizeIterator> Send
 for
     Splice<'a, AnyVecRawPtr<Type, M>, ReplaceIter>
 where
@@ -136,14 +136,14 @@ where
 
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: Mem, ReplaceIter: ExactSizeIterator> Sync
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder, ReplaceIter: ExactSizeIterator> Sync
 for
     Splice<'a, AnyVecPtr<Traits, M>, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue + Sync
 {}
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Sync, M: Mem, ReplaceIter: ExactSizeIterator> Sync
+unsafe impl<'a, Type: Sync, M: MemBuilder, ReplaceIter: ExactSizeIterator> Sync
 for
     Splice<'a, AnyVecRawPtr<Type, M>, ReplaceIter>
 where

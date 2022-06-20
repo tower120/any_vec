@@ -10,6 +10,14 @@ use std::alloc::Layout;
 use std::cmp;
 use std::ptr::NonNull;
 
+/// This is [`Mem`] builder.
+///
+/// It can be stateful. You can use it like Allocator.
+pub trait MemBuilder: Clone {
+    type Mem: Mem;
+    fn build(&mut self, element_layout: Layout, capacity: usize) -> Self::Mem;
+}
+
 /// Interface for [`AnyVec`] memory chunk.
 ///
 /// Responsible for allocation, dealocation, reallocation of the memory chunk.
@@ -18,8 +26,6 @@ use std::ptr::NonNull;
 /// _`Mem` is fixed capacity memory. Implement [`MemResizable`] if you want it
 /// to be resizable._
 pub trait Mem{
-    type Builder: MemBuilder<Self>;
-
     fn as_ptr(&self) -> *const u8;
 
     fn as_mut_ptr(&mut self) -> *mut u8;
@@ -49,11 +55,4 @@ pub trait MemResizable: Mem{
 
     /// Do panic if can't resize.
     fn resize(&mut self, new_size: usize);
-}
-
-/// This is [`Mem`] builder.
-///
-/// It can be stateful. You can use it like Allocator.
-pub trait MemBuilder<M: Mem + ?Sized>: Clone{
-    fn build(&mut self, element_layout: Layout, capacity: usize) -> M;
 }

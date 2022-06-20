@@ -7,7 +7,7 @@ use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::mem;
-use crate::mem::Mem;
+use crate::mem::{Mem, MemBuilder};
 use crate::traits::{Cloneable, None, Trait};
 
 // Typed operations will never use type-erased Element, so there is no
@@ -109,7 +109,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
 
-impl<'a, Traits: ?Sized + Cloneable + Trait, M: Mem>
+impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits, M>>
 {
     #[inline]
@@ -118,8 +118,8 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: Mem>
     }
 }
 
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: Mem> Send for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: Mem> Sync for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
 
 
 /// [`AnyVec`] element.
@@ -133,10 +133,10 @@ pub type Element<'a, Traits = dyn None, M = mem::Default> = ElementPointer<'a, A
 /// Created by  [`AnyVec::get`].
 ///
 /// [`AnyVec::get`]: crate::AnyVec::get
-pub struct ElementRef<'a, Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>(
+pub struct ElementRef<'a, Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>(
     pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementRef<'a, Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Deref for ElementRef<'a, Traits, M>{
     type Target = Element<'a, Traits, M>;
 
     #[inline]
@@ -144,7 +144,7 @@ impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementRef<'a, Traits, M>{
         &self.0
     }
 }
-impl<'a, Traits: ?Sized + Trait, M: Mem> Clone for ElementRef<'a, Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Clone for ElementRef<'a, Traits, M>{
     #[inline]
     fn clone(&self) -> Self {
         Self(ManuallyDrop::new(self.0.clone()))
@@ -156,10 +156,10 @@ impl<'a, Traits: ?Sized + Trait, M: Mem> Clone for ElementRef<'a, Traits, M>{
 /// Created by  [`AnyVec::get_mut`].
 ///
 /// [`AnyVec::get_mut`]: crate::AnyVec::get_mut
-pub struct ElementMut<'a, Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>(
+pub struct ElementMut<'a, Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>(
     pub(crate) ManuallyDrop<ElementPointer<'a, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementMut<'a, Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Deref for ElementMut<'a, Traits, M>{
     type Target = Element<'a, Traits, M>;
 
     #[inline]
@@ -167,7 +167,7 @@ impl<'a, Traits: ?Sized + Trait, M: Mem> Deref for ElementMut<'a, Traits, M>{
         &self.0
     }
 }
-impl<'a, Traits: ?Sized + Trait, M: Mem> DerefMut for ElementMut<'a, Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> DerefMut for ElementMut<'a, Traits, M>{
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0

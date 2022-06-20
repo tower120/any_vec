@@ -8,17 +8,17 @@ use crate::mem::{Mem, MemBuilder, MemResizable};
 
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
-pub struct AnyVecRaw<M: Mem> {
-    mem_builder: M::Builder,// usually ZST
-    pub(crate) mem: M,
+pub struct AnyVecRaw<M: MemBuilder> {
+    mem_builder: M,// usually ZST
+    pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
     type_id: TypeId,        // purely for safety checks
     drop_fn: Option<DropFn>
 }
 
-impl<M: Mem> AnyVecRaw<M> {
+impl<M: MemBuilder> AnyVecRaw<M> {
     #[inline]
-    pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M::Builder) -> Self {
+    pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self {
         let mem = mem_builder.build(Layout::new::<T>(), capacity);
         Self{
             mem_builder,
@@ -122,7 +122,7 @@ impl<M: Mem> AnyVecRaw<M> {
 
     #[inline]
     pub fn reserve_exact(&mut self, additional: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         let new_len = self.len + additional;
         if self.capacity() < new_len{
@@ -131,13 +131,13 @@ impl<M: Mem> AnyVecRaw<M> {
     }
 
     pub fn shrink_to_fit(&mut self)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.mem.resize(self.len);
     }
 
     pub fn shrink_to(&mut self, min_capacity: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         let new_len = cmp::max(self.len, min_capacity);
         self.mem.resize(new_len);
@@ -234,7 +234,7 @@ impl<M: Mem> AnyVecRaw<M> {
     }
 }
 
-impl<M: Mem> Drop for AnyVecRaw<M> {
+impl<M: MemBuilder> Drop for AnyVecRaw<M> {
     fn drop(&mut self) {
         self.clear();
     }

@@ -5,11 +5,13 @@ use crate::mem::{Mem, MemBuilder, MemResizable};
 
 
 #[derive(Default, Clone)]
-pub struct HeapBuilder;
-impl MemBuilder<Heap> for HeapBuilder{
+pub struct Heap;
+impl MemBuilder for Heap {
+    type Mem = HeapMem;
+
     #[inline]
-    fn build(&mut self, element_layout: Layout, size: usize) -> Heap {
-        let mut this = Heap{
+    fn build(&mut self, element_layout: Layout, size: usize) -> HeapMem {
+        let mut this = HeapMem {
             mem: NonNull::<u8>::dangling(),
             size: 0,
             element_layout
@@ -20,15 +22,13 @@ impl MemBuilder<Heap> for HeapBuilder{
 }
 
 /// Heap allocated memory.
-pub struct Heap{
+pub struct HeapMem {
     mem: NonNull<u8>,
     size: usize,        // in elements
     element_layout: Layout, // size is aligned
 }
 
-impl Mem for Heap{
-    type Builder = HeapBuilder;
-
+impl Mem for HeapMem {
     #[inline]
     fn as_ptr(&self) -> *const u8 {
         self.mem.as_ptr()
@@ -56,7 +56,7 @@ impl Mem for Heap{
     }
 }
 
-impl MemResizable for Heap {
+impl MemResizable for HeapMem {
     fn resize(&mut self, new_size: usize) {
         if self.size == new_size{
             return;
@@ -99,7 +99,7 @@ impl MemResizable for Heap {
     }
 }
 
-impl Drop for Heap{
+impl Drop for HeapMem {
     fn drop(&mut self) {
         self.resize(0);
     }

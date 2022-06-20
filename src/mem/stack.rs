@@ -2,30 +2,30 @@ use std::alloc::Layout;
 use std::mem::MaybeUninit;
 use crate::mem::{Mem, MemBuilder};
 
-/// Fixed capacity on-stack memory.
-///
-/// `SIZE` in bytes.
-pub struct Stack<const SIZE: usize>{
-    mem: MaybeUninit<[u8; SIZE]>,
-    element_layout: Layout
-}
-
 #[derive(Default, Clone)]
-pub struct StackBuilder;
-impl<const SIZE: usize> MemBuilder<Stack<SIZE>> for StackBuilder{
+pub struct Stack<const SIZE: usize>;
+impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
+    type Mem = StackMem<SIZE>;
+
     #[inline]
-    fn build(&mut self, element_layout: Layout, size: usize) -> Stack<SIZE> {
+    fn build(&mut self, element_layout: Layout, size: usize) -> StackMem<SIZE> {
         assert!(size <= SIZE, "Requested mem size too big!");
-        Stack{
+        StackMem{
             mem: MaybeUninit::uninit(),
             element_layout
         }
     }
 }
 
-impl<const SIZE: usize> Mem for Stack<SIZE>{
-    type Builder = StackBuilder;
+/// Fixed capacity on-stack memory.
+///
+/// `SIZE` in bytes.
+pub struct StackMem<const SIZE: usize>{
+    mem: MaybeUninit<[u8; SIZE]>,
+    element_layout: Layout
+}
 
+impl<const SIZE: usize> Mem for StackMem<SIZE>{
     #[inline]
     fn as_ptr(&self) -> *const u8 {
         unsafe{self.mem.assume_init_ref()}.as_ptr()

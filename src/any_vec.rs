@@ -15,7 +15,7 @@ use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
-use crate::mem::{Mem, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemResizable};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -98,14 +98,14 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
 /// *`Element: 'static` due to TypeId requirements*
-pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>
+pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>
 {
     pub(crate) raw: AnyVecRaw<M>,
     clone_fn: <Traits as CloneType>::Type,
     phantom: PhantomData<Traits>
 }
 
-impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
+impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 {
     /// Element should implement requested Traits
     ///
@@ -114,14 +114,14 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     pub fn new<T: 'static>() -> Self
     where
         T: SatisfyTraits<Traits>,
-        M::Builder: Default
+        M: Default
     {
         Self::new_in::<T>(Default::default())
     }
 
     /// Element should implement requested Traits
     #[inline]
-    pub fn new_in<T: 'static>(mem_builder: M::Builder) -> Self
+    pub fn new_in<T: 'static>(mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
     {
         Self::with_capacity_in::<T>(0, mem_builder)
@@ -134,13 +134,13 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
         T: SatisfyTraits<Traits>,
-        M::Builder: Default
+        M: Default
     {
         Self::with_capacity_in::<T>(capacity, Default::default())
     }
 
     /// Element should implement requested Traits
-    pub fn with_capacity_in<T: 'static>(capacity: usize, mem_builder: M::Builder) -> Self
+    pub fn with_capacity_in<T: 'static>(capacity: usize, mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
     {
         let clone_fn = <T as CloneFnTrait<Traits>>::CLONE_FN;
@@ -171,28 +171,28 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
 
     #[inline]
     pub fn reserve(&mut self, additional: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.raw.reserve(additional)
     }
 
     #[inline]
     pub fn reserve_exact(&mut self, additional: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.raw.reserve_exact(additional)
     }
 
     #[inline]
     pub fn shrink_to_fit(&mut self)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.raw.shrink_to_fit()
     }
 
     #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize)
-        where M: MemResizable
+        where M::Mem: MemResizable
     {
         self.raw.shrink_to(min_capacity)
     }
@@ -461,9 +461,9 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 }
 
-unsafe impl<Traits: ?Sized + Send + Trait, M: Mem> Send for AnyVec<Traits, M> {}
-unsafe impl<Traits: ?Sized + Sync + Trait, M: Mem> Sync for AnyVec<Traits, M> {}
-impl<Traits: ?Sized + Cloneable + Trait, M: Mem> Clone for AnyVec<Traits, M>
+unsafe impl<Traits: ?Sized + Send + Trait, M: MemBuilder> Send for AnyVec<Traits, M> {}
+unsafe impl<Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for AnyVec<Traits, M> {}
+impl<Traits: ?Sized + Cloneable + Trait, M: MemBuilder> Clone for AnyVec<Traits, M>
 {
     fn clone(&self) -> Self {
         Self{
@@ -474,7 +474,7 @@ impl<Traits: ?Sized + Cloneable + Trait, M: Mem> Clone for AnyVec<Traits, M>
     }
 }
 
-impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a AnyVec<Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IntoIterator for &'a AnyVec<Traits, M>{
     type Item = ElementRef<'a, Traits, M>;
     type IntoIter = IterRef<'a, Traits, M>;
 
@@ -484,7 +484,7 @@ impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a AnyVec<Traits, M>{
     }
 }
 
-impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a mut AnyVec<Traits, M>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IntoIterator for &'a mut AnyVec<Traits, M>{
     type Item = ElementMut<'a, Traits, M>;
     type IntoIter = IterMut<'a, Traits, M>;
 
@@ -500,14 +500,14 @@ impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a mut AnyVec<Traits,
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
-pub struct AnyVecRef<'a, T: 'static, M: Mem + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: Mem + 'a> Clone for AnyVecRef<'a, T, M>{
+pub struct AnyVecRef<'a, T: 'static, M: MemBuilder + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
+impl<'a, T: 'static, M: MemBuilder + 'a> Clone for AnyVecRef<'a, T, M>{
     #[inline]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
-impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecRef<'a, T, M>{
+impl<'a, T: 'static, M: MemBuilder + 'a> Deref for AnyVecRef<'a, T, M>{
     type Target = AnyVecTyped<'a, T, M>;
 
     #[inline]
@@ -515,7 +515,7 @@ impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecRef<'a, T, M>{
         &self.0
     }
 }
-impl<'a, T: 'static, M: Mem + 'a> IntoIterator for AnyVecRef<'a, T, M>{
+impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecRef<'a, T, M>{
     type Item = &'a T;
     type IntoIter = slice::Iter<'a, T>;
 
@@ -531,8 +531,8 @@ impl<'a, T: 'static, M: Mem + 'a> IntoIterator for AnyVecRef<'a, T, M>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
-pub struct AnyVecMut<'a, T: 'static, M: Mem + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecMut<'a, T, M>{
+pub struct AnyVecMut<'a, T: 'static, M: MemBuilder + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
+impl<'a, T: 'static, M: MemBuilder + 'a> Deref for AnyVecMut<'a, T, M>{
     type Target = AnyVecTyped<'a, T, M>;
 
     #[inline]
@@ -540,13 +540,13 @@ impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecMut<'a, T, M>{
         &self.0
     }
 }
-impl<'a, T: 'static, M: Mem + 'a> DerefMut for AnyVecMut<'a, T, M>{
+impl<'a, T: 'static, M: MemBuilder + 'a> DerefMut for AnyVecMut<'a, T, M>{
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-impl<'a, T: 'static, M: Mem + 'a> IntoIterator for AnyVecMut<'a, T, M>{
+impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecMut<'a, T, M>{
     type Item = &'a mut T;
     type IntoIter = slice::IterMut<'a, T>;
 
