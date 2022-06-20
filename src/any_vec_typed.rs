@@ -8,7 +8,7 @@ use crate::ops::{Iter, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::iter::ElementIterator;
-use crate::mem::Mem;
+use crate::mem::{Mem, MemResizable};
 use crate::ops::drain::Drain;
 use crate::ops::splice::Splice;
 
@@ -56,22 +56,30 @@ impl<'a, T: 'static, M: Mem + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
-    pub fn reserve(&mut self, additional: usize){
+    pub fn reserve(&mut self, additional: usize)
+        where M: MemResizable
+    {
         self.this_mut().reserve(additional)
     }
 
     #[inline]
-    pub fn reserve_exact(&mut self, additional: usize){
+    pub fn reserve_exact(&mut self, additional: usize)
+        where M: MemResizable
+    {
         self.this_mut().reserve_exact(additional)
     }
 
     #[inline]
-    pub fn shrink_to_fit(&mut self){
+    pub fn shrink_to_fit(&mut self)
+        where M: MemResizable
+    {
         self.this_mut().shrink_to_fit()
     }
 
     #[inline]
-    pub fn shrink_to(&mut self, min_capacity: usize){
+    pub fn shrink_to(&mut self, min_capacity: usize)
+        where M: MemResizable
+    {
         self.this_mut().shrink_to(min_capacity)
     }
 

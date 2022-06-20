@@ -4,7 +4,7 @@ use std::any::TypeId;
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
-use crate::mem::{Mem, MemBuilder};
+use crate::mem::{Mem, MemBuilder, MemResizable};
 
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
@@ -109,31 +109,36 @@ impl<M: Mem> AnyVecRaw<M> {
         }
     }
 
-    // TODO: UNTESTED!!!
+    /// Leave this, for Mem, because implementation need it.
+    /// If M does not implement MemResizable, then `expand`
+    /// will panic, if out of capacity.
     #[inline]
-    pub fn reserve(&mut self, additional: usize){
+    pub fn reserve(&mut self, additional: usize) {
         let new_len = self.len + additional;
         if self.capacity() < new_len{
             self.mem.expand(new_len - self.capacity());
         }
     }
 
-    // TODO: UNTESTED!!!
     #[inline]
-    pub fn reserve_exact(&mut self, additional: usize){
+    pub fn reserve_exact(&mut self, additional: usize)
+        where M: MemResizable
+    {
         let new_len = self.len + additional;
         if self.capacity() < new_len{
             self.mem.expand_exact(new_len - self.capacity());
         }
     }
 
-    // TODO: UNTESTED!!!
-    pub fn shrink_to_fit(&mut self){
+    pub fn shrink_to_fit(&mut self)
+        where M: MemResizable
+    {
         self.mem.resize(self.len);
     }
 
-    // TODO: UNTESTED!!!
-    pub fn shrink_to(&mut self, min_capacity: usize){
+    pub fn shrink_to(&mut self, min_capacity: usize)
+        where M: MemResizable
+    {
         let new_len = cmp::max(self.len, min_capacity);
         self.mem.resize(new_len);
     }

@@ -15,7 +15,7 @@ use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
-use crate::mem::Mem;
+use crate::mem::{Mem, MemResizable};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -170,22 +170,30 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub fn reserve(&mut self, additional: usize){
+    pub fn reserve(&mut self, additional: usize)
+        where M: MemResizable
+    {
         self.raw.reserve(additional)
     }
 
     #[inline]
-    pub fn reserve_exact(&mut self, additional: usize){
+    pub fn reserve_exact(&mut self, additional: usize)
+        where M: MemResizable
+    {
         self.raw.reserve_exact(additional)
     }
 
     #[inline]
-    pub fn shrink_to_fit(&mut self){
+    pub fn shrink_to_fit(&mut self)
+        where M: MemResizable
+    {
         self.raw.shrink_to_fit()
     }
 
     #[inline]
-    pub fn shrink_to(&mut self, min_capacity: usize){
+    pub fn shrink_to(&mut self, min_capacity: usize)
+        where M: MemResizable
+    {
         self.raw.shrink_to(min_capacity)
     }
 

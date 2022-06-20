@@ -1,6 +1,7 @@
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
+use std::cmp;
 use std::ptr::NonNull;
-use crate::mem::{Mem, MemBuilder};
+use crate::mem::{Mem, MemBuilder, MemResizable};
 
 
 #[derive(Default, Clone)]
@@ -18,6 +19,7 @@ impl MemBuilder<Heap> for HeapBuilder{
     }
 }
 
+/// Heap allocated memory.
 pub struct Heap{
     mem: NonNull<u8>,
     size: usize,        // in elements
@@ -47,6 +49,14 @@ impl Mem for Heap{
         self.size
     }
 
+    fn expand(&mut self, additional: usize){
+        let requested_size = self.size() + additional;
+        let new_size = cmp::max(self.size() * 2, requested_size);
+        self.resize(new_size);
+    }
+}
+
+impl MemResizable for Heap {
     fn resize(&mut self, new_size: usize) {
         if self.size == new_size{
             return;

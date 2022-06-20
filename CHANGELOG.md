@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Added
+- `Stack` Mem/Allocator. 
 - `Mem` ala Allocator.
 - `reserve`
 - `reserve_exact`

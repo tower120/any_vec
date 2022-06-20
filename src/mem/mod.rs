@@ -1,6 +1,8 @@
 mod heap;
+mod stack;
 
 pub use heap::Heap;
+pub use stack::Stack;
 
 pub(crate) type Default = Heap;
 
@@ -12,6 +14,9 @@ use std::ptr::NonNull;
 ///
 /// Responsible for allocation, dealocation, reallocation of the memory chunk.
 /// Constructed through `Mem::Builder`.
+///
+/// _`Mem` is fixed capacity memory. Implement [`MemResizable`] if you want it
+/// to be resizable._
 pub trait Mem{
     type Builder: MemBuilder<Self>;
 
@@ -25,12 +30,19 @@ pub trait Mem{
     /// In elements.
     fn size(&self) -> usize;
 
+    /// AnyVec implementation need this. Should be in MemResizable.
     fn expand(&mut self, additional: usize){
-        let requested_size = self.size() + additional;
-        let new_size = cmp::max(self.size() * 2, requested_size);
-        self.resize(new_size);
-    }
+        drop(additional);
+        panic!("Can't change capacity!");
 
+        /*let requested_size = self.size() + additional;
+        let new_size = cmp::max(self.size() * 2, requested_size);
+        self.resize(new_size);*/
+    }
+}
+
+/// Marker trait for resizable ['Mem'].
+pub trait MemResizable: Mem{
     fn expand_exact(&mut self, additional: usize){
         self.resize(self.size() + additional);
     }
