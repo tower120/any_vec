@@ -13,7 +13,7 @@ impl Mem for Heap{
     fn new(element_layout: Layout, size: usize) -> Self {
         let mut this = Self{
             mem: NonNull::<u8>::dangling(),
-            size,
+            size: 0,
             element_layout
         };
         this.resize(size);

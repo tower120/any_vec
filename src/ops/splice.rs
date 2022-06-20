@@ -1,6 +1,7 @@
-use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{any_vec_ptr, Iter};
 use crate::any_value::AnyValue;
+use crate::mem::Mem;
 use crate::ops::iter::Iterable;
 use crate::traits::Trait;
 
@@ -77,9 +78,7 @@ where
         // 0. capacity.
         {
             let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw().as_mut()};
-            if new_len > any_vec_raw.capacity(){
-                any_vec_raw.grow();
-            }
+            any_vec_raw.reserve(new_len);
         }
 
         // 1. drop elements.
@@ -119,35 +118,34 @@ where
     }
 }
 
+
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, ReplaceIter: ExactSizeIterator> Send
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: Mem, ReplaceIter: ExactSizeIterator> Send
 for
-    Splice<'a, AnyVecPtr<Traits>, ReplaceIter>
+    Splice<'a, AnyVecPtr<Traits, M>, ReplaceIter>
+where
+    ReplaceIter::Item: AnyValue + Send
+{}
+#[allow(suspicious_auto_trait_impls)]
+unsafe impl<'a, Type: Send, M: Mem, ReplaceIter: ExactSizeIterator> Send
+for
+    Splice<'a, AnyVecRawPtr<Type, M>, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue + Send
 {}
 
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Send, ReplaceIter: ExactSizeIterator> Send
-for
-    Splice<'a, AnyVecRawPtr<Type>, ReplaceIter>
-where
-    ReplaceIter::Item: AnyValue + Send
-{}
-
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, ReplaceIter: ExactSizeIterator> Sync
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: Mem, ReplaceIter: ExactSizeIterator> Sync
 for
-    Splice<'a, AnyVecPtr<Traits>, ReplaceIter>
+    Splice<'a, AnyVecPtr<Traits, M>, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue + Sync
 {}
-
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Sync, ReplaceIter: ExactSizeIterator> Sync
+unsafe impl<'a, Type: Sync, M: Mem, ReplaceIter: ExactSizeIterator> Sync
 for
-    Splice<'a, AnyVecRawPtr<Type>, ReplaceIter>
+    Splice<'a, AnyVecRawPtr<Type, M>, ReplaceIter>
 where
     ReplaceIter::Item: AnyValue + Sync
 {}

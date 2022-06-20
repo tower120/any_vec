@@ -1,4 +1,4 @@
-use std::{mem, ptr};
+use std::{cmp, mem, ptr};
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::any::TypeId;
 use std::ptr::NonNull;
@@ -46,7 +46,7 @@ impl<M: Mem> AnyVecRaw<M> {
     #[inline]
     pub(crate) fn clone_empty(&self) -> Self{
         Self{
-            mem: M::new(self.element_layout, 0),
+            mem: M::new(self.element_layout(), 0),
             len: 0,
             type_id: self.type_id,
             drop_fn: self.drop_fn,
@@ -59,9 +59,7 @@ impl<M: Mem> AnyVecRaw<M> {
         let mut cloned = self.clone_empty();
 
         // 2. allocate
-        // TODO: set only necessary capacity size.
-        // TODO: implement through expand.
-        cloned.set_capacity(self.capacity);
+        cloned.mem.expand(self.len);
 
         // 3. copy/clone
         {
@@ -72,7 +70,7 @@ impl<M: Mem> AnyVecRaw<M> {
             } else {
                 ptr::copy_nonoverlapping(
                     src, dst,
-                    self.element_layout.size() * self.len
+                    self.element_layout().size() * self.len
                 );
             }
         }
@@ -100,18 +98,39 @@ impl<M: Mem> AnyVecRaw<M> {
 
     #[inline]
     /*pub(crate)*/ fn reserve_one(&mut self){
-        if self.len == self.capacity{
+        if self.len == self.capacity(){
             self.expand_one();
         }
     }
 
-/*    #[inline]
+    // TODO: UNTESTED!!!
+    #[inline]
     pub fn reserve(&mut self, additional: usize){
-        let new_len = self.len() + additional;
+        let new_len = self.len + additional;
         if self.capacity() < new_len{
             self.mem.expand(new_len - self.capacity());
         }
-    }*/
+    }
+
+    // TODO: UNTESTED!!!
+    #[inline]
+    pub fn reserve_exact(&mut self, additional: usize){
+        let new_len = self.len + additional;
+        if self.capacity() < new_len{
+            self.mem.expand_exact(new_len - self.capacity());
+        }
+    }
+
+    // TODO: UNTESTED!!!
+    pub fn shrink_to_fit(&mut self){
+        self.mem.resize(self.len);
+    }
+
+    // TODO: UNTESTED!!!
+    pub fn shrink_to(&mut self, min_capacity: usize){
+        let new_len = cmp::max(self.len, min_capacity);
+        self.mem.resize(new_len);
+    }
 
     /// # Safety
     ///
@@ -164,7 +183,7 @@ impl<M: Mem> AnyVecRaw<M> {
             if !Unknown::is::<V::Type>(){
                  self.mem.as_mut_ptr().cast::<V::Type>().add(self.len) as *mut u8
             } else {
-                let element_size = self.element_layout.size();
+                let element_size = self.element_layout().size();
                 self.mem.as_mut_ptr().add(element_size * self.len)
             };
 
@@ -195,7 +214,7 @@ impl<M: Mem> AnyVecRaw<M> {
     /// Element Layout
     #[inline]
     pub fn element_layout(&self) -> Layout {
-        self.mem.element_layout
+        self.mem.element_layout()
     }
 
     #[inline]

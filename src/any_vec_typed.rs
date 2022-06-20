@@ -21,7 +21,7 @@ use crate::ops::splice::Splice;
 /// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
-pub struct AnyVecTyped<'a, T: 'static, M: Mem>{
+pub struct AnyVecTyped<'a, T: 'static, M: Mem + 'a>{
     // NonNull - to have one struct for both & and &mut
     any_vec: NonNull<AnyVecRaw<M>>,
     phantom: PhantomData<&'a mut T>
@@ -30,7 +30,7 @@ pub struct AnyVecTyped<'a, T: 'static, M: Mem>{
 unsafe impl<'a, T: 'static + Send, M: Mem> Send for AnyVecTyped<'a, T, M> {}
 unsafe impl<'a, T: 'static + Sync, M: Mem> Sync for AnyVecTyped<'a, T, M> {}
 
-impl<'a, T: 'static, M: Mem> AnyVecTyped<'a, T, M>{
+impl<'a, T: 'static, M: Mem + 'a> AnyVecTyped<'a, T, M>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
@@ -93,7 +93,7 @@ impl<'a, T: 'static, M: Mem> AnyVecTyped<'a, T, M>{
 
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>)
-        -> impl ElementIterator<Item = T>
+        -> impl ElementIterator<Item = T> + 'a
     {
         let Range{start, end} = into_range(self.len(), range);
         Iter(Drain::new(
@@ -107,10 +107,10 @@ impl<'a, T: 'static, M: Mem> AnyVecTyped<'a, T, M>{
 
     #[inline]
     pub fn splice<I>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
-        -> impl ElementIterator<Item = T>
+        -> impl ElementIterator<Item = T> + 'a
     where
         I: IntoIterator<Item = T>,
-        I::IntoIter: ExactSizeIterator,
+        I::IntoIter: ExactSizeIterator + 'a,
     {
         let Range{start, end} = into_range(self.len(), range);
         let replace_with = replace_with.into_iter()

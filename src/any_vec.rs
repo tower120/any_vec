@@ -146,7 +146,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element>> {
+    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element, M>> {
         if self.element_typeid() == TypeId::of::<Element>() {
             unsafe{ Some(self.downcast_ref_unchecked()) }
         } else {
@@ -155,12 +155,12 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element> {
+    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element, M> {
         AnyVecRef(AnyVecTyped::new(NonNull::from(&self.raw)))
     }
 
     #[inline]
-    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element>> {
+    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element, M>> {
         if self.element_typeid() == TypeId::of::<Element>() {
             unsafe{ Some(self.downcast_mut_unchecked()) }
         } else {
@@ -169,7 +169,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element> {
+    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element, M> {
         AnyVecMut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
     }
 
@@ -179,18 +179,18 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub fn iter(&self) -> IterRef<Traits>{
+    pub fn iter(&self) -> IterRef<Traits, M>{
         Iter::new(AnyVecPtr::from(self), 0, self.len())
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut<Traits>{
+    pub fn iter_mut(&mut self) -> IterMut<Traits, M>{
         let len = self.len();
         Iter::new(AnyVecPtr::from(self), 0, len)
     }
 
     #[inline]
-    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<Traits>>{
+    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<Traits, M>>{
         let element = NonNull::new_unchecked(
             self.as_bytes().add(self.element_layout().size() * index) as *mut u8
         );
@@ -206,12 +206,12 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     ///
     /// * Panics if index is out of bounds.
     #[inline]
-    pub fn at(&self, index: usize) -> ElementRef<Traits>{
+    pub fn at(&self, index: usize) -> ElementRef<Traits, M>{
         self.get(index).unwrap()
     }
 
     #[inline]
-    pub fn get(&self, index: usize) -> Option<ElementRef<Traits>>{
+    pub fn get(&self, index: usize) -> Option<ElementRef<Traits, M>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked(index) })
         } else {
@@ -220,7 +220,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits>{
+    pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits, M>{
         ElementRef(self.get_element(index))
     }
 
@@ -230,12 +230,12 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     ///
     /// * Panics if index is out of bounds.
     #[inline]
-    pub fn at_mut(&mut self, index: usize) -> ElementMut<Traits>{
+    pub fn at_mut(&mut self, index: usize) -> ElementMut<Traits, M>{
         self.get_mut(index).unwrap()
     }
 
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits>>{
+    pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits, M>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked_mut(index) })
         } else {
@@ -244,7 +244,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits> {
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits, M> {
         ElementMut(self.get_element(index))
     }
 
@@ -285,7 +285,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
-    pub fn remove(&mut self, index: usize) -> Remove<Traits> {
+    pub fn remove(&mut self, index: usize) -> Remove<Traits, M> {
         self.raw.index_check(index);
         TempValue::new(remove::Remove::new(
             AnyVecPtr::from(self),
@@ -306,7 +306,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits> {
+    pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits, M> {
         self.raw.index_check(index);
         TempValue::new(swap_remove::SwapRemove::new(
             AnyVecPtr::from(self),
@@ -334,7 +334,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     /// [`mem::forget`]: std::mem::forget
     ///
     #[inline]
-    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits> {
+    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits, M> {
         let Range{start, end} = into_range(self.len(), range);
         ops::Iter(drain::Drain::new(
             AnyVecPtr::from(self),
@@ -366,7 +366,7 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     ///
     #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
-        -> Splice<Traits, I::IntoIter>
+        -> Splice<Traits, M, I::IntoIter>
     where
         I::IntoIter: ExactSizeIterator,
         I::Item: AnyValue
@@ -408,9 +408,9 @@ impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
     }
 }
 
-unsafe impl<Traits: ?Sized + Send + Trait> Send for AnyVec<Traits> {}
-unsafe impl<Traits: ?Sized + Sync + Trait> Sync for AnyVec<Traits> {}
-impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
+unsafe impl<Traits: ?Sized + Send + Trait, M: Mem> Send for AnyVec<Traits, M> {}
+unsafe impl<Traits: ?Sized + Sync + Trait, M: Mem> Sync for AnyVec<Traits, M> {}
+impl<Traits: ?Sized + Cloneable + Trait, M: Mem> Clone for AnyVec<Traits, M>
 {
     fn clone(&self) -> Self {
         Self{
@@ -421,9 +421,9 @@ impl<Traits: ?Sized + Cloneable + Trait> Clone for AnyVec<Traits>
     }
 }
 
-impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a AnyVec<Traits>{
-    type Item = ElementRef<'a, Traits>;
-    type IntoIter = IterRef<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a AnyVec<Traits, M>{
+    type Item = ElementRef<'a, Traits, M>;
+    type IntoIter = IterRef<'a, Traits, M>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -431,9 +431,9 @@ impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a AnyVec<Traits>{
     }
 }
 
-impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
-    type Item = ElementMut<'a, Traits>;
-    type IntoIter = IterMut<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: Mem> IntoIterator for &'a mut AnyVec<Traits, M>{
+    type Item = ElementMut<'a, Traits, M>;
+    type IntoIter = IterMut<'a, Traits, M>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -447,14 +447,14 @@ impl<'a, Traits: ?Sized + Trait> IntoIterator for &'a mut AnyVec<Traits>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
-pub struct AnyVecRef<'a, T: 'static, M: Mem>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: Mem> Clone for AnyVecRef<'a, T, M>{
+pub struct AnyVecRef<'a, T: 'static, M: Mem + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
+impl<'a, T: 'static, M: Mem + 'a> Clone for AnyVecRef<'a, T, M>{
     #[inline]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
-impl<'a, T: 'static, M: Mem> Deref for AnyVecRef<'a, T, M>{
+impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecRef<'a, T, M>{
     type Target = AnyVecTyped<'a, T, M>;
 
     #[inline]
@@ -462,7 +462,7 @@ impl<'a, T: 'static, M: Mem> Deref for AnyVecRef<'a, T, M>{
         &self.0
     }
 }
-impl<'a, T: 'static, M: Mem> IntoIterator for AnyVecRef<'a, T, M>{
+impl<'a, T: 'static, M: Mem + 'a> IntoIterator for AnyVecRef<'a, T, M>{
     type Item = &'a T;
     type IntoIter = slice::Iter<'a, T>;
 
@@ -478,8 +478,8 @@ impl<'a, T: 'static, M: Mem> IntoIterator for AnyVecRef<'a, T, M>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
-pub struct AnyVecMut<'a, T: 'static, M: Mem>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: Mem> Deref for AnyVecMut<'a, T, M>{
+pub struct AnyVecMut<'a, T: 'static, M: Mem + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
+impl<'a, T: 'static, M: Mem + 'a> Deref for AnyVecMut<'a, T, M>{
     type Target = AnyVecTyped<'a, T, M>;
 
     #[inline]
@@ -487,13 +487,13 @@ impl<'a, T: 'static, M: Mem> Deref for AnyVecMut<'a, T, M>{
         &self.0
     }
 }
-impl<'a, T: 'static, M: Mem> DerefMut for AnyVecMut<'a, T, M>{
+impl<'a, T: 'static, M: Mem + 'a> DerefMut for AnyVecMut<'a, T, M>{
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
-impl<'a, T: 'static, M: Mem> IntoIterator for AnyVecMut<'a, T, M>{
+impl<'a, T: 'static, M: Mem + 'a> IntoIterator for AnyVecMut<'a, T, M>{
     type Item = &'a mut T;
     type IntoIter = slice::IterMut<'a, T>;
 

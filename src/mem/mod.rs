@@ -5,6 +5,7 @@ pub use heap::Heap;
 pub(crate) type Default = Heap;
 
 use std::alloc::Layout;
+use std::cmp;
 use std::ptr::NonNull;
 
 /// Memory interface for [`AnyVec`].
@@ -25,15 +26,9 @@ pub trait Mem{
     fn size(&self) -> usize;
 
     fn expand(&mut self, additional: usize){
-        let requested_capacity = self.size() + additional;
-        let mut new_capacity = self.size();
-        loop{
-            new_capacity *= 2;
-            if new_capacity >= requested_capacity{
-                break;
-            }
-        }
-        self.resize(new_capacity);
+        let requested_size = self.size() + additional;
+        let new_size = cmp::max(self.size() * 2, requested_size);
+        self.resize(new_size);
     }
 
     fn expand_exact(&mut self, additional: usize){

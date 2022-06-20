@@ -3,13 +3,14 @@ use std::ptr;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_raw::AnyVecRaw;
+use crate::mem::Mem;
 use crate::ops::temp::Operation;
 
 pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     index: usize,
     last_index: usize,
-    phantom: PhantomData<&'a mut AnyVecRaw>
+    phantom: PhantomData<&'a mut AnyVecRaw<AnyVecPtr::M>>
 }
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Remove<'a, AnyVecPtr>{
@@ -38,7 +39,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
         unsafe{
             let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
             if !Unknown::is::<Self::Type>(){
-                any_vec_raw.mem.cast::<Self::Type>().as_ptr()
+                any_vec_raw.mem.as_ptr().cast::<Self::Type>()
                     .add(self.index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()

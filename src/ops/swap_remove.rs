@@ -4,13 +4,14 @@ use crate::copy_bytes_nonoverlapping;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_raw::AnyVecRaw;
+use crate::mem::Mem;
 use crate::ops::temp::Operation;
 
 pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: *mut u8,
     last_index: usize,
-    phantom: PhantomData<&'a mut AnyVecRaw>,
+    phantom: PhantomData<&'a mut AnyVecRaw<AnyVecPtr::M>>,
 }
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
@@ -24,9 +25,9 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
 
         let element: *mut u8 = unsafe{
             if !Unknown::is::<AnyVecPtr::Element>(){
-                any_vec_raw.mem.cast::<AnyVecPtr::Element>().as_ptr().add(index) as *mut u8
+                any_vec_raw.mem.as_mut_ptr().cast::<AnyVecPtr::Element>().add(index) as *mut u8
             } else {
-                any_vec_raw.mem.as_ptr().add(any_vec_raw.element_layout().size() * index)
+                any_vec_raw.mem.as_mut_ptr().add(any_vec_raw.element_layout().size() * index)
             }
         };
         Self{ any_vec_ptr, element, last_index, phantom: PhantomData }
@@ -54,7 +55,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
         let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
         let last_element =
             if !Unknown::is::<Self::Type>() {
-                any_vec_raw.mem.cast::<Self::Type>().as_ptr().add(self.last_index) as *const u8
+                any_vec_raw.mem.as_ptr().cast::<Self::Type>().add(self.last_index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.last_index)

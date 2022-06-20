@@ -8,13 +8,16 @@ use crate::AnyVec;
 use crate::mem::Mem;
 use crate::traits::Trait;
 
-pub trait IAnyVecRawPtr<M: Mem>: Copy{
+pub trait IAnyVecRawPtr: Copy{
     /// Known element type of AnyVec
     type Element: 'static/* = Unknown*/;
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>>;
+    // TODO: rename to Mem?
+    type M: Mem;
+    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<Self::M>>;
 }
-pub trait IAnyVecPtr<Traits: ?Sized + Trait, M: Mem>: IAnyVecRawPtr<M>{
-    fn any_vec(&self) -> NonNull<AnyVec<Traits, M>>;
+pub trait IAnyVecPtr: IAnyVecRawPtr{
+    type Traits: ?Sized + Trait;
+    fn any_vec(&self) -> NonNull<AnyVec<Self::Traits, Self::M>>;
 }
 
 
@@ -39,8 +42,9 @@ impl<Type, M: Mem> Clone for AnyVecRawPtr<Type, M> {
     }
 }
 
-impl<Type, M: Mem> IAnyVecRawPtr<M> for AnyVecRawPtr<Type, M>{
+impl<Type, M: Mem> IAnyVecRawPtr for AnyVecRawPtr<Type, M>{
     type Element = Type;
+    type M = M;
 
     #[inline]
     fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
@@ -54,19 +58,19 @@ pub struct AnyVecPtr<Traits: ?Sized + Trait, M: Mem>{
 }
 impl<Traits: ?Sized + Trait, M: Mem> From<NonNull<AnyVec<Traits, M>>> for AnyVecPtr<Traits, M> {
     #[inline]
-    fn from(ptr: NonNull<AnyVec<Traits>>) -> Self {
+    fn from(ptr: NonNull<AnyVec<Traits, M>>) -> Self {
         Self{ptr}
     }
 }
 impl<Traits: ?Sized + Trait, M: Mem> From<&mut AnyVec<Traits, M>> for AnyVecPtr<Traits, M> {
     #[inline]
-    fn from(reference: &mut AnyVec<Traits>) -> Self {
+    fn from(reference: &mut AnyVec<Traits, M>) -> Self {
         Self{ptr: NonNull::from(reference)}
     }
 }
 impl<Traits: ?Sized + Trait, M: Mem> From<&AnyVec<Traits, M>> for AnyVecPtr<Traits, M> {
     #[inline]
-    fn from(reference: &AnyVec<Traits>) -> Self {
+    fn from(reference: &AnyVec<Traits, M>) -> Self {
         Self{ptr: NonNull::from(reference)}
     }
 }
@@ -78,15 +82,18 @@ impl<Traits: ?Sized + Trait, M: Mem> Clone for AnyVecPtr<Traits, M>{
 }
 impl<Traits: ?Sized + Trait, M: Mem> Copy for AnyVecPtr<Traits, M>{}
 
-impl<Traits: ?Sized + Trait, M: Mem> IAnyVecRawPtr<M> for AnyVecPtr<Traits, M> {
+impl<Traits: ?Sized + Trait, M: Mem> IAnyVecRawPtr for AnyVecPtr<Traits, M> {
     type Element = Unknown;
+    type M = M;
 
     #[inline]
     fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
         NonNull::from(unsafe{&self.ptr.as_ref().raw})
     }
 }
-impl<Traits: ?Sized + Trait, M: Mem> IAnyVecPtr<Traits, M> for AnyVecPtr<Traits, M> {
+impl<Traits: ?Sized + Trait, M: Mem> IAnyVecPtr for AnyVecPtr<Traits, M> {
+    type Traits = Traits;
+
     #[inline]
     fn any_vec(&self) -> NonNull<AnyVec<Traits, M>> {
         self.ptr
@@ -98,6 +105,7 @@ impl<Traits: ?Sized + Trait, M: Mem> IAnyVecPtr<Traits, M> for AnyVecPtr<Traits,
 pub(crate) mod utils{
     use std::{mem, ptr};
     use std::mem::size_of;
+    use crate::mem::Mem;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
 
@@ -119,10 +127,10 @@ pub(crate) mod utils{
         let any_vec_raw = any_vec_ptr.any_vec_raw().as_mut();
 
         if Unknown::is::<AnyVecPtr::Element>(){
-            any_vec_raw.mem.as_ptr()
+            any_vec_raw.mem.as_mut_ptr()
                 .add(any_vec_raw.element_layout().size() * index)
         } else {
-            any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
+            any_vec_raw.mem.as_mut_ptr().cast::<AnyVecPtr::Element>()
                 .add(index) as *mut u8
         }
     } }

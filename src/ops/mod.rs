@@ -15,14 +15,14 @@ use crate::any_vec_ptr::AnyVecPtr;
 /// This is created by [`AnyVec::remove`].
 ///
 /// [`AnyVec::remove`]: crate::AnyVec::remove
-pub type Remove<'a, Traits> = TempValue<remove::Remove<'a, AnyVecPtr<Traits>>, Traits>;
+pub type Remove<'a, Traits, M> = TempValue<remove::Remove<'a, AnyVecPtr<Traits, M>>>;
 
 /// Lazily `swap_remove` element on consumption/drop.
 ///
 /// This is created by [`AnyVec::swap_remove`].
 ///
 /// [`AnyVec::swap_remove`]: crate::AnyVec::swap_remove
-pub type SwapRemove<'a, Traits> = TempValue<swap_remove::SwapRemove<'a, AnyVecPtr<Traits>>, Traits>;
+pub type SwapRemove<'a, Traits, M> = TempValue<swap_remove::SwapRemove<'a, AnyVecPtr<Traits, M>>>;
 
 ///  A draining [`ElementIterator`] for [`AnyVec`]. Return [`Element`] items.
 ///
@@ -32,7 +32,7 @@ pub type SwapRemove<'a, Traits> = TempValue<swap_remove::SwapRemove<'a, AnyVecPt
 /// [`AnyVec::drain`]: crate::AnyVec::drain
 /// [`Element`]: crate::element::Element
 /// [`ElementIterator`]: crate::iter::ElementIterator
-pub type Drain<'a, Traits> = Iter<drain::Drain<'a, AnyVecPtr<Traits>>>;
+pub type Drain<'a, Traits, M> = Iter<drain::Drain<'a, AnyVecPtr<Traits, M>>>;
 
 ///  A splicing [`ElementIterator`] for [`AnyVec`]. Return [`Element`] items.
 ///
@@ -42,4 +42,4 @@ pub type Drain<'a, Traits> = Iter<drain::Drain<'a, AnyVecPtr<Traits>>>;
 /// [`AnyVec::splice`]: crate::AnyVec::splice
 /// [`Element`]: crate::element::Element
 /// [`ElementIterator`]: crate::iter::ElementIterator
-pub type Splice<'a, Traits, I> = Iter<splice::Splice<'a, AnyVecPtr<Traits>, I>>;
+pub type Splice<'a, Traits, M, I> = Iter<splice::Splice<'a, AnyVecPtr<Traits, M>, I>>;

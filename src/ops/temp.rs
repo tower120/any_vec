@@ -25,23 +25,22 @@ pub trait Operation {
 ///
 /// May do some postponed actions on consumption/destruction.
 ///
-pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn None>{
+pub struct TempValue<Op: Operation>{
     op: Op,
-    phantom: PhantomData<Traits>
 }
-impl<Op: Operation, Traits: ?Sized + Trait> TempValue<Op, Traits>{
+impl<Op: Operation> TempValue<Op>{
     #[inline]
     pub(crate) fn new(op: Op) -> Self {
-        Self{op, phantom: PhantomData}
+        Self{op}
     }
 
     #[inline]
-    fn any_vec_raw(&self) -> &AnyVecRaw{
+    fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M>{
         unsafe{ self.op.any_vec_ptr().any_vec_raw().as_ref() }
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
+impl<Op: Operation> AnyValue for TempValue<Op>{
     type Type = Op::Type;
 
     #[inline]
@@ -76,12 +75,12 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValueMut for TempValue<Op, Traits>
-    where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
-{}
+impl<Op: Operation> AnyValueMut for TempValue<Op> {}
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, Traits>
-    where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
+impl<Op: Operation> AnyValueCloneable for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Cloneable
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
@@ -90,7 +89,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, 
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
+impl<Op: Operation> Drop for TempValue<Op>{
     #[inline]
     fn drop(&mut self) {
         unsafe{
@@ -110,5 +109,14 @@ impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
     }
 }
 
-unsafe impl<Op: Operation, Traits: ?Sized + Trait + Send> Send for TempValue<Op, Traits> {}
-unsafe impl<Op: Operation, Traits: ?Sized + Trait + Sync> Sync for TempValue<Op, Traits> {}
+unsafe impl<Op: Operation> Send for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Send
+{}
+
+unsafe impl<Op: Operation> Sync for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Sync
+{}

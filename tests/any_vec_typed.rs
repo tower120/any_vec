@@ -1,4 +1,5 @@
 use itertools::assert_equal;
+use any_vec::any_value::AnyValueWrapper;
 use any_vec::AnyVec;
 
 #[test]
@@ -115,6 +116,29 @@ fn any_vec_drain_in_the_middle_test() {
         String::from("3"),
         String::from("4"),
     ]);
+}
+
+#[test]
+fn any_vec_splice_lifetime_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("2")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
+
+    // lifetime check ?
+    {
+        let mut vec = any_vec.downcast_mut::<String>().unwrap();
+        let replace = [
+            String::from("100"),
+            String::from("200")
+        ];
+        let drained = vec.splice(1..4, replace.iter().cloned());
+        drained.count();
+        drop(replace);
+        //drained.count();
+    }
 }
 
 #[test]
