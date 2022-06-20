@@ -1,6 +1,22 @@
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::ptr::NonNull;
-use crate::mem::Mem;
+use crate::mem::{Mem, MemBuilder};
+
+
+#[derive(Default, Clone)]
+pub struct HeapBuilder;
+impl MemBuilder<Heap> for HeapBuilder{
+    #[inline]
+    fn build(&mut self, element_layout: Layout, size: usize) -> Heap {
+        let mut this = Heap{
+            mem: NonNull::<u8>::dangling(),
+            size: 0,
+            element_layout
+        };
+        this.resize(size);
+        this
+    }
+}
 
 pub struct Heap{
     mem: NonNull<u8>,
@@ -9,16 +25,7 @@ pub struct Heap{
 }
 
 impl Mem for Heap{
-    #[inline]
-    fn new(element_layout: Layout, size: usize) -> Self {
-        let mut this = Self{
-            mem: NonNull::<u8>::dangling(),
-            size: 0,
-            element_layout
-        };
-        this.resize(size);
-        this
-    }
+    type Builder = HeapBuilder;
 
     #[inline]
     fn as_ptr(&self) -> *const u8 {

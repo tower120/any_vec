@@ -8,12 +8,12 @@ use std::alloc::Layout;
 use std::cmp;
 use std::ptr::NonNull;
 
-/// Memory interface for [`AnyVec`].
+/// Interface for [`AnyVec`] memory chunk.
 ///
-/// Responsible for allocation and dealocation of the memory chunk.
-/// Memory chunk is always one.
+/// Responsible for allocation, dealocation, reallocation of the memory chunk.
+/// Constructed through `Mem::Builder`.
 pub trait Mem{
-    fn new(element_layout: Layout, capacity: usize) -> Self;
+    type Builder: MemBuilder<Self>;
 
     fn as_ptr(&self) -> *const u8;
 
@@ -35,5 +35,13 @@ pub trait Mem{
         self.resize(self.size() + additional);
     }
 
+    /// Do panic if can't resize.
     fn resize(&mut self, new_size: usize);
+}
+
+/// This is [`Mem`] builder.
+///
+/// It can be stateful. You can use it like Allocator.
+pub trait MemBuilder<M: Mem + ?Sized>: Clone{
+    fn build(&mut self, element_layout: Layout, capacity: usize) -> M;
 }

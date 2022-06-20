@@ -4,11 +4,12 @@ use std::any::TypeId;
 use std::ptr::NonNull;
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
-use crate::mem::Mem;
+use crate::mem::{Mem, MemBuilder};
 
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw<M: Mem> {
+    mem_builder: M::Builder,// usually ZST
     pub(crate) mem: M,
     pub(crate) len: usize,  // in elements
     type_id: TypeId,        // purely for safety checks
@@ -17,9 +18,11 @@ pub struct AnyVecRaw<M: Mem> {
 
 impl<M: Mem> AnyVecRaw<M> {
     #[inline]
-    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self {
+    pub fn with_capacity_in<Element: 'static>(capacity: usize, mut mem_builder: M::Builder) -> Self {
+        let mem = mem_builder.build(Layout::new::<Element>(), capacity);
         Self{
-            mem: M::new(Layout::new::<Element>(), capacity),
+            mem_builder,
+            mem,
             len: 0,
             type_id: TypeId::of::<Element>(),
             drop_fn:
@@ -45,8 +48,11 @@ impl<M: Mem> AnyVecRaw<M> {
 
     #[inline]
     pub(crate) fn clone_empty(&self) -> Self{
+        let mut mem_builder = self.mem_builder.clone();
+        let mem = mem_builder.build(self.element_layout(), 0);
         Self{
-            mem: M::new(self.element_layout(), 0),
+            mem_builder,
+            mem,
             len: 0,
             type_id: self.type_id,
             drop_fn: self.drop_fn,

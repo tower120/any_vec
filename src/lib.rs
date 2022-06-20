@@ -86,10 +86,10 @@ pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterRef, IterMut};
 
+pub mod mem;
 pub mod any_value;
 pub mod ops;
 pub mod element;
-mod mem;
 
 use std::ptr;
 use std::ops::{Bound, Range, RangeBounds};

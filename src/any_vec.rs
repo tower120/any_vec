@@ -108,20 +108,44 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: Mem = mem::Default>
 impl<Traits: ?Sized + Trait, M: Mem> AnyVec<Traits, M>
 {
     /// Element should implement requested Traits
+    ///
+    /// `Mem::Builder` should be Default constructible.
     #[inline]
     pub fn new<Element: 'static>() -> Self
-        where Element: SatisfyTraits<Traits>
+    where
+        Element: SatisfyTraits<Traits>,
+        M::Builder: Default
     {
-        Self::with_capacity::<Element>(0)
+        Self::new_in::<Element>(Default::default())
     }
 
     /// Element should implement requested Traits
+    #[inline]
+    pub fn new_in<Element: 'static>(mem_builder: M::Builder) -> Self
+        where Element: SatisfyTraits<Traits>
+    {
+        Self::with_capacity_in::<Element>(0, mem_builder)
+    }
+
+    /// Element should implement requested Traits
+    ///
+    /// `Mem::Builder` should be Default constructible.
+    #[inline]
     pub fn with_capacity<Element: 'static>(capacity: usize) -> Self
+    where
+        Element: SatisfyTraits<Traits>,
+        M::Builder: Default
+    {
+        Self::with_capacity_in::<Element>(capacity, Default::default())
+    }
+
+    /// Element should implement requested Traits
+    pub fn with_capacity_in<Element: 'static>(capacity: usize, mem_builder: M::Builder) -> Self
         where Element: SatisfyTraits<Traits>
     {
         let clone_fn = <Element as CloneFnTrait<Traits>>::CLONE_FN;
         Self{
-            raw: AnyVecRaw::with_capacity::<Element>(capacity),
+            raw: AnyVecRaw::with_capacity_in::<Element>(capacity, mem_builder),
             clone_fn: <Traits as CloneType>::new(clone_fn),
             phantom: PhantomData
         }
