@@ -1,7 +1,7 @@
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::cmp;
 use std::ptr::NonNull;
-use crate::mem::{Mem, MemBuilder, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 
 
 #[derive(Default, Clone)]
@@ -16,6 +16,15 @@ impl MemBuilder for Heap {
             size: 0,
             element_layout
         }
+    }
+}
+impl MemBuilderSizeable for Heap{
+    #[inline]
+    fn build_with_size(&mut self, element_layout: Layout, capacity: usize) -> Self::Mem
+    {
+        let mut mem = self.build(element_layout);
+        mem.resize(capacity);
+        mem
     }
 }
 

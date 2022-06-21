@@ -15,7 +15,7 @@ use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
-use crate::mem::{Mem, MemBuilder, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -118,8 +118,6 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     /// Element should implement requested Traits
-    ///
-    /// `Mem::Builder` should be Default constructible.
     #[inline]
     pub fn new<T: 'static>() -> Self
     where
@@ -139,13 +137,11 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     /// Element should implement requested Traits
-    ///
-    /// `Mem::Builder` should be Default constructible.
     #[inline]
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
         T: SatisfyTraits<Traits>,
-        M::Mem: MemResizable,
+        M: MemBuilderSizeable,
         M: Default
     {
         Self::with_capacity_in::<T>(capacity, Default::default())
@@ -155,7 +151,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self
     where
         T: SatisfyTraits<Traits>,
-        M::Mem: MemResizable
+        M: MemBuilderSizeable
     {
         let mem = mem_builder.build_with_size(Layout::new::<T>(), capacity);
         let raw = AnyVecRaw::new::<T>(mem_builder, mem);
