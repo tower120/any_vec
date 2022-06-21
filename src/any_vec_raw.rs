@@ -113,7 +113,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     }
 
     /// Leave this, for Mem, because implementation need it.
-    /// If M does not implement MemResizable, then `expand`
+    /// If M::Mem does not implement MemResizable, then `expand`
     /// will panic, if out of capacity.
     #[inline]
     pub fn reserve(&mut self, additional: usize) {

@@ -4,6 +4,7 @@ use std::ptr::NonNull;
 use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 
 
+/// Heap allocated memory.
 #[derive(Default, Clone)]
 pub struct Heap;
 impl MemBuilder for Heap {
@@ -28,7 +29,6 @@ impl MemBuilderSizeable for Heap{
     }
 }
 
-/// Heap allocated memory.
 pub struct HeapMem {
     mem: NonNull<u8>,
     size: usize,        // in elements

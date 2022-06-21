@@ -2,6 +2,9 @@ use std::alloc::Layout;
 use std::mem::MaybeUninit;
 use crate::mem::{Mem, MemBuilder};
 
+/// Fixed capacity on-stack memory.
+///
+/// `SIZE` in bytes.
 #[derive(Default, Clone)]
 pub struct Stack<const SIZE: usize>;
 impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
@@ -16,9 +19,6 @@ impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
     }
 }
 
-/// Fixed capacity on-stack memory.
-///
-/// `SIZE` in bytes.
 pub struct StackMem<const SIZE: usize>{
     mem: MaybeUninit<[u8; SIZE]>,
     element_layout: Layout
