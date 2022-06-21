@@ -38,3 +38,7 @@ harness = false
 [[bench]]
 name = "drain"
 harness = false
+
+[[bench]]
+name = "iter"
+harness = false

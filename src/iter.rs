@@ -38,7 +38,6 @@ pub struct Iter<'a,
 {
     pub(crate) any_vec_ptr: AnyVecPtr,
 
-    // TODO: try pointers, instead
     pub(crate) index: usize,
     pub(crate) end: usize,
 

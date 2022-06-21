@@ -13,8 +13,6 @@ use crate::traits::{Cloneable, None, Trait};
 // Typed operations will never use type-erased Element, so there is no
 // need in type-known-based optimizations.
 
-// TODO: hide. Derive AnyValue staff in Element.
-//
 /// Owning pointer to [`AnyVec`] element.
 ///
 /// This is public, just so you can see what [`Element`] can do.
