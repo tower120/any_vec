@@ -46,10 +46,14 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     }
 
     #[inline]
-    pub(crate) fn clone_empty(&self) -> Self{
-        let mut mem_builder = self.mem_builder.clone();
+    pub(crate) fn clone_empty(&self) -> Self {
+        self.clone_empty_in(self.mem_builder.clone())
+    }
+
+    #[inline]
+    pub(crate) fn clone_empty_in<NewM: MemBuilder>(&self, mut mem_builder: NewM) -> AnyVecRaw<NewM>{
         let mem = mem_builder.build(self.element_layout());
-        Self{
+        AnyVecRaw{
             mem_builder,
             mem,
             len: 0,

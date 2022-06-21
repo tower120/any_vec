@@ -172,6 +172,15 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
+    pub fn clone_empty_in<NewM: MemBuilder>(&self, mem_builder: NewM) -> AnyVec<Traits, NewM> {
+        AnyVec {
+            raw: self.raw.clone_empty_in(mem_builder),
+            clone_fn: self.clone_fn,
+            phantom: PhantomData
+        }
+    }
+
+    #[inline]
     pub(crate) fn clone_fn(&self) -> Option<CloneFn>{
         <Traits as CloneType>::get(self.clone_fn)
     }

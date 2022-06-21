@@ -4,6 +4,7 @@ use itertools::{assert_equal};
 use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
 use any_vec::element::Element;
+use any_vec::mem::Stack;
 use any_vec::traits::{Cloneable, Trait};
 
 #[test]
@@ -154,7 +155,7 @@ fn any_vec_push_to_self_test(){
         vec.push(String::from("2"));
     }
 
-    let mut intermediate = any_vec.clone_empty();
+    let mut intermediate = any_vec.clone_empty_in(Stack::<512>);
     intermediate.push(any_vec.get(1).unwrap().lazy_clone());
     let e = intermediate.get(0).unwrap();
 
