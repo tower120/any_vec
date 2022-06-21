@@ -33,6 +33,8 @@ Only destruct operations have additional overhead of indirect call.
     } 
 ```
 
+See [documentation](https://docs.rs/any_vec) for more.
+
 ## Send, Sync, Clone
 
 You can make `AnyVec` `Send`able, `Sync`able, `Clone`able:
@@ -61,6 +63,10 @@ let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
  v2.push(e.lazy_clone());
  v2.push(e.lazy_clone());
 ```
+
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version differences.
 
 #### N.B.
 

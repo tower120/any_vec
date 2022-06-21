@@ -74,6 +74,41 @@
 //! v2.push(e.lazy_clone());
 //! v2.push(e.lazy_clone());
 //! ```
+//!
+//! # MemBuilder / Mem
+//!
+//! [`MemBuilder`] + [`Mem`] works like [`Allocator`] for [`AnyVec`]. But unlike allocator,
+//! [`Mem`] container-specialized design allows to perform more optimizations. For example
+//! it is possible to make stack-allocated `FixedAnyVec` and small-buffer-optimized(SBO) `SmallAnyVec`
+//! from `AnyVec` by just changing [`MemBuilder`]:
+//!
+//!```rust
+//! # use any_vec::any_value::AnyValueWrapper;
+//! # use any_vec::AnyVec;
+//! # use any_vec::mem::Stack;
+//! type FixedAnyVec = AnyVec<_, Stack<512>>;
+//! let mut any_vec: FixedAnyVec  = AnyVec::new::<String>();
+//! // This will be on stack, without any allocations.
+//! // This is as fast, as just making variable.
+//! any_vec.push(AnyValueWrapper::new(String::from("0")))
+//!```
+//!
+//! With help of [clone_empty_in] you can use stack allocated, or SBO [`AnyVec`]
+//! as fast intermediate storage for values of unknown type:
+//!
+//!```rust
+//! # use any_vec::any_value::{AnyValueCloneable, AnyValueWrapper};
+//! # use any_vec::AnyVec;
+//! # use any_vec::mem::Stack;
+//!
+//! fn self_push_first_element<T: dyn Cloneable>(any_vec: &mut AnyVec<T>){
+//!    let mut tmp = any_vec.clone_empty_in(Stack<256>);
+//!    tmp.push(any_vec.at(0).lazy_clone());
+//!    any_vec.push(tmp.pop());
+//! }
+//!```
+//!
+//! [`MemBuilder`] interface, being stateful, allow to make [`Mem`]'s, which work with complex custom allocators.
 
 mod any_vec;
 mod clone_type;
