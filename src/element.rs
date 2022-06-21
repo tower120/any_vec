@@ -7,7 +7,7 @@ use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::mem;
-use crate::mem::{Mem, MemBuilder};
+use crate::mem::MemBuilder;
 use crate::traits::{Cloneable, None, Trait};
 
 // Typed operations will never use type-erased Element, so there is no
