@@ -78,7 +78,7 @@
 //! # MemBuilder
 //!
 //! [`MemBuilder`] + [`Mem`] works like [`Allocator`] for [`AnyVec`]. But unlike allocator,
-//! [`Mem`] container-specialized design allows to perform more optimizations. For example
+//! [`Mem`] container-specialized design allows to perform more optimizations. For example,
 //! it is possible to make stack-allocated `FixedAnyVec` and small-buffer-optimized(SBO) `SmallAnyVec`
 //! from `AnyVec` by just changing [`MemBuilder`]:
 //!
@@ -90,8 +90,8 @@
 //!
 //! type FixedAnyVec<Traits = dyn None> = AnyVec<Traits, Stack<512>>;
 //! let mut any_vec: FixedAnyVec = AnyVec::new::<String>();
+//!
 //! // This will be on stack, without any allocations.
-//! // This is as fast, as just making variable.
 //! any_vec.push(AnyValueWrapper::new(String::from("0")))
 //!```
 //!
