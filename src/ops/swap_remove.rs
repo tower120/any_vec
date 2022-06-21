@@ -36,7 +36,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {
@@ -54,17 +53,20 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
         // 2. overwrite with last element
         let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
         let last_element =
-            if !Unknown::is::<Self::Type>() {
-                any_vec_raw.mem.as_ptr().cast::<Self::Type>().add(self.last_index) as *const u8
+            if !Unknown::is::<AnyVecPtr::Element>() {
+                any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>().add(self.last_index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
                     .add(any_vec_raw.element_layout().size() * self.last_index)
             };
 
         if self.element as *const u8 != last_element {
-            if !Unknown::is::<Self::Type>() {
-                ptr::copy_nonoverlapping
-                    (last_element as *const Self::Type, self.element as *mut Self::Type, 1);
+            if !Unknown::is::<AnyVecPtr::Element>() {
+                ptr::copy_nonoverlapping(
+                    last_element as *const AnyVecPtr::Element,
+                    self.element as *mut AnyVecPtr::Element,
+                    1
+                );
             } else {
                 copy_bytes_nonoverlapping
                     (last_element, self.element, any_vec_raw.element_layout().size());

@@ -27,7 +27,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Remove<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {
@@ -38,8 +37,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     fn bytes(&self) -> *const u8 {
         unsafe{
             let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
-            if !Unknown::is::<Self::Type>(){
-                any_vec_raw.mem.as_ptr().cast::<Self::Type>()
+            if !Unknown::is::<AnyVecPtr::Element>(){
+                any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
                     .add(self.index) as *const u8
             } else {
                 any_vec_raw.mem.as_ptr()
@@ -52,8 +51,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     fn consume(&mut self) {
     unsafe{
         // 2. shift everything left
-        if !Unknown::is::<Self::Type>() {
-            let dst = self.bytes() as *mut Self::Type;
+        if !Unknown::is::<AnyVecPtr::Element>() {
+            let dst = self.bytes() as *mut AnyVecPtr::Element;
             let src = dst.add(1);
             ptr::copy(src, dst,self.last_index - self.index);
         } else {

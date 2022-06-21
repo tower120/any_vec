@@ -9,9 +9,6 @@ use crate::traits::{Cloneable, None, Trait};
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;
 
-    // TODO: remove Type
-    type Type: 'static;
-
     fn any_vec_ptr(&self) -> Self::AnyVecPtr;
 
     fn bytes(&self) -> *const u8;
@@ -43,11 +40,11 @@ impl<Op: Operation> TempValue<Op>{
 }
 
 impl<Op: Operation> AnyValue for TempValue<Op>{
-    type Type = Op::Type;
+    type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
-        let typeid = TypeId::of::<Op::Type>();
+        let typeid = TypeId::of::<Self::Type>();
         if typeid == TypeId::of::<Unknown>(){
             self.any_vec_raw().element_typeid()
         } else {
@@ -57,10 +54,10 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
 
     #[inline]
     fn size(&self) -> usize {
-        if Unknown::is::<Op::Type>() {
+        if Unknown::is::<Self::Type>() {
             self.any_vec_raw().element_layout().size()
         } else{
-            mem::size_of::<Op::Type>()
+            mem::size_of::<Self::Type>()
         }
     }
 
@@ -99,12 +96,12 @@ impl<Op: Operation> Drop for TempValue<Op>{
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
-            if Unknown::is::<Op::Type>() {
+            if Unknown::is::<<Self as AnyValue>::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element, 1);
                 }
             } else {
-                ptr::drop_in_place(element as *mut Op::Type);
+                ptr::drop_in_place(element as *mut <Self as AnyValue>::Type);
             }
         }
         self.op.consume();

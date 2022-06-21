@@ -27,7 +27,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Pop<'a, AnyVecPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Pop<'a, AnyVecPtr>{
     type AnyVecPtr = AnyVecPtr;
-    type Type = AnyVecPtr::Element;
 
     #[inline]
     fn any_vec_ptr(&self) -> Self::AnyVecPtr {
