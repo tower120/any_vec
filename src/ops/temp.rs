@@ -8,6 +8,8 @@ use crate::traits::{Cloneable, None, Trait};
 
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;
+
+    // TODO: remove Type
     type Type: 'static;
 
     fn any_vec_ptr(&self) -> Self::AnyVecPtr;

@@ -4,7 +4,7 @@ use std::ptr::NonNull;
 use std::slice;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{Iter, remove, swap_remove, TempValue};
+use crate::ops::{Iter, pop, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::iter::ElementIterator;
@@ -94,6 +94,20 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     pub fn push(&mut self, value: T){
         unsafe{
             self.this_mut().push_unchecked(AnyValueWrapper::new(value));
+        }
+    }
+
+    #[inline]
+    pub fn pop(&mut self) -> Option<T> {
+        if self.is_empty(){
+            None
+        } else {
+            let value = unsafe{
+                TempValue::new(pop::Pop::new(
+                    AnyVecRawPtr::<T, M>::from(self.any_vec)
+                )).downcast_unchecked::<T>()
+            };
+            Some(value)
         }
     }
 
@@ -228,6 +242,11 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     #[inline]
     pub fn len(&self) -> usize {
         self.this().len
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     #[inline]

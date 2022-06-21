@@ -2,6 +2,8 @@
 
 ## Unreleased
 ### Added
+- `pop`
+- `is_empty`
 - `AnyVec::clone_empty_in`
 - `Stack` Mem/Allocator. 
 - `Mem` ala Allocator.

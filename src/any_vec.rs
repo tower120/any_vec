@@ -8,7 +8,7 @@ use std::slice;
 use crate::{AnyVecTyped, into_range, mem, ops};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove};
+use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
@@ -341,6 +341,24 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
+    /// # Leaking
+    ///
+    /// If the returned [`TempValue`] goes out of scope without being dropped (due to
+    /// [`mem::forget`], for example), the vector will lost and leak last element.
+    ///
+    /// [`mem::forget`]: std::mem::forget
+    ///
+    #[inline]
+    pub fn pop(&mut self) -> Option<Pop<Traits, M>> {
+        if self.is_empty(){
+            None
+        } else {
+            Some(TempValue::new(
+                pop::Pop::new(AnyVecPtr::from(self))
+            ))
+        }
+    }
+
     /// # Panics
     ///
     /// * Panics if index out of bounds.
@@ -469,6 +487,11 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     #[inline]
     pub fn len(&self) -> usize {
         self.raw.len
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     #[inline]

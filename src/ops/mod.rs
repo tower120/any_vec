@@ -4,11 +4,19 @@ pub(crate) mod swap_remove;
 pub(crate) mod remove;
 pub(crate) mod drain;
 pub(crate) mod splice;
+pub(crate) mod pop;
 
 pub use temp::TempValue;
 pub use iter::Iter;
 
 use crate::any_vec_ptr::AnyVecPtr;
+
+/// Lazily `pop` on consumption/drop.
+///
+/// This is created by [`AnyVec::pop`].
+///
+/// [`AnyVec::pop`]: crate::AnyVec::pop
+pub type Pop<'a, Traits, M> = TempValue<pop::Pop<'a, AnyVecPtr<Traits, M>>>;
 
 /// Lazily `remove` element on consumption/drop.
 ///
