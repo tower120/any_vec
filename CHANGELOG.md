@@ -6,7 +6,7 @@
 - `is_empty`
 - `AnyVec::clone_empty_in`
 - `Stack` Mem/Allocator. 
-- `Mem` ala Allocator.
+- `MemBuilder` + `Mem` = Allocator.
 - `reserve`
 - `reserve_exact`
 - `shrink_to_fit`
