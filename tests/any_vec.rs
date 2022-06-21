@@ -2,7 +2,7 @@ use std::any::{TypeId};
 use std::mem::{size_of};
 use std::mem::forget;
 use std::ptr::NonNull;
-use itertools::{any, assert_equal};
+use itertools::assert_equal;
 use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
 use any_vec::mem::Stack;
