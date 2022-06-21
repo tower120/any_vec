@@ -1,10 +1,9 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use std::marker::PhantomData;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
-use crate::traits::{Cloneable, None, Trait};
+use crate::traits::Cloneable;
 
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;

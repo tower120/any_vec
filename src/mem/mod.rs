@@ -7,8 +7,6 @@ pub use stack::Stack;
 pub(crate) type Default = Heap;
 
 use std::alloc::Layout;
-use std::cmp;
-use std::ptr::NonNull;
 
 /// This is [`Mem`] builder.
 ///

@@ -6,7 +6,7 @@ use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::element::{ElementPointer, ElementMut, ElementRef};
-use crate::mem::{Mem, MemBuilder};
+use crate::mem::MemBuilder;
 use crate::traits::Trait;
 
 // TODO :Additional [`AnyVec`] Iterator operations.

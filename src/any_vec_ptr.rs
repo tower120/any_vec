@@ -5,7 +5,7 @@ use std::ptr::NonNull;
 use crate::any_value::Unknown;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
-use crate::mem::{Mem, MemBuilder};
+use crate::mem::{MemBuilder};
 use crate::traits::Trait;
 
 pub trait IAnyVecRawPtr: Copy{

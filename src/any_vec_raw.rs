@@ -1,7 +1,6 @@
 use std::{cmp, mem, ptr};
-use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
+use std::alloc::Layout;
 use std::any::TypeId;
-use std::ptr::NonNull;
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
