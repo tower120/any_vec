@@ -15,7 +15,19 @@ use std::ptr::NonNull;
 /// It can be stateful. You can use it like Allocator.
 pub trait MemBuilder: Clone {
     type Mem: Mem;
-    fn build(&mut self, element_layout: Layout, capacity: usize) -> Self::Mem;
+
+    fn build(&mut self, element_layout: Layout) -> Self::Mem;
+
+    #[inline]
+    fn build_with_size(&mut self, element_layout: Layout, capacity: usize)
+        -> Self::Mem
+    where
+        Self::Mem: MemResizable
+    {
+        let mut mem = self.build(element_layout);
+        mem.resize(capacity);
+        mem
+    }
 }
 
 /// Interface for [`AnyVec`] memory chunk.

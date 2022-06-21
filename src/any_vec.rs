@@ -107,6 +107,16 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Defaul
 
 impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 {
+    #[inline]
+    fn build<T: SatisfyTraits<Traits>>(raw: AnyVecRaw<M>) -> Self {
+        let clone_fn = <T as CloneFnTrait<Traits>>::CLONE_FN;
+        Self{
+            raw,
+            clone_fn: <Traits as CloneType>::new(clone_fn),
+            phantom: PhantomData
+        }
+    }
+
     /// Element should implement requested Traits
     ///
     /// `Mem::Builder` should be Default constructible.
@@ -120,11 +130,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     /// Element should implement requested Traits
-    #[inline]
-    pub fn new_in<T: 'static>(mem_builder: M) -> Self
+    pub fn new_in<T: 'static>(mut mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
     {
-        Self::with_capacity_in::<T>(0, mem_builder)
+        let mem = mem_builder.build(Layout::new::<T>());
+        let raw = AnyVecRaw::new::<T>(mem_builder, mem);
+        Self::build::<T>(raw)
     }
 
     /// Element should implement requested Traits
@@ -134,21 +145,21 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
         T: SatisfyTraits<Traits>,
+        M::Mem: MemResizable,
         M: Default
     {
         Self::with_capacity_in::<T>(capacity, Default::default())
     }
 
     /// Element should implement requested Traits
-    pub fn with_capacity_in<T: 'static>(capacity: usize, mem_builder: M) -> Self
-        where T: SatisfyTraits<Traits>
+    pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self
+    where
+        T: SatisfyTraits<Traits>,
+        M::Mem: MemResizable
     {
-        let clone_fn = <T as CloneFnTrait<Traits>>::CLONE_FN;
-        Self{
-            raw: AnyVecRaw::with_capacity_in::<T>(capacity, mem_builder),
-            clone_fn: <Traits as CloneType>::new(clone_fn),
-            phantom: PhantomData
-        }
+        let mem = mem_builder.build_with_size(Layout::new::<T>(), capacity);
+        let raw = AnyVecRaw::new::<T>(mem_builder, mem);
+        Self::build::<T>(raw)
     }
 
     /// Same as clone, but without data copy.

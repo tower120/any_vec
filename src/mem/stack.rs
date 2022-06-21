@@ -8,8 +8,7 @@ impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
     type Mem = StackMem<SIZE>;
 
     #[inline]
-    fn build(&mut self, element_layout: Layout, size: usize) -> StackMem<SIZE> {
-        assert!(size <= SIZE, "Requested mem size too big!");
+    fn build(&mut self, element_layout: Layout) -> StackMem<SIZE> {
         StackMem{
             mem: MaybeUninit::uninit(),
             element_layout

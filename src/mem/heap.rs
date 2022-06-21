@@ -10,14 +10,12 @@ impl MemBuilder for Heap {
     type Mem = HeapMem;
 
     #[inline]
-    fn build(&mut self, element_layout: Layout, size: usize) -> HeapMem {
-        let mut this = HeapMem {
+    fn build(&mut self, element_layout: Layout) -> HeapMem {
+        HeapMem {
             mem: NonNull::<u8>::dangling(),
             size: 0,
             element_layout
-        };
-        this.resize(size);
-        this
+        }
     }
 }
 

@@ -18,8 +18,7 @@ pub struct AnyVecRaw<M: MemBuilder> {
 
 impl<M: MemBuilder> AnyVecRaw<M> {
     #[inline]
-    pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self {
-        let mem = mem_builder.build(Layout::new::<T>(), capacity);
+    pub fn new<T: 'static>(mem_builder: M, mem: M::Mem) -> Self {
         Self{
             mem_builder,
             mem,
@@ -49,7 +48,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     #[inline]
     pub(crate) fn clone_empty(&self) -> Self{
         let mut mem_builder = self.mem_builder.clone();
-        let mem = mem_builder.build(self.element_layout(), 0);
+        let mem = mem_builder.build(self.element_layout());
         Self{
             mem_builder,
             mem,
