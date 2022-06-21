@@ -115,7 +115,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     pub fn remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(remove::Remove::new(
+            TempValue::new(remove::Remove::new(
                 AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
@@ -126,7 +126,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     pub fn swap_remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(swap_remove::SwapRemove::new(
+            TempValue::new(swap_remove::SwapRemove::new(
                 AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
