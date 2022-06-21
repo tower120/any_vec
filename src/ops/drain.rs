@@ -1,6 +1,7 @@
 use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
 use crate::iter::Iter;
 use crate::any_vec_ptr;
+use crate::mem::{MemBuilder};
 use crate::ops::iter::Iterable;
 use crate::traits::Trait;
 
@@ -81,11 +82,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 }
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait> Sync for Drain<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for Drain<'a, AnyVecPtr<Traits, M>>{}
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Sync> Sync for Drain<'a, AnyVecRawPtr<Type>>{}
+unsafe impl<'a, Type: Sync, M: MemBuilder> Sync for Drain<'a, AnyVecRawPtr<Type, M>>{}
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait> Send for Drain<'a, AnyVecPtr<Traits>>{}
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for Drain<'a, AnyVecPtr<Traits, M>>{}
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Send> Send for Drain<'a, AnyVecRawPtr<Type>>{}
+unsafe impl<'a, Type: Send, M: MemBuilder> Send for Drain<'a, AnyVecRawPtr<Type, M>>{}

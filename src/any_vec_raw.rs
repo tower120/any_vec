@@ -1,49 +1,42 @@
-use std::{mem, ptr};
-use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
+use std::{cmp, mem, ptr};
+use std::alloc::Layout;
 use std::any::TypeId;
-use std::ptr::NonNull;
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
+use crate::mem::{Mem, MemBuilder, MemResizable};
 
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
-pub struct AnyVecRaw {
-    pub(crate) mem: NonNull<u8>,
-    capacity: usize,        // in elements
+pub struct AnyVecRaw<M: MemBuilder> {
+    mem_builder: M,// usually ZST
+    pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
-    element_layout: Layout, // size is aligned
     type_id: TypeId,        // purely for safety checks
     drop_fn: Option<DropFn>
 }
 
-impl AnyVecRaw {
-/*    pub fn new<Element: 'static>() -> Self {
-        Self::with_capacity::<Element>(0)
-    }
-*/
-    pub fn with_capacity<Element: 'static>(capacity: usize) -> Self {
-        let mut this = Self{
-            mem: NonNull::<u8>::dangling(),
-            capacity: 0,
+impl<M: MemBuilder> AnyVecRaw<M> {
+    #[inline]
+    pub fn new<T: 'static>(mem_builder: M, mem: M::Mem) -> Self {
+        Self{
+            mem_builder,
+            mem,
             len: 0,
-            element_layout: Layout::new::<Element>(),
-            type_id: TypeId::of::<Element>(),
+            type_id: TypeId::of::<T>(),
             drop_fn:
-                if !mem::needs_drop::<Element>(){
+                if !mem::needs_drop::<T>(){
                     None
                 } else{
                     Some(|mut ptr: *mut u8, len: usize|{
                         for _ in 0..len{
                             unsafe{
-                                ptr::drop_in_place(ptr as *mut Element);
-                                ptr = ptr.add(mem::size_of::<Element>());
+                                ptr::drop_in_place(ptr as *mut T);
+                                ptr = ptr.add(mem::size_of::<T>());
                             }
                         }
                     })
                 }
-        };
-        this.set_capacity(capacity);
-        this
+        }
     }
 
     #[inline]
@@ -52,15 +45,19 @@ impl AnyVecRaw {
     }
 
     #[inline]
-    pub(crate) fn clone_empty(&self) -> Self{
-        Self{
-            mem: NonNull::<u8>::dangling(),
-            capacity: 0,
+    pub(crate) fn clone_empty(&self) -> Self {
+        self.clone_empty_in(self.mem_builder.clone())
+    }
+
+    #[inline]
+    pub(crate) fn clone_empty_in<NewM: MemBuilder>(&self, mut mem_builder: NewM) -> AnyVecRaw<NewM>{
+        let mem = mem_builder.build(self.element_layout());
+        AnyVecRaw{
+            mem_builder,
+            mem,
             len: 0,
-            element_layout: self.element_layout,
             type_id: self.type_id,
             drop_fn: self.drop_fn,
-            //clone_fn: self.clone_fn
         }
     }
 
@@ -70,20 +67,18 @@ impl AnyVecRaw {
         let mut cloned = self.clone_empty();
 
         // 2. allocate
-        // TODO: set only necessary capacity size.
-        // TODO: implement through expand.
-        cloned.set_capacity(self.capacity);
+        cloned.mem.expand(self.len);
 
         // 3. copy/clone
         {
             let src = self.mem.as_ptr();
-            let dst = cloned.mem.as_ptr();
+            let dst = cloned.mem.as_mut_ptr();
             if let Some(clone_fn) = clone_fn{
                 (clone_fn)(src, dst, self.len);
             } else {
                 ptr::copy_nonoverlapping(
                     src, dst,
-                    self.element_layout.size() * self.len
+                    self.element_layout().size() * self.len
                 );
             }
         }
@@ -91,51 +86,6 @@ impl AnyVecRaw {
         // 4. set len
         cloned.len = self.len;
         cloned
-    }
-
-    /// This is the only function, which do allocations/deallocations.
-    fn set_capacity(&mut self, new_capacity: usize){
-        // Never cut
-        debug_assert!(self.len <= new_capacity);
-
-        if self.capacity == new_capacity {
-            return;
-        }
-
-        if self.element_layout.size() != 0 {
-            unsafe{
-                // Non checked mul, because this memory size already allocated.
-                let mem_layout = Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.capacity,
-                    self.element_layout.align()
-                );
-
-                self.mem =
-                    if new_capacity == 0 {
-                        dealloc(self.mem.as_ptr(), mem_layout);
-                        NonNull::<u8>::dangling()
-                    } else {
-                        // mul carefully, to prevent overflow.
-                        let new_mem_size = self.element_layout.size()
-                            .checked_mul(new_capacity).unwrap();
-                        let new_mem_layout = Layout::from_size_align_unchecked(
-                            new_mem_size, self.element_layout.align()
-                        );
-
-                        if self.capacity == 0 {
-                            // allocate
-                            NonNull::new(alloc(new_mem_layout))
-                        } else {
-                            // reallocate
-                            NonNull::new(realloc(
-                                self.mem.as_ptr(), mem_layout,new_mem_size
-                            ))
-                        }
-                        .unwrap_or_else(|| handle_alloc_error(new_mem_layout))
-                    }
-            }
-        }
-        self.capacity = new_capacity;
     }
 
     #[inline]
@@ -148,13 +98,51 @@ impl AnyVecRaw {
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
-    // TODO: hide and make reserve!!
     #[cold]
     #[inline(never)]
-    pub(crate) fn grow(&mut self){
-        self.set_capacity(
-             if self.capacity == 0 {2} else {self.capacity * 2}
-        );
+    fn expand_one(&mut self){
+        self.mem.expand(1);
+    }
+
+    #[inline]
+    /*pub(crate)*/ fn reserve_one(&mut self){
+        if self.len == self.capacity(){
+            self.expand_one();
+        }
+    }
+
+    /// Leave this, for Mem, because implementation need it.
+    /// If M::Mem does not implement MemResizable, then `expand`
+    /// will panic, if out of capacity.
+    #[inline]
+    pub fn reserve(&mut self, additional: usize) {
+        let new_len = self.len + additional;
+        if self.capacity() < new_len{
+            self.mem.expand(new_len - self.capacity());
+        }
+    }
+
+    #[inline]
+    pub fn reserve_exact(&mut self, additional: usize)
+        where M::Mem: MemResizable
+    {
+        let new_len = self.len + additional;
+        if self.capacity() < new_len{
+            self.mem.expand_exact(new_len - self.capacity());
+        }
+    }
+
+    pub fn shrink_to_fit(&mut self)
+        where M::Mem: MemResizable
+    {
+        self.mem.resize(self.len);
+    }
+
+    pub fn shrink_to(&mut self, min_capacity: usize)
+        where M::Mem: MemResizable
+    {
+        let new_len = cmp::max(self.len, min_capacity);
+        self.mem.resize(new_len);
     }
 
     /// # Safety
@@ -163,13 +151,11 @@ impl AnyVecRaw {
     pub unsafe fn insert_unchecked<V: AnyValue>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
-        if self.len == self.capacity{
-            self.grow();
-        }
+        self.reserve_one();
 
         // Compile time type optimization
         if !Unknown::is::<V::Type>(){
-            let element = self.mem.cast::<V::Type>().as_ptr().add(index);
+            let element = self.mem.as_mut_ptr().cast::<V::Type>().add(index);
 
             // 1. shift right
             ptr::copy(
@@ -181,8 +167,8 @@ impl AnyVecRaw {
             // 2. write value
             value.move_into(element as *mut u8);
         } else {
-            let element_size = self.element_layout.size();
-            let element = self.mem.as_ptr().add(element_size * index);
+            let element_size = self.element_layout().size();
+            let element = self.mem.as_mut_ptr().add(element_size * index);
 
             // 1. shift right
             crate::copy_bytes(
@@ -203,17 +189,15 @@ impl AnyVecRaw {
     /// Type is not checked.
     #[inline]
     pub unsafe fn push_unchecked<V: AnyValue>(&mut self, value: V) {
-        if self.len == self.capacity{
-            self.grow();
-        }
+        self.reserve_one();
 
         // Compile time type optimization
         let element =
             if !Unknown::is::<V::Type>(){
-                 self.mem.cast::<V::Type>().as_ptr().add(self.len) as *mut u8
+                 self.mem.as_mut_ptr().cast::<V::Type>().add(self.len) as *mut u8
             } else {
-                let element_size = self.element_layout.size();
-                self.mem.as_ptr().add(element_size * self.len)
+                let element_size = self.element_layout().size();
+                self.mem.as_mut_ptr().add(element_size * self.len)
             };
 
         value.move_into(element);
@@ -230,7 +214,7 @@ impl AnyVecRaw {
         self.len = 0;
 
         if let Some(drop_fn) = self.drop_fn{
-            (drop_fn)(self.mem.as_ptr(), len);
+            (drop_fn)(self.mem.as_mut_ptr(), len);
         }
     }
 
@@ -243,18 +227,17 @@ impl AnyVecRaw {
     /// Element Layout
     #[inline]
     pub fn element_layout(&self) -> Layout {
-        self.element_layout
+        self.mem.element_layout()
     }
 
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.capacity
+        self.mem.size()
     }
 }
 
-impl Drop for AnyVecRaw {
+impl<M: MemBuilder> Drop for AnyVecRaw<M> {
     fn drop(&mut self) {
         self.clear();
-        self.set_capacity(0);
     }
 }

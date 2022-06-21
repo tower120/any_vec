@@ -5,6 +5,7 @@ use std::ptr::NonNull;
 use itertools::assert_equal;
 use any_vec::AnyVec;
 use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
+use any_vec::mem::Stack;
 
 #[allow(dead_code)]
 unsafe fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
@@ -281,6 +282,81 @@ fn any_vec_insert_back(){
         vec.insert(i, i);
     }
     assert_equal(vec.as_slice().iter().copied(), 0..100);
+}
+
+#[test]
+fn reserve_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve(4);
+    assert_eq!(any_vec.capacity(), 4);
+
+    any_vec.reserve(6);
+    assert_eq!(any_vec.capacity(), 8);
+}
+
+#[test]
+fn reserve_exact_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(4);
+    assert_eq!(any_vec.capacity(), 4);
+
+    any_vec.reserve_exact(6);
+    assert_eq!(any_vec.capacity(), 6);
+}
+
+#[test]
+fn shrink_to_fit_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(10);
+    assert_eq!(any_vec.capacity(), 10);
+
+    any_vec.shrink_to_fit();
+    assert_eq!(any_vec.capacity(), 0);
+}
+
+#[test]
+fn shrink_to_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    assert_eq!(any_vec.capacity(), 0);
+
+    any_vec.reserve_exact(10);
+    assert_eq!(any_vec.capacity(), 10);
+
+    any_vec.shrink_to(5);
+    assert_eq!(any_vec.capacity(), 5);
+}
+
+#[test]
+fn mem_stack_test(){
+    use any_vec::traits::None;
+    type FixedAnyVec<Traits = dyn None> = AnyVec<Traits, Stack<512>>;
+
+    let mut any_vec: FixedAnyVec = AnyVec::new::<String>();
+    {
+        let mut vec = any_vec.downcast_mut::<String>().unwrap();
+        vec.push(String::from("0"));
+        vec.push(String::from("1"));
+        vec.push(String::from("2"));
+        vec.push(String::from("3"));
+    }
+
+    // Should fail to compile.
+    //any_vec.reserve(1);
+
+    assert_eq!(any_vec.capacity(), 512);
+    assert_eq!(any_vec.len(), 4);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3")
+    ]);
 }
 
 #[test]

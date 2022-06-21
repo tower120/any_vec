@@ -6,6 +6,7 @@ use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::element::{ElementPointer, ElementMut, ElementRef};
+use crate::mem::MemBuilder;
 use crate::traits::Trait;
 
 // TODO :Additional [`AnyVec`] Iterator operations.
@@ -31,18 +32,16 @@ where
 /// [`Element`]: crate::element::Element
 /// [`ElementRef`]: crate::element::ElementRef
 /// [`ElementMut`]: crate::element::ElementMut
-#[derive(Clone)]
 pub struct Iter<'a,
     AnyVecPtr: IAnyVecRawPtr,
     IterItem: IteratorItem<'a, AnyVecPtr> = ElementIterItem<'a, AnyVecPtr>>
 {
     pub(crate) any_vec_ptr: AnyVecPtr,
 
-    // TODO: try pointers, instead
     pub(crate) index: usize,
     pub(crate) end: usize,
 
-    phantom: PhantomData<(&'a AnyVecRaw, IterItem)>
+    phantom: PhantomData<(&'a AnyVecRaw<AnyVecPtr::M>, IterItem)>
 }
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>>
@@ -51,6 +50,22 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>>
     #[inline]
     pub(crate) fn new(any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
         Self{any_vec_ptr, index: start, end, phantom: PhantomData}
+    }
+}
+
+impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr> + Clone>
+    Clone
+for
+    Iter<'a, AnyVecPtr, IterItem>
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self{
+            any_vec_ptr: self.any_vec_ptr,
+            index: self.index,
+            end: self.end,
+            phantom: PhantomData
+        }
     }
 }
 
@@ -117,12 +132,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
 
 // According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Send
-    for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
+unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Send
+    for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, IterItem: IteratorItem<'a, AnyVecPtr<Traits>>> Sync
-    for Iter<'a, AnyVecPtr<Traits>, IterItem> {}
+unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Sync
+    for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
 
 
 pub trait IteratorItem<'a, AnyVecPtr: IAnyVecRawPtr>{
@@ -144,18 +159,18 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> IteratorItem<'a, AnyVecPtr> for ElementIterIt
 }
 
 /// Ref
-pub struct ElementRefIterItem<'a, Traits: ?Sized + Trait>(
-    pub(crate) PhantomData<ElementPointer<'a, AnyVecPtr<Traits>>>
+pub struct ElementRefIterItem<'a, Traits: ?Sized + Trait, M: MemBuilder>(
+    pub(crate) PhantomData<ElementPointer<'a, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait> IteratorItem<'a, AnyVecPtr<Traits>> for ElementRefIterItem<'a, Traits>{
-    type Item = ElementRef<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IteratorItem<'a, AnyVecPtr<Traits, M>> for ElementRefIterItem<'a, Traits, M>{
+    type Item = ElementRef<'a, Traits, M>;
 
     #[inline]
-    fn element_to_item(element: ElementPointer<'a, AnyVecPtr<Traits>>) -> Self::Item {
+    fn element_to_item(element: ElementPointer<'a, AnyVecPtr<Traits, M>>) -> Self::Item {
         ElementRef(ManuallyDrop::new(element))
     }
 }
-impl<'a, Traits: ?Sized + Trait> Clone for ElementRefIterItem<'a, Traits>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Clone for ElementRefIterItem<'a, Traits, M>{
     fn clone(&self) -> Self {
         Self(PhantomData)
     }
@@ -163,18 +178,18 @@ impl<'a, Traits: ?Sized + Trait> Clone for ElementRefIterItem<'a, Traits>{
 
 
 /// Mut
-pub struct ElementMutIterItem<'a, Traits: ?Sized + Trait>(
-    pub(crate) PhantomData<ElementPointer<'a, AnyVecPtr<Traits>>>
+pub struct ElementMutIterItem<'a, Traits: ?Sized + Trait, M: MemBuilder>(
+    pub(crate) PhantomData<ElementPointer<'a, AnyVecPtr<Traits, M>>>
 );
-impl<'a, Traits: ?Sized + Trait> IteratorItem<'a, AnyVecPtr<Traits>> for ElementMutIterItem<'a, Traits>{
-    type Item = ElementMut<'a, Traits>;
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IteratorItem<'a, AnyVecPtr<Traits, M>> for ElementMutIterItem<'a, Traits, M>{
+    type Item = ElementMut<'a, Traits, M>;
 
     #[inline]
-    fn element_to_item(element: ElementPointer<'a, AnyVecPtr<Traits>>) -> Self::Item {
+    fn element_to_item(element: ElementPointer<'a, AnyVecPtr<Traits, M>>) -> Self::Item {
         ElementMut(ManuallyDrop::new(element))
     }
 }
-impl<'a, Traits: ?Sized + Trait> Clone for ElementMutIterItem<'a, Traits>{
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Clone for ElementMutIterItem<'a, Traits, M>{
     fn clone(&self) -> Self {
         Self(PhantomData)
     }
@@ -187,10 +202,10 @@ impl<'a, Traits: ?Sized + Trait> Clone for ElementMutIterItem<'a, Traits>{
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`ElementRef`]: crate::element::ElementRef
-pub type IterRef<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementRefIterItem<'a, Traits>>;
+pub type IterRef<'a, Traits, M> = Iter<'a, AnyVecPtr<Traits, M>, ElementRefIterItem<'a, Traits, M>>;
 
 /// Mutable reference [`AnyVec`] iterator. Return [`ElementMut`] items.
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`ElementMut`]: crate::element::ElementMut
-pub type IterMut<'a, Traits> = Iter<'a, AnyVecPtr<Traits>, ElementMutIterItem<'a, Traits>>;
+pub type IterMut<'a, Traits, M> = Iter<'a, AnyVecPtr<Traits, M>, ElementMutIterItem<'a, Traits, M>>;

@@ -1,14 +1,12 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use std::marker::PhantomData;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
-use crate::traits::{Cloneable, None, Trait};
+use crate::traits::Cloneable;
 
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;
-    type Type: 'static;
 
     fn any_vec_ptr(&self) -> Self::AnyVecPtr;
 
@@ -25,28 +23,27 @@ pub trait Operation {
 ///
 /// May do some postponed actions on consumption/destruction.
 ///
-pub struct TempValue<Op: Operation, Traits: ?Sized + Trait = dyn None>{
+pub struct TempValue<Op: Operation>{
     op: Op,
-    phantom: PhantomData<Traits>
 }
-impl<Op: Operation, Traits: ?Sized + Trait> TempValue<Op, Traits>{
+impl<Op: Operation> TempValue<Op>{
     #[inline]
     pub(crate) fn new(op: Op) -> Self {
-        Self{op, phantom: PhantomData}
+        Self{op}
     }
 
     #[inline]
-    fn any_vec_raw(&self) -> &AnyVecRaw{
+    fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M>{
         unsafe{ self.op.any_vec_ptr().any_vec_raw().as_ref() }
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
-    type Type = Op::Type;
+impl<Op: Operation> AnyValue for TempValue<Op>{
+    type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
-        let typeid = TypeId::of::<Op::Type>();
+        let typeid = TypeId::of::<Self::Type>();
         if typeid == TypeId::of::<Unknown>(){
             self.any_vec_raw().element_typeid()
         } else {
@@ -56,10 +53,10 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
 
     #[inline]
     fn size(&self) -> usize {
-        if Unknown::is::<Op::Type>() {
+        if Unknown::is::<Self::Type>() {
             self.any_vec_raw().element_layout().size()
         } else{
-            mem::size_of::<Op::Type>()
+            mem::size_of::<Self::Type>()
         }
     }
 
@@ -76,12 +73,12 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValue for TempValue<Op, Traits>{
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValueMut for TempValue<Op, Traits>
-    where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
-{}
+impl<Op: Operation> AnyValueMut for TempValue<Op> {}
 
-impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, Traits>
-    where Traits: Cloneable, Op::AnyVecPtr : IAnyVecPtr<Traits>
+impl<Op: Operation> AnyValueCloneable for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Cloneable
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
@@ -90,7 +87,7 @@ impl<Op: Operation, Traits: ?Sized + Trait> AnyValueCloneable for TempValue<Op, 
     }
 }
 
-impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
+impl<Op: Operation> Drop for TempValue<Op>{
     #[inline]
     fn drop(&mut self) {
         unsafe{
@@ -98,17 +95,26 @@ impl<Op: Operation, Traits: ?Sized + Trait> Drop for TempValue<Op, Traits>{
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
-            if Unknown::is::<Op::Type>() {
+            if Unknown::is::<<Self as AnyValue>::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element, 1);
                 }
             } else {
-                ptr::drop_in_place(element as *mut Op::Type);
+                ptr::drop_in_place(element as *mut <Self as AnyValue>::Type);
             }
         }
         self.op.consume();
     }
 }
 
-unsafe impl<Op: Operation, Traits: ?Sized + Trait + Send> Send for TempValue<Op, Traits> {}
-unsafe impl<Op: Operation, Traits: ?Sized + Trait + Sync> Sync for TempValue<Op, Traits> {}
+unsafe impl<Op: Operation> Send for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Send
+{}
+
+unsafe impl<Op: Operation> Sync for TempValue<Op>
+where
+    Op::AnyVecPtr: IAnyVecPtr,
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Sync
+{}

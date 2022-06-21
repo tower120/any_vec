@@ -4,10 +4,11 @@ use std::ptr::NonNull;
 use std::slice;
 use crate::any_value::{AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{Iter, remove, swap_remove, TempValue};
+use crate::ops::{Iter, pop, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;
 use crate::into_range;
 use crate::iter::ElementIterator;
+use crate::mem::{MemBuilder, Mem, MemResizable};
 use crate::ops::drain::Drain;
 use crate::ops::splice::Splice;
 
@@ -20,21 +21,21 @@ use crate::ops::splice::Splice;
 /// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
 /// [`AnyVecRef<T>`]: crate::AnyVecRef
 /// [`AnyVecMut<T>`]: crate::AnyVecMut
-pub struct AnyVecTyped<'a, T: 'static>{
+pub struct AnyVecTyped<'a, T: 'static, M: MemBuilder + 'a>{
     // NonNull - to have one struct for both & and &mut
-    any_vec: NonNull<AnyVecRaw>,
+    any_vec: NonNull<AnyVecRaw<M>>,
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static + Send> Send for AnyVecTyped<'a, T> {}
-unsafe impl<'a, T: 'static + Sync> Sync for AnyVecTyped<'a, T> {}
+unsafe impl<'a, T: 'static + Send, M: MemBuilder> Send for AnyVecTyped<'a, T, M> {}
+unsafe impl<'a, T: 'static + Sync, M: MemBuilder> Sync for AnyVecTyped<'a, T, M> {}
 
-impl<'a, T: 'static> AnyVecTyped<'a, T>{
+impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     /// # Safety
     ///
     /// Unsafe, because type not checked
     #[inline]
-    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw>) -> Self {
+    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw<M>>) -> Self {
         Self{any_vec, phantom: PhantomData}
     }
 
@@ -45,13 +46,41 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
-    fn this(&self) -> &'a AnyVecRaw {
+    fn this(&self) -> &'a AnyVecRaw<M> {
         unsafe{ self.any_vec.as_ref() }
     }
 
     #[inline]
-    fn this_mut(&mut self) -> &'a mut AnyVecRaw {
+    fn this_mut(&mut self) -> &'a mut AnyVecRaw<M> {
         unsafe{ self.any_vec.as_mut() }
+    }
+
+    #[inline]
+    pub fn reserve(&mut self, additional: usize)
+        where M::Mem: MemResizable
+    {
+        self.this_mut().reserve(additional)
+    }
+
+    #[inline]
+    pub fn reserve_exact(&mut self, additional: usize)
+        where M::Mem: MemResizable
+    {
+        self.this_mut().reserve_exact(additional)
+    }
+
+    #[inline]
+    pub fn shrink_to_fit(&mut self)
+        where M::Mem: MemResizable
+    {
+        self.this_mut().shrink_to_fit()
+    }
+
+    #[inline]
+    pub fn shrink_to(&mut self, min_capacity: usize)
+        where M::Mem: MemResizable
+    {
+        self.this_mut().shrink_to(min_capacity)
     }
 
     #[inline]
@@ -69,11 +98,25 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     }
 
     #[inline]
+    pub fn pop(&mut self) -> Option<T> {
+        if self.is_empty(){
+            None
+        } else {
+            let value = unsafe{
+                TempValue::new(pop::Pop::new(
+                    AnyVecRawPtr::<T, M>::from(self.any_vec)
+                )).downcast_unchecked::<T>()
+            };
+            Some(value)
+        }
+    }
+
+    #[inline]
     pub fn remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(remove::Remove::new(
-                AnyVecRawPtr::<T>::from(self.any_vec),
+            TempValue::new(remove::Remove::new(
+                AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -83,8 +126,8 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     pub fn swap_remove(&mut self, index: usize) -> T {
         self.this().index_check(index);
         unsafe{
-            TempValue::<_>::new(swap_remove::SwapRemove::new(
-                AnyVecRawPtr::<T>::from(self.any_vec),
+            TempValue::new(swap_remove::SwapRemove::new(
+                AnyVecRawPtr::<T, M>::from(self.any_vec),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -92,11 +135,11 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>)
-        -> impl ElementIterator<Item = T>
+        -> impl ElementIterator<Item = T> + 'a
     {
         let Range{start, end} = into_range(self.len(), range);
         Iter(Drain::new(
-            AnyVecRawPtr::<T>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.any_vec),
             start,
             end
         )).map(|e| unsafe{
@@ -106,17 +149,17 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
 
     #[inline]
     pub fn splice<I>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
-        -> impl ElementIterator<Item = T>
+        -> impl ElementIterator<Item = T> + 'a
     where
         I: IntoIterator<Item = T>,
-        I::IntoIter: ExactSizeIterator,
+        I::IntoIter: ExactSizeIterator + 'a,
     {
         let Range{start, end} = into_range(self.len(), range);
         let replace_with = replace_with.into_iter()
             .map(|e| AnyValueWrapper::new(e));
 
         Iter(Splice::new(
-            AnyVecRawPtr::<T>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.any_vec),
             start,
             end,
             replace_with
@@ -190,7 +233,7 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
             slice::from_raw_parts_mut(
-                self.this_mut().mem.as_ptr().cast::<T>(),
+                self.this_mut().mem.as_mut_ptr().cast::<T>(),
                 self.this().len,
             )
         }
@@ -199,6 +242,11 @@ impl<'a, T: 'static> AnyVecTyped<'a, T>{
     #[inline]
     pub fn len(&self) -> usize {
         self.this().len
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     #[inline]

@@ -33,6 +33,8 @@ Only destruct operations have additional overhead of indirect call.
     } 
 ```
 
+See [documentation](https://docs.rs/any_vec) for more.
+
 ## Send, Sync, Clone
 
 You can make `AnyVec` `Send`able, `Sync`able, `Clone`able:
@@ -61,6 +63,38 @@ let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
  v2.push(e.lazy_clone());
  v2.push(e.lazy_clone());
 ```
+
+## MemBuilder
+
+ `MemBuilder` + `Mem` works like `Allocator` for `AnyVec`. But unlike allocator,
+ `Mem` container-specialized design allows to perform more optimizations. For example,
+ it is possible to make stack-allocated `FixedAnyVec` and small-buffer-optimized(SBO) `SmallAnyVec`
+ from `AnyVec` by just changing `MemBuilder`:
+
+```rust
+type FixedAnyVec<Traits = dyn None> = AnyVec<Traits, Stack<512>>;
+let mut any_vec: FixedAnyVec = AnyVec::new::<String>();
+
+// This will be on stack, without any allocations.
+any_vec.push(AnyValueWrapper::new(String::from("0")))
+```
+
+ With help of `clone_empty_in` you can use stack allocated, or SBO `AnyVec`
+ as fast intermediate storage for values of unknown type:
+
+```rust
+fn self_push_first_element<T: Trait + Cloneable>(any_vec: &mut AnyVec<T>){
+    let mut tmp = any_vec.clone_empty_in(Stack::<256>);
+    tmp.push(any_vec.at(0).lazy_clone());
+    any_vec.push(tmp.pop().unwrap());
+}
+```
+
+ `MemBuilder` interface, being stateful, allow to make `Mem`, which can work with complex custom allocators.
+
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version differences.
 
 #### N.B.
 

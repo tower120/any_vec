@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+### Added
+- `pop`
+- `is_empty`
+- `AnyVec::clone_empty_in`
+- `Stack` Mem/Allocator. 
+- `MemBuilder` + `Mem` = Allocator.
+- `reserve`
+- `reserve_exact`
+- `shrink_to_fit`
+- `shrink_to`
+
 ## 0.8.0
 ### Added
 - Added `AnyVec::at` - ergonomic version of `get`.
