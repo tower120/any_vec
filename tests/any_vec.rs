@@ -351,6 +351,12 @@ fn mem_stack_test(){
 
     assert_eq!(any_vec.capacity(), 512);
     assert_eq!(any_vec.len(), 4);
+    assert_equal(any_vec.downcast_ref::<String>().unwrap(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3")
+    ]);
 }
 
 #[test]

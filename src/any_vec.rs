@@ -128,6 +128,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     /// Element should implement requested Traits
+    #[inline]
     pub fn new_in<T: 'static>(mut mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
     {

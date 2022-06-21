@@ -42,6 +42,7 @@ pub type SwapRemove<'a, Traits, M> = TempValue<swap_remove::SwapRemove<'a, AnyVe
 /// [`ElementIterator`]: crate::iter::ElementIterator
 pub type Drain<'a, Traits, M> = Iter<drain::Drain<'a, AnyVecPtr<Traits, M>>>;
 
+// TODO: change template arguments order<I, Traits, M>
 ///  A splicing [`ElementIterator`] for [`AnyVec`]. Return [`Element`] items.
 ///
 /// This is created by [`AnyVec::splice`].
