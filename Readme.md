@@ -7,7 +7,7 @@ Type erased vector. All elements have the same type.
 
 Designed to be type-erased as far as possible - most of the operations does not know about concrete type.
 
-Only destruct operations have additional overhead of indirect call.
+Only type-erased destruct and clone operations have additional overhead of indirect call.
 
 # Usage
 

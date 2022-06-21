@@ -1,16 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.9.0
 ### Added
-- `pop`
-- `is_empty`
-- `AnyVec::clone_empty_in`
-- `Stack` Mem/Allocator. 
 - `MemBuilder` + `Mem` = Allocator.
+- `Stack` Mem/Allocator.
+- `AnyVec::clone_empty_in`
 - `reserve`
 - `reserve_exact`
 - `shrink_to_fit`
 - `shrink_to`
+- `pop`
+- `is_empty`
 
 ## 0.8.0
 ### Added
