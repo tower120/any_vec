@@ -15,7 +15,12 @@ use crate::ops::splice::Splice;
 /// Concrete type [`AnyVec`] representation.
 ///
 /// Created with [`AnyVec::downcast_`]-family.
-/// Accessed through [`AnyVecRef<T>`] or [`AnyVecMut<T>`]
+/// Accessed through [`AnyVecRef<T>`] or [`AnyVecMut<T>`].
+/// See [`AnyVec`] for documentation.
+///
+/// Operations with concrete type are somewhat faster, due to
+/// the fact, that compiler are able to optimize harder with full
+/// type knowledge.
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
@@ -183,9 +188,6 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         self.as_mut_slice().iter_mut()
     }
 
-    /// # Panics
-    ///
-    /// * Panics if index is out of bounds.
     #[inline]
     pub fn at(&self, index: usize) -> &'a T{
         self.get(index).unwrap()
@@ -201,9 +203,6 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         self.as_slice().get_unchecked(index)
     }
 
-    /// # Panics
-    ///
-    /// * Panics if index is out of bounds.
     #[inline]
     pub fn at_mut(&mut self, index: usize) -> &'a mut T{
         self.get_mut(index).unwrap()

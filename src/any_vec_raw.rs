@@ -8,7 +8,7 @@ use crate::mem::{Mem, MemBuilder, MemResizable};
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw<M: MemBuilder> {
-    mem_builder: M,// usually ZST
+    mem_builder: M,         // usually ZST
     pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
     type_id: TypeId,        // purely for safety checks

@@ -89,7 +89,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// Type erased vec-like container.
 /// All elements have the same type.
 ///
-/// Only destruct operations have indirect call overhead.
+/// Only destruct and clone operations have indirect call overhead.
 ///
 /// You can make AnyVec [`Send`]-able, [`Sync`]-able, [`Cloneable`], by
 /// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`traits`].
@@ -117,7 +117,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
-    /// Element should implement requested Traits
+    /// Constructs empty [`AnyVec`] with elements of type `T`,
+    /// using [`Default`] [`MemBuilder`].
+    ///
+    /// `T` should satisfy requested Traits.
+    ///
+    /// Not available, if provided [`MemBuilder`] is not [`Default`].
     #[inline]
     pub fn new<T: 'static>() -> Self
     where
@@ -127,7 +132,10 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         Self::new_in::<T>(Default::default())
     }
 
-    /// Element should implement requested Traits
+    /// Constructs empty [`AnyVec`] with elements of type `T`,
+    /// using provided `mem_builder`.
+    ///
+    /// `T` should satisfy requested Traits.
     #[inline]
     pub fn new_in<T: 'static>(mut mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
@@ -137,7 +145,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         Self::build::<T>(raw)
     }
 
-    /// Element should implement requested Traits
+    /// Constructs empty [`AnyVec`] with specified capacity and
+    /// elements of type `T`, using [`Default`] [`MemBuilder`].
+    ///
+    /// `T` should satisfy requested Traits.
+    ///
+    /// Not available, if provided [`MemBuilder`] is not
+    /// [`MemBuilderSizeable`] and [`Default`].
     #[inline]
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
@@ -148,7 +162,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         Self::with_capacity_in::<T>(capacity, Default::default())
     }
 
-    /// Element should implement requested Traits
+    /// Constructs empty [`AnyVec`] with specified capacity and
+    /// elements of type `T`, using `mem_builder`.
+    ///
+    /// `T` should satisfy requested Traits.
+    ///
+    /// Not available, if provided [`MemBuilder`] is not
+    /// [`MemBuilderSizeable`].
     pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self
     where
         T: SatisfyTraits<Traits>,
@@ -159,10 +179,10 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         Self::build::<T>(raw)
     }
 
-    /// Same as clone, but without data copy.
+    /// Constructs **empty** [`AnyVec`] with the same elements type, `Traits` and `MemBuilder`.
+    /// IOW, same as [`clone`], but without elements copy.
     ///
-    /// Since it does not copy underlying data, it works with any [`AnyVec`].
-    /// Use it to construct [`AnyVec`] of the same type.
+    /// [`clone`]: Clone::clone
     #[inline]
     pub fn clone_empty(&self) -> Self {
         Self {
@@ -172,6 +192,23 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
+    /// Constructs **empty** [`AnyVec`] with the same elements type and `Traits`,
+    /// but with other `MemBuilder`.
+    ///
+    /// Use it to construct intermediate storage, with fast [`MemBuilder`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use any_vec::any_value::AnyValueCloneable;
+    /// # use any_vec::AnyVec;
+    /// # use any_vec::mem::Stack;
+    /// # use any_vec::traits::Cloneable;
+    /// # let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+    /// let mut tmp = any_vec.clone_empty_in(Stack::<256>);
+    ///     tmp.push(any_vec.at(0).lazy_clone());
+    /// any_vec.push(tmp.pop().unwrap());
+    /// ```
     #[inline]
     pub fn clone_empty_in<NewM: MemBuilder>(&self, mem_builder: NewM) -> AnyVec<Traits, NewM> {
         AnyVec {
@@ -186,6 +223,17 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         <Traits as CloneType>::get(self.clone_fn)
     }
 
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the given container. More space may be reserved to avoid
+    /// frequent reallocations. After calling `reserve`, capacity will be
+    /// greater than or equal to `self.len() + additional`. Exact behavior defined by
+    /// implementation of [`MemResizable`]. Does nothing if capacity is already sufficient.
+    ///
+    /// Not available, if provided [`MemBuilder::Mem`] is not [`MemResizable`].
+    ///
+    /// # Panics
+    ///
+    /// [`MemResizable`] implementation may panic - see implementation description.
     #[inline]
     pub fn reserve(&mut self, additional: usize)
         where M::Mem: MemResizable
@@ -193,6 +241,23 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         self.raw.reserve(additional)
     }
 
+    /// Reserves the minimum capacity for exactly `additional` more elements to
+    /// be inserted in the given container. After calling `reserve_exact`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Exact behavior defined by implementation of [`MemResizable`].
+    /// Does nothing if the capacity is already sufficient.
+    ///
+    /// Note that the [`Mem`] implementation may grow bigger then requested.
+    /// Therefore, capacity can not be relied upon to be precisely
+    /// minimal. Prefer [`reserve`] if future insertions are expected.
+    ///
+    /// Not available, if provided [`MemBuilder::Mem`] is not [`MemResizable`].
+    ///
+    /// # Panics
+    ///
+    /// [`MemResizable`] implementation may panic - see implementation description.
+    ///
+    /// [`reserve`]: Self::reserve
     #[inline]
     pub fn reserve_exact(&mut self, additional: usize)
         where M::Mem: MemResizable
@@ -200,6 +265,14 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         self.raw.reserve_exact(additional)
     }
 
+    /// Shrinks the capacity as much as possible.
+    /// Exact behavior defined by implementation of [`MemResizable`].
+    ///
+    /// Not available, if provided [`MemBuilder::Mem`] is not [`MemResizable`].
+    ///
+    /// # Panics
+    ///
+    /// [`MemResizable`] implementation may panic - see implementation description.
     #[inline]
     pub fn shrink_to_fit(&mut self)
         where M::Mem: MemResizable
@@ -207,6 +280,18 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         self.raw.shrink_to_fit()
     }
 
+    /// Shrinks the capacity of the vector with a lower bound.
+    ///
+    /// The capacity will remain at least as large as both the length
+    /// and the supplied value. Exact behavior defined by implementation of [`MemResizable`].
+    ///
+    /// If the current capacity is less than the lower limit, this is a no-op.
+    ///
+    /// Not available, if provided [`MemBuilder::Mem`] is not [`MemResizable`].
+    ///
+    /// # Panics
+    ///
+    /// [`MemResizable`] implementation may panic - see implementation description.
     #[inline]
     pub fn shrink_to(&mut self, min_capacity: usize)
         where M::Mem: MemResizable
@@ -214,31 +299,47 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         self.raw.shrink_to(min_capacity)
     }
 
+    /// Returns [`AnyVecRef`] - typed view to const AnyVec,
+    /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_ref<Element: 'static>(&self) -> Option<AnyVecRef<Element, M>> {
-        if self.element_typeid() == TypeId::of::<Element>() {
+    pub fn downcast_ref<T: 'static>(&self) -> Option<AnyVecRef<T, M>> {
+        if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_ref_unchecked()) }
         } else {
             None
         }
     }
 
+    /// Returns [`AnyVecRef`] - typed view to const AnyVec.
+    ///
+    /// # Safety
+    ///
+    /// The container elements must be of type `T`.
+    /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_ref_unchecked<Element: 'static>(&self) -> AnyVecRef<Element, M> {
+    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> AnyVecRef<T, M> {
         AnyVecRef(AnyVecTyped::new(NonNull::from(&self.raw)))
     }
 
+    /// Returns [`AnyVecMut`] - typed view to mut AnyVec,
+    /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_mut<Element: 'static>(&mut self) -> Option<AnyVecMut<Element, M>> {
-        if self.element_typeid() == TypeId::of::<Element>() {
+    pub fn downcast_mut<T: 'static>(&mut self) -> Option<AnyVecMut<T, M>> {
+        if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_mut_unchecked()) }
         } else {
             None
         }
     }
 
+    /// Returns [`AnyVecMut`] - typed view to mut AnyVec.
+    ///
+    /// # Safety
+    ///
+    /// The container elements must be of type `T`.
+    /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<Element: 'static>(&mut self) -> AnyVecMut<Element, M> {
+    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> AnyVecMut<T, M> {
         AnyVecMut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
     }
 
@@ -293,7 +394,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         ElementRef(self.get_element(index))
     }
 
-    /// Return reference to element at `index` with bounds check.
+    /// Return mutable reference to element at `index` with bounds check.
     ///
     /// # Panics
     ///

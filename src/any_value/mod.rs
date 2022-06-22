@@ -68,6 +68,8 @@ pub trait AnyValue {
         tmp.assume_init()
     }
 
+    /// Move self into `out`.
+    ///
     /// `out` must have at least [`size`] bytes.
     /// Will do compile-time optimisation if type/size known.
     ///

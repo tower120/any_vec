@@ -48,10 +48,19 @@ pub trait Mem{
     /// In elements.
     fn size(&self) -> usize;
 
+    /// Expand `Mem` size for **at least** `additional` more elements.
+    /// Implementation encouraged to avoid frequent reallocations.
+    ///
+    /// # Notes
+    ///
     /// Consider, that `expand` is in [`MemResizable`].
     /// Implement this only if your type [`MemResizable`].
     ///
     /// It's here, only due to technical reasons (see `AnyVecRaw::reserve`).
+    ///
+    /// # Panics
+    ///
+    /// Implementation may panic, if fail to allocate/reallocate memory.
     fn expand(&mut self, additional: usize){
         drop(additional);
         panic!("Can't change capacity!");
@@ -62,12 +71,22 @@ pub trait Mem{
     }
 }
 
-/// Marker trait for resizable [`Mem`].
+/// Resizable [`Mem`].
 pub trait MemResizable: Mem{
+    /// Expand `Mem` size for **exactly** `additional` more elements.
+    /// Implementation encouraged to be as precise as possible with new memory size.
+    ///
+    /// # Panics
+    ///
+    /// Implementation may panic, if fail to allocate/reallocate memory.
     fn expand_exact(&mut self, additional: usize){
         self.resize(self.size() + additional);
     }
 
-    /// Do panic if can't resize.
+    /// Resize memory chunk to specified size.
+    ///
+    /// # Panics
+    ///
+    /// Implementation may panic, if fail to allocate/reallocate/deallocate memory.
     fn resize(&mut self, new_size: usize);
 }
