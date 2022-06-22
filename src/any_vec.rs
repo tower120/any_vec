@@ -205,6 +205,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// # use any_vec::mem::Stack;
     /// # use any_vec::traits::Cloneable;
     /// # let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
+    /// # any_vec.downcast_mut::<String>().unwrap().push(String::from("0"));
     /// let mut tmp = any_vec.clone_empty_in(Stack::<256>);
     ///     tmp.push(any_vec.at(0).lazy_clone());
     /// any_vec.push(tmp.pop().unwrap());
