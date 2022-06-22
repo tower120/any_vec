@@ -28,7 +28,7 @@ Only type-erased destruct and clone operations have additional overhead of indir
     other_vec.push(element);
 
     // Output 2 1
-    for s in vec.downcast_ref::<String>().unwrap().as_slice(){
+    for s in vec.downcast_ref::<String>().unwrap(){
         println!("{}", s);
     } 
 ```

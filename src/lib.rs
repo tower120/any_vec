@@ -25,7 +25,7 @@
 //!     other_vec.push(element);
 //!
 //!     // Output 2 1
-//!     for s in vec.downcast_ref::<String>().unwrap().as_slice(){
+//!     for s in vec.downcast_ref::<String>().unwrap(){
 //!         println!("{}", s);
 //!     }
 //!
@@ -111,12 +111,29 @@
 //! }
 //!```
 //!
-//! [`MemBuilder`] interface, being stateful, allow to make [`Mem`], which can work with complex custom allocators.
+//! [`MemBuilder`] interface, being stateful, allow to make [`Mem`],
+//! which can work with complex custom allocators.
 //!
 //! [`MemBuilder`]: mem::MemBuilder
 //! [`Mem`]: mem::Mem
 //! [`Allocator`]: std::alloc::Allocator
 //! [`clone_empty_in`]: AnyVec::clone_empty_in
+//!
+//! # AnyValue
+//!
+//! Being type erased, [`AnyVec`] need a way to operate on untyped values safely.
+//! Instead of working with plain `*mut u8`, [`AnyVec`] operates with [`AnyValue`].
+//!
+//! [`AnyValue`] is trait, which provide operations to work with type erased values.
+//! Any type that implement [`AnyValue`] can be used with [`AnyVec`].
+//! [`AnyValue`] interface allows to perform postponed operations on consumption.
+//! This trick used heavily by [`AnyVec`] destructive operations, which instead of concrete
+//! type return [`AnyValue`], which perform actual operation on value drop.
+//!
+//! Implementing [`AnyValueMut`] and [`AnyValueCloneable`] makes type mutable and
+//! cloneable respectively.
+//!
+//! [`AnyValueMut`]: crate::any_value::AnyValueMut`
 
 mod any_vec;
 mod clone_type;
