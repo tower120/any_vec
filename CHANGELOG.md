@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1
+### Fixed
+- Fixed UB with `StackMem::as_ptr`.
+
 ## 0.9.0
 ### Added
 - `MemBuilder` + `Mem` = Allocator.

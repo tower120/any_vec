@@ -27,12 +27,12 @@ pub struct StackMem<const SIZE: usize>{
 impl<const SIZE: usize> Mem for StackMem<SIZE>{
     #[inline]
     fn as_ptr(&self) -> *const u8 {
-        unsafe{self.mem.assume_init_ref()}.as_ptr()
+        self.mem.as_ptr() as *const u8
     }
 
     #[inline]
     fn as_mut_ptr(&mut self) -> *mut u8 {
-        unsafe{self.mem.assume_init_mut()}.as_mut_ptr()
+        self.mem.as_mut_ptr() as *mut u8
     }
 
     #[inline]
