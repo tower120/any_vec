@@ -1,9 +1,7 @@
-use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::iter::Iter;
 use crate::any_vec_ptr;
-use crate::mem::{MemBuilder};
 use crate::ops::iter::Iterable;
-use crate::traits::Trait;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {

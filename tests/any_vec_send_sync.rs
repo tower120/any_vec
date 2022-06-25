@@ -1,5 +1,4 @@
 use std::iter;
-use std::marker::PhantomData;
 use impls::impls;
 use any_vec::{AnyVec, AnyVecMut, IterMut, IterRef, mem};
 use any_vec::any_value::AnyValueWrapper;
@@ -32,9 +31,10 @@ fn any_vec_heap_send_sync_test() {
         }
 
         {
-            let mut vec: AnyVecMut<String, M> = any_vec.downcast_mut::<String>().unwrap();
+            let vec: AnyVecMut<String, M> = any_vec.downcast_mut::<String>().unwrap();
             assert!(!impls!(AnyVecMut<String, M>: Send));
             assert!(!impls!(AnyVecMut<String, M>: Sync));
+            drop(vec);
         }
 
         {
