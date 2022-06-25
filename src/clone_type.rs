@@ -19,27 +19,33 @@ fn clone_fn<T: Clone>(src: *const u8, dst: *mut u8, len: usize){
         }
     }
 }
-const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
+
+// This not work as intended. T considered as always !Copy
+/*const fn get_clone_fn<T: Clone>() -> Option<CloneFn>{
     if impls::impls!(T: Copy){
         None
     } else {
         Some(clone_fn::<T>)
     }
-}
+}*/
 pub trait CloneFnTrait<Traits: ?Sized>{
     const CLONE_FN: Option<CloneFn> = None;
 }
 impl<T: Clone> CloneFnTrait<dyn Cloneable> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    //const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    const CLONE_FN: Option<CloneFn> = Some(clone_fn::<T>);
 }
 impl<T: Clone> CloneFnTrait<dyn Cloneable+Send> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    //const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    const CLONE_FN: Option<CloneFn> = Some(clone_fn::<T>);
 }
 impl<T: Clone> CloneFnTrait<dyn Cloneable+Sync> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    //const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    const CLONE_FN: Option<CloneFn> = Some(clone_fn::<T>);
 }
 impl<T: Clone> CloneFnTrait<dyn Cloneable+Send+Sync> for T{
-    const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    //const CLONE_FN: Option<CloneFn> = get_clone_fn::<T>();
+    const CLONE_FN: Option<CloneFn> = Some(clone_fn::<T>);
 }
 impl<T> CloneFnTrait<dyn None> for T{}
 impl<T> CloneFnTrait<dyn Send> for T{}
