@@ -2,9 +2,10 @@ use std::iter::{FusedIterator};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
-use crate::any_vec_ptr::{AnyVecPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
+use crate::{AnyVec, AnyVecTyped};
 use crate::element::{ElementPointer, ElementMut, ElementRef};
 use crate::mem::MemBuilder;
 use crate::traits::Trait;
@@ -130,14 +131,21 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
     for Iter<'a, AnyVecPtr, IterItem>
 {}
 
+
 // According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
 #[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Send
     for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
+#[allow(suspicious_auto_trait_impls)]
+unsafe impl<'a, T: Send, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Send
+    for Iter<'a, AnyVecRawPtr<T, M>, IterItem> {}
 
 #[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Sync
     for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
+#[allow(suspicious_auto_trait_impls)]
+unsafe impl<'a, T: Sync, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Sync
+    for Iter<'a, AnyVecRawPtr<T, M>, IterItem> {}
 
 
 pub trait IteratorItem<'a, AnyVecPtr: IAnyVecRawPtr>{

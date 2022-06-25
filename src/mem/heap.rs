@@ -111,3 +111,6 @@ impl Drop for HeapMem {
         self.resize(0);
     }
 }
+
+unsafe impl Send for HeapMem{}
+unsafe impl Sync for HeapMem{}

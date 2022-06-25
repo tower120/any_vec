@@ -2,6 +2,7 @@
 
 ## 0.9.1
 ### Fixed
+- `AnyVec` Send/Sync -ability now MemBuilder dependent. 
 - Fixed UB with `StackMem::as_ptr`.
 
 ## 0.9.0

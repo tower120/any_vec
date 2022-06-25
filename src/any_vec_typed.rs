@@ -32,8 +32,12 @@ pub struct AnyVecTyped<'a, T: 'static, M: MemBuilder + 'a>{
     phantom: PhantomData<&'a mut T>
 }
 
-unsafe impl<'a, T: 'static + Send, M: MemBuilder> Send for AnyVecTyped<'a, T, M> {}
-unsafe impl<'a, T: 'static + Sync, M: MemBuilder> Sync for AnyVecTyped<'a, T, M> {}
+unsafe impl<'a, T: 'static + Send, M: MemBuilder + Send> Send for AnyVecTyped<'a, T, M>
+    where M::Mem: Send
+{}
+unsafe impl<'a, T: 'static + Sync, M: MemBuilder + Sync> Sync for AnyVecTyped<'a, T, M>
+    where M::Mem: Sync
+{}
 
 impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     /// # Safety

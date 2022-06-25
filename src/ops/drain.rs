@@ -80,13 +80,3 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
         any_vec_raw.len = self.original_len - distance;
     }
 }
-
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for Drain<'a, AnyVecPtr<Traits, M>>{}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Sync, M: MemBuilder> Sync for Drain<'a, AnyVecRawPtr<Type, M>>{}
-
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for Drain<'a, AnyVecPtr<Traits, M>>{}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Send, M: MemBuilder> Send for Drain<'a, AnyVecRawPtr<Type, M>>{}

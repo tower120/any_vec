@@ -603,8 +603,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 }
 
-unsafe impl<Traits: ?Sized + Send + Trait, M: MemBuilder> Send for AnyVec<Traits, M> {}
-unsafe impl<Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for AnyVec<Traits, M> {}
+unsafe impl<Traits: ?Sized + Send + Trait, M: MemBuilder + Send> Send for AnyVec<Traits, M>
+    where M::Mem: Send
+{}
+unsafe impl<Traits: ?Sized + Sync + Trait, M: MemBuilder + Sync> Sync for AnyVec<Traits, M>
+    where M::Mem: Sync
+{}
 impl<Traits: ?Sized + Cloneable + Trait, M: MemBuilder> Clone for AnyVec<Traits, M>
 {
     fn clone(&self) -> Self {

@@ -118,6 +118,7 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
 
 unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
 unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
+// Do not implement Send/Sync for AnyVecPtrRaw, since it will be casted to concrete type anyway.
 
 
 /// [`AnyVec`] element.
