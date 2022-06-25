@@ -3,6 +3,7 @@ use std::{mem, ptr};
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
+use crate::AnyVec;
 use crate::traits::Cloneable;
 
 pub trait Operation {
@@ -110,11 +111,17 @@ impl<Op: Operation> Drop for TempValue<Op>{
 unsafe impl<Op: Operation> Send for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Send
+    AnyVec<
+        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
+        <Op::AnyVecPtr as IAnyVecRawPtr>::M
+    >: Send
 {}
 
 unsafe impl<Op: Operation> Sync for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Sync
+    AnyVec<
+        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
+        <Op::AnyVecPtr as IAnyVecRawPtr>::M
+    >: Sync
 {}

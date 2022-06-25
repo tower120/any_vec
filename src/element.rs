@@ -6,7 +6,7 @@ use std::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
-use crate::mem;
+use crate::{AnyVec, mem};
 use crate::mem::MemBuilder;
 use crate::traits::{Cloneable, None, Trait};
 
@@ -116,8 +116,20 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     }
 }
 
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for ElementPointer<'a, AnyVecPtr<Traits, M>>{}
+unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Send
+for
+    ElementPointer<'a, AnyVecPtr<Traits, M>>
+where
+    AnyVec<Traits, M>: Send
+{}
+
+unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Sync
+for
+    ElementPointer<'a, AnyVecPtr<Traits, M>>
+where
+    AnyVec<Traits, M>: Sync
+{}
+
 // Do not implement Send/Sync for AnyVecPtrRaw, since it will be casted to concrete type anyway.
 
 

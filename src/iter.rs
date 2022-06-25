@@ -134,18 +134,34 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
 
 // According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Send
-    for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
+unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Send
+for
+    Iter<'a, AnyVecPtr<Traits, M>, IterItem>
+where
+    AnyVec<Traits, M>: Send
+{}
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, T: Send, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Send
-    for Iter<'a, AnyVecRawPtr<T, M>, IterItem> {}
+unsafe impl<'a, T, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Send
+for
+    Iter<'a, AnyVecRawPtr<T, M>, IterItem>
+where
+    AnyVecTyped<'a, T, M>: Send
+{}
 
 #[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Sync
-    for Iter<'a, AnyVecPtr<Traits, M>, IterItem> {}
+unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Sync
+for
+    Iter<'a, AnyVecPtr<Traits, M>, IterItem>
+where
+    AnyVec<Traits, M>: Sync
+{}
 #[allow(suspicious_auto_trait_impls)]
 unsafe impl<'a, T: Sync, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Sync
-    for Iter<'a, AnyVecRawPtr<T, M>, IterItem> {}
+for
+    Iter<'a, AnyVecRawPtr<T, M>, IterItem>
+where
+    AnyVecTyped<'a, T, M>: Sync
+{}
 
 
 pub trait IteratorItem<'a, AnyVecPtr: IAnyVecRawPtr>{
