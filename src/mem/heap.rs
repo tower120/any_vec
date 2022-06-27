@@ -3,6 +3,11 @@ use std::cmp;
 use std::ptr::NonNull;
 use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 
+#[inline]
+fn dangling(layout: &Layout) -> NonNull<u8>{
+    //layout.dangling()
+    unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
+}
 
 /// Heap allocated memory.
 #[derive(Default, Clone)]
@@ -13,7 +18,7 @@ impl MemBuilder for Heap {
     #[inline]
     fn build(&mut self, element_layout: Layout) -> HeapMem {
         HeapMem {
-            mem: NonNull::<u8>::dangling(),
+            mem: dangling(&element_layout),
             size: 0,
             element_layout
         }
@@ -80,7 +85,7 @@ impl MemResizable for HeapMem {
                 self.mem =
                     if new_size == 0 {
                         dealloc(self.mem.as_ptr(), mem_layout);
-                        NonNull::<u8>::dangling()
+                        dangling(&self.element_layout)
                     } else {
                         // mul carefully, to prevent overflow.
                         let new_mem_size = self.element_layout.size()
