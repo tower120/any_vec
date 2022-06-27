@@ -71,9 +71,14 @@ impl<M: MemBuilder> AnyVecRaw<M> {
 
         // 3. copy/clone
         {
-            let src = self.mem.as_ptr();
-            let dst = cloned.mem.as_mut_ptr();
-            (clone_fn)(src, dst, self.len);
+            let mut src = self.mem.as_ptr();
+            let mut dst = cloned.mem.as_mut_ptr();
+            let element_size = self.element_layout().size();
+            for _ in 0..self.len{
+                (clone_fn)(src, dst);
+                src = src.add(element_size);
+                dst = dst.add(element_size);
+            }
         }
 
         // 4. set len

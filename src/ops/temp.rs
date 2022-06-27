@@ -84,7 +84,7 @@ where
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
         let clone_fn = self.op.any_vec_ptr().any_vec().as_ref().clone_fn();
-        (clone_fn)(self.bytes(), out, 1);
+        (clone_fn)(self.bytes(), out);
     }
 }
 
