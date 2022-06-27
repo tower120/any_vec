@@ -101,7 +101,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>
 {
     pub(crate) raw: AnyVecRaw<M>,
-    clone_fn: <Traits as CloneType>::Type,
+    clone_fn: <Traits as CloneType>::Type,  // ZST if Traits: !Cloneable
     phantom: PhantomData<Traits>
 }
 
@@ -220,7 +220,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub(crate) fn clone_fn(&self) -> Option<CloneFn>{
+    pub(crate) fn clone_fn(&self) -> CloneFn{
         <Traits as CloneType>::get(self.clone_fn)
     }
 

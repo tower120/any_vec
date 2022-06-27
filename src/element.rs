@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -112,7 +112,8 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        clone_into(self, out, self.any_vec_ptr.any_vec().as_ref().clone_fn());
+        let clone_fn = self.any_vec_ptr.any_vec().as_ref().clone_fn();
+        (clone_fn)(self.bytes(), out, 1);
     }
 }
 

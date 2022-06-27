@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::AnyVec;
@@ -83,8 +83,8 @@ where
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        let any_vec = self.op.any_vec_ptr().any_vec().as_ref();
-        clone_into(self, out, any_vec.clone_fn());
+        let clone_fn = self.op.any_vec_ptr().any_vec().as_ref().clone_fn();
+        (clone_fn)(self.bytes(), out, 1);
     }
 }
 

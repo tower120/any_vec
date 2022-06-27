@@ -62,7 +62,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     }
 
     /// Unsafe, because type cloneability is not checked
-    pub(crate) unsafe fn clone(&self, clone_fn: Option<CloneFn>) -> Self {
+    pub(crate) unsafe fn clone(&self, clone_fn: CloneFn) -> Self {
         // 1. construct empty "prototype"
         let mut cloned = self.clone_empty();
 
@@ -73,14 +73,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
         {
             let src = self.mem.as_ptr();
             let dst = cloned.mem.as_mut_ptr();
-            if let Some(clone_fn) = clone_fn{
-                (clone_fn)(src, dst, self.len);
-            } else {
-                ptr::copy_nonoverlapping(
-                    src, dst,
-                    self.element_layout().size() * self.len
-                );
-            }
+            (clone_fn)(src, dst, self.len);
         }
 
         // 4. set len
