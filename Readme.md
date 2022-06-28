@@ -96,11 +96,6 @@ fn self_push_first_element<T: Trait + Cloneable>(any_vec: &mut AnyVec<T>){
 
 See [CHANGELOG.md](CHANGELOG.md) for version differences.
 
-#### N.B.
-
-*Currently, minimum rust version is 1.61. This is to simplify implementation.  
-If you need `any_vec` to work on lower rust version - please feel free to make an issue.*
-
 # Known alternatives
 
 * [type_erased_vec](https://crates.io/crates/type_erased_vec). Allow to store `Vec<T>` in type erased way, 

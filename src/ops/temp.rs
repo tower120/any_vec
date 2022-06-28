@@ -1,8 +1,9 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, clone_into, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
+use crate::AnyVec;
 use crate::traits::Cloneable;
 
 pub trait Operation {
@@ -82,8 +83,8 @@ where
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        let any_vec = self.op.any_vec_ptr().any_vec().as_ref();
-        clone_into(self, out, any_vec.clone_fn());
+        let clone_fn = self.op.any_vec_ptr().any_vec().as_ref().clone_fn();
+        (clone_fn)(self.bytes(), out, 1);
     }
 }
 
@@ -110,11 +111,17 @@ impl<Op: Operation> Drop for TempValue<Op>{
 unsafe impl<Op: Operation> Send for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Send
+    AnyVec<
+        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
+        <Op::AnyVecPtr as IAnyVecRawPtr>::M
+    >: Send
 {}
 
 unsafe impl<Op: Operation> Sync for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Sync
+    AnyVec<
+        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
+        <Op::AnyVecPtr as IAnyVecRawPtr>::M
+    >: Sync
 {}

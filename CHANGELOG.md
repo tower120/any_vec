@@ -1,7 +1,13 @@
 # Changelog
 
 ## 0.9.1
+### Changed
+- `impls` dependency dropped. 
+- minimum rust version 1.61 requirement dropped.
+
 ### Fixed
+- Empty `HeapMem` used wrong aligned dangling pointer. Fixed. 
+- `AnyVec` Send/Sync -ability now MemBuilder dependent. 
 - Fixed UB with `StackMem::as_ptr`.
 
 ## 0.9.0

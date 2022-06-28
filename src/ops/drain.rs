@@ -1,9 +1,7 @@
-use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
+use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::iter::Iter;
 use crate::any_vec_ptr;
-use crate::mem::{MemBuilder};
 use crate::ops::iter::Iterable;
-use crate::traits::Trait;
 
 pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 {
@@ -80,13 +78,3 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
         any_vec_raw.len = self.original_len - distance;
     }
 }
-
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Sync + Trait, M: MemBuilder> Sync for Drain<'a, AnyVecPtr<Traits, M>>{}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Sync, M: MemBuilder> Sync for Drain<'a, AnyVecRawPtr<Type, M>>{}
-
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Send + Trait, M: MemBuilder> Send for Drain<'a, AnyVecPtr<Traits, M>>{}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Type: Send, M: MemBuilder> Send for Drain<'a, AnyVecRawPtr<Type, M>>{}

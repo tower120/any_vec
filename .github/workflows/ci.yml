@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,9 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ATiltedTree/setup-rust@v1
-      with:
-        rust-version: stable
+    #- uses: ATiltedTree/setup-rust@v1
+    #  with:
+    #    rust-version: stable
     - name: Build
       run: RUSTFLAGS="--deny warnings" cargo build
 
@@ -24,9 +24,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ATiltedTree/setup-rust@v1
-      with:
-        rust-version: stable
+    #- uses: ATiltedTree/setup-rust@v1
+    #  with:
+    #    rust-version: stable
     - name: Build with all features
       run: RUSTFLAGS="--deny warnings" cargo build --all-features
 
@@ -34,9 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ATiltedTree/setup-rust@v1
-      with:
-        rust-version: stable
+    #- uses: ATiltedTree/setup-rust@v1
+    #  with:
+    #    rust-version: stable
     - name: Run tests
       run: RUSTFLAGS="--deny warnings" cargo test --all-features
 
@@ -55,9 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ATiltedTree/setup-rust@v1
-      with:
-        rust-version: stable
+    #- uses: ATiltedTree/setup-rust@v1
+    #  with:
+    #    rust-version: stable
     - name: Build benches
       run: RUSTFLAGS="--deny warnings" cargo build --benches
 
@@ -65,8 +65,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: ATiltedTree/setup-rust@v1
-      with:
-        rust-version: stable
+    #- uses: ATiltedTree/setup-rust@v1
+    #  with:
+    #    rust-version: stable
     - name: Build doc
       run: RUSTFLAGS="--deny warnings" cargo doc --lib

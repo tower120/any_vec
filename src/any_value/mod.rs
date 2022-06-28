@@ -9,7 +9,6 @@ pub use raw::AnyValueRaw;
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::MaybeUninit;
-use crate::clone_type::CloneFn;
 use crate::copy_bytes_nonoverlapping;
 
 /// Marker for unknown type.
@@ -130,15 +129,5 @@ pub trait AnyValueCloneable: AnyValue {
         where Self: Sized
     {
         LazyClone::new(self)
-    }
-}
-
-/// Helper function, which utilize type knowledge.
-#[inline]
-pub(crate) unsafe fn clone_into(any_value: &impl AnyValue, out: *mut u8, clone_fn: Option<CloneFn>) {
-    if let Some(clone_fn) = clone_fn{
-        (clone_fn)(any_value.bytes(), out, 1);
-    } else {
-        copy_bytes(any_value, out);
     }
 }
