@@ -9,7 +9,7 @@ use crate::utils::bench_custom;
 
 const SIZE: usize = 10000;
 
-// usize is worst scenario, since it is copyable.
+// usize is worst case scenario, since it is copyable.
 type Element = usize;
 static VALUE: Element = 100;
 

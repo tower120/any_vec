@@ -6,6 +6,7 @@
 - minimum rust version 1.61 requirement dropped.
 
 ### Fixed
+- Empty `HeapMem` used wrong aligned dangling pointer. Fixed. 
 - `AnyVec` Send/Sync -ability now MemBuilder dependent. 
 - Fixed UB with `StackMem::as_ptr`.
 
