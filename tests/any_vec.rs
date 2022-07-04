@@ -374,6 +374,14 @@ fn any_vec_into_iter_test() {
         sum += e.downcast_ref::<usize>().unwrap();
     }
     assert_eq!(sum, 111);
+
+    let mut sum = 0;
+    for mut e in &mut any_vec{
+        let value = e.downcast_mut::<usize>().unwrap();
+        *value *= 10;
+        sum += *value;
+    }
+    assert_eq!(sum, 1110);
 }
 
 #[test]

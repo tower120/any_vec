@@ -13,9 +13,9 @@ pub struct Drain<'a, AnyVecPtr: IAnyVecRawPtr>
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drain<'a, AnyVecPtr>
 {
     #[inline]
-    pub(crate) fn new(any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
+    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr, start: usize, end: usize) -> Self {
         debug_assert!(start <= end);
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
         let original_len = any_vec_raw.len;
         debug_assert!(end <= original_len);
 
@@ -74,7 +74,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for Drain<'a, AnyVecPtr>
 
         // 3. len
         let distance = self.iter.end - self.start;
-        let any_vec_raw = unsafe{ self.iter.any_vec_ptr.any_vec_raw().as_mut() };
+        let any_vec_raw = unsafe{ self.iter.any_vec_ptr.any_vec_raw_mut() };
         any_vec_raw.len = self.original_len - distance;
     }
 }

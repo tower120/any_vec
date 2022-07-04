@@ -16,8 +16,8 @@ pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
     #[inline]
-    pub(crate) fn new(any_vec_ptr: AnyVecPtr, index: usize) -> Self{
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr, index: usize) -> Self{
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
 
         // 1. mem::forget and element drop panic "safety".
         let last_index = any_vec_raw.len - 1;
@@ -51,7 +51,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
     fn consume(&mut self) {
     unsafe{
         // 2. overwrite with last element
-        let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
+        let any_vec_raw = self.any_vec_ptr.any_vec_raw_mut();
         let last_element =
             if !Unknown::is::<AnyVecPtr::Element>() {
                 any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>().add(self.last_index) as *const u8

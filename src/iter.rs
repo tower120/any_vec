@@ -83,7 +83,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
             let element_ptr = element_ptr_at(self.any_vec_ptr, self.index);
             let element = ElementPointer::new(
                 self.any_vec_ptr,
-                unsafe{NonNull::new_unchecked(element_ptr)}
+                unsafe{NonNull::new_unchecked(element_ptr as *mut u8)}
             );
 
             self.index += 1;
@@ -110,7 +110,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Double
             let element_ptr = element_ptr_at(self.any_vec_ptr, self.end);
             let element = ElementPointer::new(
                 self.any_vec_ptr,
-                unsafe{NonNull::new_unchecked(element_ptr)}
+                unsafe{NonNull::new_unchecked(element_ptr as *mut u8)}
             );
 
             Some(IterItem::element_to_item(element))

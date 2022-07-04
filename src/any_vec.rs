@@ -32,7 +32,7 @@ use crate::traits::{Cloneable, Trait};
 /// ```
 pub mod traits{
     /// Marker trait, for traits accepted by AnyVec.
-    pub trait Trait: crate::clone_type::CloneType{}
+    pub trait Trait: 'static + crate::clone_type::CloneType{}
     impl Trait for dyn None {}
     impl Trait for dyn Sync{}
     impl Trait for dyn Send{}

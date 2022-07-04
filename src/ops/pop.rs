@@ -11,8 +11,8 @@ pub struct Pop<'a, AnyVecPtr: IAnyVecRawPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Pop<'a, AnyVecPtr>{
     #[inline]
-    pub(crate) fn new(any_vec_ptr: AnyVecPtr) -> Self{
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr) -> Self{
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
 
         // mem::forget and element drop panic "safety".
         debug_assert!(any_vec_raw.len > 0);
@@ -35,7 +35,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Pop<'a, AnyVecPtr>{
 
     #[inline]
     fn bytes(&self) -> *const u8 {
-        let any_vec_raw = unsafe{ self.any_vec_ptr.any_vec_raw().as_ref() };
+        let any_vec_raw = unsafe{ self.any_vec_ptr.any_vec_raw() };
         let index = any_vec_raw.len;
         element_ptr_at(self.any_vec_ptr, index)
     }

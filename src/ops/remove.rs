@@ -15,9 +15,9 @@ pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr>{
 
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Remove<'a, AnyVecPtr>{
     #[inline]
-    pub(crate) fn new(any_vec_ptr: AnyVecPtr, index: usize) -> Self{
+    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr, index: usize) -> Self{
         // 1. mem::forget and element drop panic "safety".
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
         let last_index = any_vec_raw.len - 1;
         any_vec_raw.len = index;
 
@@ -36,7 +36,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
     #[inline]
     fn bytes(&self) -> *const u8 {
         unsafe{
-            let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_ref();
+            let any_vec_raw = self.any_vec_ptr.any_vec_raw();
             if !Unknown::is::<AnyVecPtr::Element>(){
                 any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
                     .add(self.index) as *const u8
@@ -56,7 +56,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
             let src = dst.add(1);
             ptr::copy(src, dst,self.last_index - self.index);
         } else {
-            let size = self.any_vec_ptr.any_vec_raw().as_ref().element_layout().size();
+            let size = self.any_vec_ptr.any_vec_raw().element_layout().size();
             let dst = self.bytes() as *mut u8;
             let src = dst.add(size);
             crate::copy_bytes(src, dst,size * (self.last_index - self.index));
@@ -64,7 +64,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
 
         // 3. shrink len `self.any_vec.len -= 1`
         {
-            let any_vec_raw = self.any_vec_ptr.any_vec_raw().as_mut();
+            let any_vec_raw = self.any_vec_ptr.any_vec_raw_mut();
             any_vec_raw.len = self.last_index;
         }
     }
