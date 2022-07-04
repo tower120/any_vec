@@ -5,8 +5,12 @@ use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 
 #[inline]
 fn dangling(layout: &Layout) -> NonNull<u8>{
-    //layout.dangling()
-    unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
+    #[cfg(feature = "alloc_layout_extra")]{
+        layout.dangling()
+    }
+    #[cfg(not(feature = "alloc_layout_extra"))]{
+        unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
+    }
 }
 
 /// Heap allocated memory.
