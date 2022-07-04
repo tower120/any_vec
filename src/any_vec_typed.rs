@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
@@ -255,6 +256,12 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     #[inline]
     pub fn capacity(&self) -> usize {
         self.this().capacity()
+    }
+}
+
+impl<'a, T: 'static + Debug, M: MemBuilder> Debug for AnyVecTyped<'a, T, M>{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        (*self.as_slice()).fmt(f)
     }
 }
 

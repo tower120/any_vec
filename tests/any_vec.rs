@@ -375,3 +375,10 @@ fn any_vec_into_iter_test() {
     }
     assert_eq!(sum, 111);
 }
+
+#[test]
+fn any_vec_debug() {
+    let any_vec: AnyVec = AnyVec::new::<usize>();
+    let typeid = TypeId::of::<usize>();
+    assert_eq!(format!("{any_vec:?}"), format!("AnyVec {{ typeid: {typeid:?}, len: 0 }}"));
+}
