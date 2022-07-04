@@ -3,7 +3,7 @@
 ## Unreleased
 ### Added
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
-- 
+
 ### Fixed
 - Stacked Borrow friendly now.
 
