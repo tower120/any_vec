@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+### Added
+- `Debug` implemented for `AnyVec`, `AnyVecTyped`.
+
 ## 0.9.1
 ### Changed
 - `impls` dependency dropped. 
