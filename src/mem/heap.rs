@@ -5,10 +5,12 @@ use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 
 #[inline]
 fn dangling(layout: &Layout) -> NonNull<u8>{
-    #[cfg(feature = "alloc_layout_extra")]{
+    #[cfg(miri)]
+    {
         layout.dangling()
     }
-    #[cfg(not(feature = "alloc_layout_extra"))]{
+    #[cfg(not(miri))]
+    {
         unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
     }
 }

@@ -3,6 +3,9 @@
 ## Unreleased
 ### Added
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
+- 
+### Fixed
+- Stacked Borrow friendly now.
 
 ## 0.9.1
 ### Changed

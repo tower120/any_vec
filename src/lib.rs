@@ -1,4 +1,4 @@
-#![cfg_attr( miri, feature(alloc_layout_extra) )]
+#![cfg_attr(miri, feature(alloc_layout_extra) )]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
 //! Have same performance and *operations* as [`std::vec::Vec`].
