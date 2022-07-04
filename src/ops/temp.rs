@@ -35,7 +35,7 @@ impl<Op: Operation> TempValue<Op>{
 
     #[inline]
     fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M>{
-        unsafe{ self.op.any_vec_ptr().any_vec_raw().as_ref() }
+        unsafe{ self.op.any_vec_ptr().any_vec_raw() }
     }
 }
 
@@ -83,7 +83,7 @@ where
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        let clone_fn = self.op.any_vec_ptr().any_vec().as_ref().clone_fn();
+        let clone_fn = self.op.any_vec_ptr().any_vec().clone_fn();
         (clone_fn)(self.bytes(), out, 1);
     }
 }

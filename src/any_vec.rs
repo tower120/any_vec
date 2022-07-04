@@ -1,5 +1,6 @@
 use std::alloc::Layout;
 use std::any::TypeId;
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
@@ -31,7 +32,7 @@ use crate::traits::{Cloneable, Trait};
 /// ```
 pub mod traits{
     /// Marker trait, for traits accepted by AnyVec.
-    pub trait Trait: crate::clone_type::CloneType{}
+    pub trait Trait: 'static + crate::clone_type::CloneType{}
     impl Trait for dyn None {}
     impl Trait for dyn Sync{}
     impl Trait for dyn Send{}
@@ -620,6 +621,15 @@ impl<Traits: ?Sized + Cloneable + Trait, M: MemBuilder> Clone for AnyVec<Traits,
     }
 }
 
+impl<Traits: ?Sized + Trait, M: MemBuilder> Debug for AnyVec<Traits, M>{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AnyVec")
+         .field("typeid", &self.element_typeid())
+         .field("len", &self.len())
+         .finish()
+    }
+}
+
 impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IntoIterator for &'a AnyVec<Traits, M>{
     type Item = ElementRef<'a, Traits, M>;
     type IntoIter = IterRef<'a, Traits, M>;
@@ -670,6 +680,11 @@ impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecRef<'a, T, M>{
         self.iter()
     }
 }
+impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecRef<'a, T, M>{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 /// Typed view to &mut [`AnyVec`].
 ///
@@ -699,5 +714,10 @@ impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecMut<'a, T, M>{
     #[inline]
     fn into_iter(mut self) -> Self::IntoIter {
         self.iter_mut()
+    }
+}
+impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecMut<'a, T, M>{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }

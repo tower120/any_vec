@@ -374,4 +374,19 @@ fn any_vec_into_iter_test() {
         sum += e.downcast_ref::<usize>().unwrap();
     }
     assert_eq!(sum, 111);
+
+    let mut sum = 0;
+    for mut e in &mut any_vec{
+        let value = e.downcast_mut::<usize>().unwrap();
+        *value *= 10;
+        sum += *value;
+    }
+    assert_eq!(sum, 1110);
+}
+
+#[test]
+fn any_vec_debug() {
+    let any_vec: AnyVec = AnyVec::new::<usize>();
+    let typeid = TypeId::of::<usize>();
+    assert_eq!(format!("{any_vec:?}"), format!("AnyVec {{ typeid: {typeid:?}, len: 0 }}"));
 }

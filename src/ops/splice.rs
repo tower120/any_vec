@@ -20,11 +20,11 @@ where
 {
     #[inline]
     pub fn new(
-        any_vec_ptr: AnyVecPtr, start: usize, end: usize,
+        mut any_vec_ptr: AnyVecPtr, start: usize, end: usize,
         replace_with: ReplaceIter
     ) -> Self {
         debug_assert!(start <= end);
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_mut() };
+        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
         let original_len = any_vec_raw.len;
         debug_assert!(end <= original_len);
 
@@ -67,7 +67,7 @@ where
 {
     fn drop(&mut self) {
         use any_vec_ptr::utils::*;
-        let any_vec_ptr = self.iter.any_vec_ptr;
+        let mut any_vec_ptr = self.iter.any_vec_ptr;
 
         let elements_left = self.original_len - self.iter.end;
         let replace_end = self.start + self.replace_with.len();
@@ -75,7 +75,7 @@ where
 
         // 0. capacity.
         {
-            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw().as_mut()};
+            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw_mut()};
             any_vec_raw.reserve(new_len);
         }
 
@@ -101,7 +101,7 @@ where
         // 3. move replace_with in
         unsafe{
             let element_size = element_size(any_vec_ptr);
-            let mut ptr = element_ptr_at(any_vec_ptr, self.start);
+            let mut ptr = element_mut_ptr_at(any_vec_ptr, self.start);
             while let Some(replace_element) = self.replace_with.next() {
                 replace_element.move_into(ptr);
                 ptr = ptr.add(element_size);
@@ -110,7 +110,7 @@ where
 
         // 4. restore len
         {
-            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw().as_mut()};
+            let any_vec_raw = unsafe{any_vec_ptr.any_vec_raw_mut()};
             any_vec_raw.len = new_len;
         }
     }

@@ -45,7 +45,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
 
     #[inline]
     fn any_vec_raw(&self) -> &'a AnyVecRaw<AnyVecPtr::M>{
-        unsafe { self.any_vec_ptr.any_vec_raw().as_ref() }
+        unsafe { self.any_vec_ptr.any_vec_raw() }
     }
 
     #[inline]
@@ -112,7 +112,7 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
-        let clone_fn = self.any_vec_ptr.any_vec().as_ref().clone_fn();
+        let clone_fn = self.any_vec_ptr.any_vec().clone_fn();
         (clone_fn)(self.bytes(), out, 1);
     }
 }

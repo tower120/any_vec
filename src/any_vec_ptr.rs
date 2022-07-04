@@ -12,11 +12,13 @@ pub trait IAnyVecRawPtr: Copy{
     /// Known element type of AnyVec
     type Element: 'static/* = Unknown*/;
     type M: MemBuilder;
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<Self::M>>;
+    unsafe fn any_vec_raw<'a>(&self) -> &'a AnyVecRaw<Self::M>;
+    unsafe fn any_vec_raw_mut<'a>(&mut self) -> &'a mut AnyVecRaw<Self::M>;
 }
 pub trait IAnyVecPtr: IAnyVecRawPtr{
     type Traits: ?Sized + Trait;
-    fn any_vec(&self) -> NonNull<AnyVec<Self::Traits, Self::M>>;
+    unsafe fn any_vec<'a>(&self) -> &'a AnyVec<Self::Traits, Self::M>;
+    unsafe fn any_vec_mut<'a>(&mut self) -> &'a mut AnyVec<Self::Traits, Self::M>;
 }
 
 
@@ -46,8 +48,13 @@ impl<Type, M: MemBuilder> IAnyVecRawPtr for AnyVecRawPtr<Type, M>{
     type M = M;
 
     #[inline]
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
-        self.ptr
+    unsafe fn any_vec_raw<'a>(&self) -> &'a AnyVecRaw<Self::M> {
+        self.ptr.as_ref()
+    }
+
+    #[inline]
+    unsafe fn any_vec_raw_mut<'a>(&mut self) -> &'a mut AnyVecRaw<Self::M> {
+        self.ptr.as_mut()
     }
 }
 
@@ -86,16 +93,26 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> IAnyVecRawPtr for AnyVecPtr<Traits, 
     type M = M;
 
     #[inline]
-    fn any_vec_raw(&self) -> NonNull<AnyVecRaw<M>> {
-        NonNull::from(unsafe{&self.ptr.as_ref().raw})
+    unsafe fn any_vec_raw<'a>(&self) -> &'a AnyVecRaw<Self::M> {
+        &self.ptr.as_ref().raw
+    }
+
+    #[inline]
+    unsafe fn any_vec_raw_mut<'a>(&mut self) -> &'a mut AnyVecRaw<Self::M> {
+        &mut self.ptr.as_mut().raw
     }
 }
 impl<Traits: ?Sized + Trait, M: MemBuilder> IAnyVecPtr for AnyVecPtr<Traits, M> {
     type Traits = Traits;
 
     #[inline]
-    fn any_vec(&self) -> NonNull<AnyVec<Traits, M>> {
-        self.ptr
+    unsafe fn any_vec<'a>(&self) -> &'a AnyVec<Traits, M> {
+        self.ptr.as_ref()
+    }
+
+    #[inline]
+    unsafe fn any_vec_mut<'a>(&mut self) -> &'a mut AnyVec<Traits, M> {
+        self.ptr.as_mut()
     }
 }
 
@@ -112,7 +129,7 @@ pub(crate) mod utils{
     pub fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
     {
         if Unknown::is::<AnyVecPtr::Element>(){
-            let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw().as_ref() };
+            let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw() };
             any_vec_raw.element_layout().size()
         } else {
             size_of::<AnyVecPtr::Element>()
@@ -121,10 +138,23 @@ pub(crate) mod utils{
 
     #[inline]
     pub fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
+        -> *const u8
+    { unsafe{
+        let any_vec_raw = any_vec_ptr.any_vec_raw();
+        if Unknown::is::<AnyVecPtr::Element>(){
+            any_vec_raw.mem.as_ptr()
+                .add(any_vec_raw.element_layout().size() * index)
+        } else {
+            any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
+                .add(index) as *const u8
+        }
+    } }
+
+    #[inline]
+    pub fn element_mut_ptr_at<AnyVecPtr: IAnyVecRawPtr>(mut any_vec_ptr: AnyVecPtr, index: usize)
         -> *mut u8
     { unsafe{
-        let any_vec_raw = any_vec_ptr.any_vec_raw().as_mut();
-
+        let any_vec_raw = any_vec_ptr.any_vec_raw_mut();
         if Unknown::is::<AnyVecPtr::Element>(){
             any_vec_raw.mem.as_mut_ptr()
                 .add(any_vec_raw.element_layout().size() * index)
@@ -134,14 +164,15 @@ pub(crate) mod utils{
         }
     } }
 
+
     #[inline]
     pub unsafe fn move_elements_at<AnyVecPtr: IAnyVecRawPtr>
         (any_vec_ptr: AnyVecPtr, src_index: usize, dst_index: usize, len: usize)
     {
         let src = element_ptr_at(any_vec_ptr, src_index);
-        let dst = element_ptr_at(any_vec_ptr, dst_index);
+        let dst = element_mut_ptr_at(any_vec_ptr, dst_index);
         if Unknown::is::<AnyVecPtr::Element>(){
-            let any_vec_raw = any_vec_ptr.any_vec_raw().as_ref();
+            let any_vec_raw = any_vec_ptr.any_vec_raw();
             ptr::copy(
                 src,
                 dst,
@@ -163,16 +194,16 @@ pub(crate) mod utils{
         debug_assert!(start_index <= end_index);
 
         if Unknown::is::<AnyVecPtr::Element>(){
-            let any_vec_raw = any_vec_ptr.any_vec_raw().as_ref();
+            let any_vec_raw = any_vec_ptr.any_vec_raw();
             if let Some(drop_fn) = any_vec_raw.drop_fn(){
                 (drop_fn)(
-                    element_ptr_at(any_vec_ptr, start_index),
+                    element_mut_ptr_at(any_vec_ptr, start_index),
                     end_index - start_index
                 );
             }
         } else if mem::needs_drop::<AnyVecPtr::Element>(){
             // drop as slice. This is marginally faster then one by one.
-            let start_ptr = element_ptr_at(any_vec_ptr, start_index) as *mut AnyVecPtr::Element;
+            let start_ptr = element_mut_ptr_at(any_vec_ptr, start_index) as *mut AnyVecPtr::Element;
             let to_drop = ptr::slice_from_raw_parts_mut(start_ptr, end_index - start_index);
             ptr::drop_in_place(to_drop);
         }

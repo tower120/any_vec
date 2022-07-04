@@ -176,6 +176,26 @@ fn any_vec_into_iter_test() {
     assert_eq!(sum, 111);
 }
 
+#[test]
+fn any_vec_debug() {
+    let mut any_vec: AnyVec = AnyVec::new::<usize>();
+    let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+    vec.push(1);
+    vec.push(2);
+    vec.push(3);
+
+    let mut control_vec = Vec::new();
+    control_vec.push(1);
+    control_vec.push(2);
+    control_vec.push(3);
+
+    assert_eq!(format!("{vec:?}"), format!("{control_vec:?}"));
+    drop(vec);
+
+    let vec = any_vec.downcast_ref::<usize>().unwrap();
+    assert_eq!(format!("{vec:?}"), format!("{control_vec:?}"));
+}
+
 /*
 #[test]
 fn any_vec_index_test() {
