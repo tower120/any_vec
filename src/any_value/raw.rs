@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
+use std::slice;
 use crate::any_value::AnyValue;
 use crate::any_value::Unknown;
 
@@ -47,12 +48,10 @@ impl AnyValue for AnyValueRaw{
     }
 
     #[inline]
-    fn size(&self) -> usize {
-        self.size
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        self.ptr.as_ptr()
+    fn as_bytes(&self) -> &[u8]{
+        unsafe{slice::from_raw_parts(
+            self.ptr.as_ptr(),
+            self.size
+        )}
     }
 }

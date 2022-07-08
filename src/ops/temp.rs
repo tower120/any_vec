@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use std::{mem, ptr};
+use std::{mem, ptr, slice};
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
@@ -53,17 +53,15 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     }
 
     #[inline]
-    fn size(&self) -> usize {
-        if Unknown::is::<Self::Type>() {
-            self.any_vec_raw().element_layout().size()
-        } else{
-            mem::size_of::<Self::Type>()
-        }
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        self.op.bytes()
+    fn as_bytes(&self) -> &[u8]{
+        unsafe{slice::from_raw_parts(
+            self.op.bytes(),
+            if Unknown::is::<Self::Type>() {
+                self.any_vec_raw().element_layout().size()
+            } else{
+                mem::size_of::<Self::Type>()
+            }
+        )}
     }
 
     #[inline]
@@ -74,7 +72,19 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValueMut for TempValue<Op> {}
+impl<Op: Operation> AnyValueMut for TempValue<Op> {
+    #[inline]
+    fn as_bytes_mut(&mut self) -> &mut [u8] {
+        unsafe{slice::from_raw_parts_mut(
+            self.op.bytes() as *mut u8,
+            if Unknown::is::<Self::Type>() {
+                self.any_vec_raw().element_layout().size()
+            } else{
+                mem::size_of::<Self::Type>()
+            }
+        )}
+    }
+}
 
 impl<Op: Operation> AnyValueCloneable for TempValue<Op>
 where
@@ -84,7 +94,7 @@ where
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
         let clone_fn = self.op.any_vec_ptr().any_vec().clone_fn();
-        (clone_fn)(self.bytes(), out, 1);
+        (clone_fn)(self.as_bytes().as_ptr(), out, 1);
     }
 }
 

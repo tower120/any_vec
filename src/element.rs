@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
+use std::slice;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
@@ -59,7 +60,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
 
     #[inline]
     pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &'a T{
-        &*(self.bytes() as *const T)
+        &*(self.as_bytes().as_ptr() as *const T)
     }
 
     #[inline]
@@ -73,7 +74,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
 
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &'a mut T{
-        &mut *(self.bytes_mut() as *mut T)
+        &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
     }
 }
 
@@ -95,17 +96,23 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     }
 
     #[inline]
-    fn size(&self) -> usize {
-        self.any_vec_raw().element_layout().size()
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        self.element.as_ptr()
+    fn as_bytes(&self) -> &[u8]{
+        unsafe{slice::from_raw_parts(
+            self.element.as_ptr(),
+            self.any_vec_raw().element_layout().size()
+        )}
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{
+    #[inline]
+    fn as_bytes_mut(&mut self) -> &mut [u8] {
+        unsafe{slice::from_raw_parts_mut(
+            self.element.as_ptr(),
+            self.any_vec_raw().element_layout().size()
+        )}
+    }
+}
 
 impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits, M>>
@@ -113,7 +120,7 @@ impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
         let clone_fn = self.any_vec_ptr.any_vec().clone_fn();
-        (clone_fn)(self.bytes(), out, 1);
+        (clone_fn)(self.as_bytes().as_ptr(), out, 1);
     }
 }
 

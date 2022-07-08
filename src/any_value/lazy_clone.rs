@@ -29,13 +29,8 @@ impl<'a, T: AnyValueCloneable> AnyValue for LazyClone<'a, T>{
     }
 
     #[inline]
-    fn size(&self) -> usize {
-        self.value.size()
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        self.value.bytes()
+    fn as_bytes(&self) -> &[u8]{
+        self.value.as_bytes()
     }
 
     #[inline]

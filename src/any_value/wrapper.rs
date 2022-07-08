@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, size_of};
-use std::ptr;
+use std::{ptr, slice};
 use crate::any_value::AnyValue;
 
 /// Helper struct to convert concrete type to [`AnyValue`].
@@ -22,13 +22,11 @@ impl<T: 'static> AnyValue for AnyValueWrapper<T> {
     }
 
     #[inline]
-    fn size(&self) -> usize {
-        size_of::<T>()
-    }
-
-    #[inline]
-    fn bytes(&self) -> *const u8 {
-        &self.value as *const _ as *const u8
+    fn as_bytes(&self) -> &[u8]{
+        unsafe{slice::from_raw_parts(
+            &self.value as *const _ as *const u8,
+            size_of::<T>()
+        )}
     }
 
     #[inline]
