@@ -1,7 +1,7 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::AnyValue;
+use crate::any_value::{AnyValue, AnyValueMut};
 use crate::any_value::Unknown;
 
 /// Non owning byte ptr wrapper.
@@ -50,6 +50,16 @@ impl AnyValue for AnyValueRaw{
     #[inline]
     fn as_bytes(&self) -> &[u8]{
         unsafe{slice::from_raw_parts(
+            self.ptr.as_ptr(),
+            self.size
+        )}
+    }
+}
+
+impl AnyValueMut for AnyValueRaw{
+    #[inline]
+    fn as_bytes_mut(&mut self) -> &mut [u8] {
+        unsafe{slice::from_raw_parts_mut(
             self.ptr.as_ptr(),
             self.size
         )}

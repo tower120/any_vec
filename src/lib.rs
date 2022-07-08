@@ -192,7 +192,6 @@ unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
 
 
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
-#[allow(dead_code)]
 #[inline]
 unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
     // MIRI hack
