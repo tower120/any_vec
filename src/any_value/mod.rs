@@ -9,7 +9,7 @@ pub use raw::AnyValueRaw;
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::MaybeUninit;
-use crate::copy_bytes_nonoverlapping;
+use crate::{copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 
 /// Marker for unknown type.
 pub struct Unknown;
@@ -27,11 +27,8 @@ pub trait AnyValue {
 
     fn value_typeid(&self) -> TypeId;
 
-    // TODO: Layout instead of size?
-    /// In bytes. Return compile-time value, whenever possible.
-    fn size(&self) -> usize;
-
-    fn bytes(&self) -> *const u8;
+    /// Aligned.
+    fn as_bytes(&self) -> &[u8];
 
     #[inline]
     fn downcast_ref<T: 'static>(&self) -> Option<&T>{
@@ -44,7 +41,7 @@ pub trait AnyValue {
 
     #[inline]
     unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T{
-        &*(self.bytes() as *const T)
+        &*(self.as_bytes().as_ptr() as *const T)
     }
 
     #[inline]
@@ -69,7 +66,7 @@ pub trait AnyValue {
 
     /// Move self into `out`.
     ///
-    /// `out` must have at least [`size`] bytes.
+    /// `out` must have at least `as_bytes().len()` bytes.
     /// Will do compile-time optimisation if type/size known.
     ///
     /// [`size`]: Self::size
@@ -87,23 +84,22 @@ pub trait AnyValue {
 pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
     if !Unknown::is::<T::Type>() {
         ptr::copy_nonoverlapping(
-            any_value.bytes() as *const T::Type,
+            any_value.as_bytes().as_ptr() as *const T::Type,
             out as *mut T::Type,
             1);
     } else {
+        let bytes = any_value.as_bytes();
         copy_bytes_nonoverlapping(
-            any_value.bytes(),
+            bytes.as_ptr(),
             out,
-            any_value.size());
+            bytes.len());
     }
 }
 
 /// Type erased mutable value interface.
 pub trait AnyValueMut: AnyValue{
-    #[inline]
-    fn bytes_mut(&mut self) -> *mut u8{
-        self.bytes() as *mut u8
-    }
+
+    fn as_bytes_mut(&mut self) -> &mut [u8];
 
     #[inline]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
@@ -116,7 +112,38 @@ pub trait AnyValueMut: AnyValue{
 
     #[inline]
     unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T{
-        &mut *(self.bytes_mut() as *mut T)
+        &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
+    }
+
+    /// Swaps underlying values.
+    ///
+    /// # Panic
+    ///
+    /// Panics, if type mismatch.
+    #[inline]
+    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
+        assert_eq!(self.value_typeid(), other.value_typeid());
+
+        unsafe{
+        if !Unknown::is::<Self::Type>() {
+            mem::swap(
+                self.downcast_mut_unchecked::<Self::Type>(),
+                other.downcast_mut_unchecked::<Self::Type>()
+            );
+        } else if !Unknown::is::<Other::Type>() {
+            mem::swap(
+                self.downcast_mut_unchecked::<Other::Type>(),
+                other.downcast_mut_unchecked::<Other::Type>()
+            );
+        } else {
+            let bytes = self.as_bytes_mut();
+            swap_bytes_nonoverlapping(
+                bytes.as_mut_ptr(),
+                other.as_bytes_mut().as_mut_ptr(),
+                bytes.len()
+            );
+        }
+        } // unsafe
     }
 }
 

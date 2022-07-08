@@ -1,8 +1,15 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- `AnyValue::bytes()->*const u8` and `AnyValue::size()->usize` replaced with
+`AnyValue::as_bytes()->&[u8]`. Same for `AnyValueMut`.
+- `AnyValueWrapper` now `AnyValueMut`.
+- `AnyValueRaw` now `AnyValueMut`.
+
 ### Added
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
+- `AnyValueMut::swap()`.
 
 ### Fixed
 - Stacked Borrow friendly now.
