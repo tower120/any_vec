@@ -7,7 +7,7 @@ pub use wrapper::AnyValueWrapper;
 pub use raw::AnyValueRaw;
 
 use std::any::TypeId;
-use std::{mem, ptr, slice};
+use std::{mem, ptr};
 use std::mem::MaybeUninit;
 use crate::copy_bytes_nonoverlapping;
 
@@ -27,6 +27,7 @@ pub trait AnyValue {
 
     fn value_typeid(&self) -> TypeId;
 
+    /// Aligned.
     fn as_bytes(&self) -> &[u8];
 
     #[inline]
@@ -65,7 +66,7 @@ pub trait AnyValue {
 
     /// Move self into `out`.
     ///
-    /// `out` must have at least [`size`] bytes.
+    /// `out` must have at least `as_bytes().len()` bytes.
     /// Will do compile-time optimisation if type/size known.
     ///
     /// [`size`]: Self::size
@@ -97,15 +98,8 @@ pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
 
 /// Type erased mutable value interface.
 pub trait AnyValueMut: AnyValue{
-    #[inline]
+
     fn as_bytes_mut(&mut self) -> &mut [u8];
-    // {
-    //     let bytes = self.as_bytes();
-    //     unsafe{slice::from_raw_parts_mut(
-    //         bytes.as_ptr() as *mut u8,
-    //         bytes.len()
-    //     )}
-    // }
 
     #[inline]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{

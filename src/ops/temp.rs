@@ -37,6 +37,15 @@ impl<Op: Operation> TempValue<Op>{
     fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M>{
         unsafe{ self.op.any_vec_ptr().any_vec_raw() }
     }
+
+    #[inline]
+    fn bytes_len(&self) -> usize{
+        if Unknown::is::<<Op::AnyVecPtr as IAnyVecRawPtr>::Element>() {
+            self.any_vec_raw().element_layout().size()
+        } else{
+            mem::size_of::<<Op::AnyVecPtr as IAnyVecRawPtr>::Element>()
+        }
+    }
 }
 
 impl<Op: Operation> AnyValue for TempValue<Op>{
@@ -56,11 +65,7 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     fn as_bytes(&self) -> &[u8]{
         unsafe{slice::from_raw_parts(
             self.op.bytes(),
-            if Unknown::is::<Self::Type>() {
-                self.any_vec_raw().element_layout().size()
-            } else{
-                mem::size_of::<Self::Type>()
-            }
+            self.bytes_len()
         )}
     }
 
@@ -77,11 +82,7 @@ impl<Op: Operation> AnyValueMut for TempValue<Op> {
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
             self.op.bytes() as *mut u8,
-            if Unknown::is::<Self::Type>() {
-                self.any_vec_raw().element_layout().size()
-            } else{
-                mem::size_of::<Self::Type>()
-            }
+            self.bytes_len()
         )}
     }
 }
