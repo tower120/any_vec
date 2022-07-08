@@ -87,10 +87,11 @@ pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
             out as *mut T::Type,
             1);
     } else {
+        let bytes = any_value.as_bytes();
         copy_bytes_nonoverlapping(
-            any_value.as_bytes().as_ptr(),
+            bytes.as_ptr(),
             out,
-            any_value.as_bytes().len());
+            bytes.len());
     }
 }
 
