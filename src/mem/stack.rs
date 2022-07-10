@@ -12,16 +12,25 @@ impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
 
     #[inline]
     fn build(&mut self, element_layout: Layout) -> StackMem<SIZE> {
+        let size =
+            if element_layout.size() == 0{
+                usize::MAX
+            } else{
+                SIZE / element_layout.size()
+            };
+
         StackMem{
             mem: MaybeUninit::uninit(),
-            element_layout
+            element_layout,
+            size
         }
     }
 }
 
 pub struct StackMem<const SIZE: usize>{
     mem: MaybeUninit<[u8; SIZE]>,
-    element_layout: Layout
+    element_layout: Layout,
+    size: usize
 }
 
 impl<const SIZE: usize> Mem for StackMem<SIZE>{
@@ -40,13 +49,8 @@ impl<const SIZE: usize> Mem for StackMem<SIZE>{
         self.element_layout
     }
 
-    // TODO: improve
     #[inline]
     fn size(&self) -> usize {
-        if self.element_layout.size(){
-            usize::MAX
-        } else{
-            SIZE / self.element_layout.size()
-        }
+        self.size
     }
 }

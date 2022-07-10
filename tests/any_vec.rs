@@ -350,7 +350,7 @@ fn mem_stack_test(){
     // Should fail to compile.
     //any_vec.reserve(1);
 
-    assert_eq!(any_vec.capacity(), 513);
+    assert_eq!(any_vec.capacity(), 513/size_of::<String>());
     assert_eq!(any_vec.len(), 4);
     assert_equal(any_vec.downcast_ref::<String>().unwrap(), &[
         String::from("0"),
