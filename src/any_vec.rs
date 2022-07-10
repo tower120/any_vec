@@ -6,6 +6,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
+use std::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
 use crate::any_value::{AnyValue};
 use crate::any_vec_raw::AnyVecRaw;
@@ -15,6 +16,7 @@ use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, Element, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
+use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::iter::{Iter, IterMut, IterRef};
 use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
 use crate::traits::{Cloneable, Trait};
@@ -301,6 +303,11 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         self.raw.shrink_to(min_capacity)
     }
 
+    #[inline]
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        self.raw.set_len(new_len);
+    }
+
     /// Returns [`AnyVecRef`] - typed view to const AnyVec,
     /// if container holds elements of type T, or None if it isn’t.
     #[inline]
@@ -346,8 +353,19 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub fn as_bytes(&self) -> *const u8 {
-        self.raw.mem.as_ptr()
+    pub fn as_bytes(&self) -> &[u8] {
+        unsafe{from_raw_parts(
+            self.raw.mem.as_ptr(),
+            self.len()
+        )}
+    }
+
+    #[inline]
+    pub fn as_bytes_mut(&mut self) -> &mut [u8]{
+        unsafe{from_raw_parts_mut(
+            self.raw.mem.as_mut_ptr(),
+            self.len()
+        )}
     }
 
     #[inline]
@@ -359,17 +377,6 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     pub fn iter_mut(&mut self) -> IterMut<Traits, M>{
         let len = self.len();
         Iter::new(AnyVecPtr::from(self), 0, len)
-    }
-
-    #[inline]
-    unsafe fn get_element(&self, index: usize) -> ManuallyDrop<Element<Traits, M>>{
-        let element = NonNull::new_unchecked(
-            self.as_bytes().add(self.element_layout().size() * index) as *mut u8
-        );
-        ManuallyDrop::new(ElementPointer::new(
-            AnyVecPtr::from(self),
-            element
-        ))
     }
 
     /// Return reference to element at `index` with bounds check.
@@ -393,7 +400,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 
     #[inline]
     pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits, M>{
-        ElementRef(self.get_element(index))
+        let element_ptr = self.raw.get_unchecked(index) as *mut u8;
+        ElementRef(
+            ManuallyDrop::new(ElementPointer::new(
+                AnyVecPtr::from(self),
+                NonNull::new_unchecked(element_ptr)
+            ))
+        )
     }
 
     /// Return mutable reference to element at `index` with bounds check.
@@ -417,7 +430,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 
     #[inline]
     pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits, M> {
-        ElementMut(self.get_element(index))
+        let element_ptr = self.raw.get_unchecked_mut(index);
+        ElementMut(
+            ManuallyDrop::new(ElementPointer::new(
+                AnyVecPtr::from(self),
+                NonNull::new_unchecked(element_ptr)
+            ))
+        )
     }
 
     /// # Panics

@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use std::ptr;
 use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
+use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::mem::Mem;
 use crate::ops::temp::Operation;
@@ -35,16 +36,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
 
     #[inline]
     fn bytes(&self) -> *const u8 {
-        unsafe{
-            let any_vec_raw = self.any_vec_ptr.any_vec_raw();
-            if !Unknown::is::<AnyVecPtr::Element>(){
-                any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
-                    .add(self.index) as *const u8
-            } else {
-                any_vec_raw.mem.as_ptr()
-                    .add(any_vec_raw.element_layout().size() * self.index)
-            }
-        }
+        unsafe{ element_ptr_at(self.any_vec_ptr, self.index) }
     }
 
     #[inline]

@@ -6,10 +6,12 @@
 `AnyValue::as_bytes()->&[u8]`. Same for `AnyValueMut`.
 - `AnyValueWrapper` now `AnyValueMut`.
 - `AnyValueRaw` now `AnyValueMut`.
+- `AnyValue::as_bytes()` now return `&[u8]`.
 
 ### Added
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
 - `AnyValueMut::swap()`.
+- `AnyVec`/`AnyVecTyped` `::set_len()`.
 
 ### Fixed
 - Stacked Borrow friendly now.
