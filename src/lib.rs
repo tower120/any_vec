@@ -103,11 +103,11 @@
 //!```rust
 //! # use any_vec::any_value::{AnyValueCloneable, AnyValueWrapper};
 //! # use any_vec::AnyVec;
-//! # use any_vec::mem::Stack;
+//! # use any_vec::mem::StackN;
 //! # use any_vec::traits::*;
 //!
 //! fn self_push_first_element<T: Trait + Cloneable>(any_vec: &mut AnyVec<T>){
-//!    let mut tmp = any_vec.clone_empty_in(Stack::<256>);
+//!    let mut tmp = any_vec.clone_empty_in(StackN::<1, 256>);
 //!    tmp.push(any_vec.at(0).lazy_clone());
 //!    any_vec.push(tmp.pop().unwrap());
 //! }

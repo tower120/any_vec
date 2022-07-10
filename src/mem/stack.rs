@@ -2,9 +2,14 @@ use std::alloc::Layout;
 use std::mem::MaybeUninit;
 use crate::mem::{Mem, MemBuilder};
 
-/// Fixed capacity on-stack memory.
+/// Fixed `SIZE` capacity on-stack memory.
 ///
-/// `SIZE` in bytes.
+/// Can contain at most `SIZE` bytes.
+/// Upon `build()` real capacity calculated based on `element_layout`.
+/// This involves `idiv` operation. You may want to consider [`StackN`]
+/// for intermediate storage instead.
+///
+/// [`StackN`]: super::StackN
 #[derive(Default, Clone)]
 pub struct Stack<const SIZE: usize>;
 impl<const SIZE: usize> MemBuilder for Stack<SIZE>{

@@ -1,8 +1,10 @@
 mod heap;
 mod stack;
+mod stack_n;
 
 pub use heap::Heap;
 pub use stack::Stack;
+pub use stack_n::StackN;
 
 pub(crate) type Default = Heap;
 
