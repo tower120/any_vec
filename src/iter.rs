@@ -80,10 +80,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Iterat
         if self.index == self.end{
             None
         } else {
-            let element_ptr = element_ptr_at(self.any_vec_ptr, self.index);
             let element = ElementPointer::new(
                 self.any_vec_ptr,
-                unsafe{NonNull::new_unchecked(element_ptr as *mut u8)}
+                unsafe{NonNull::new_unchecked(
+                    element_ptr_at(self.any_vec_ptr, self.index) as *mut u8
+                )}
             );
 
             self.index += 1;
@@ -107,10 +108,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> Double
             None
         } else {
             self.end -= 1;
-            let element_ptr = element_ptr_at(self.any_vec_ptr, self.end);
             let element = ElementPointer::new(
                 self.any_vec_ptr,
-                unsafe{NonNull::new_unchecked(element_ptr as *mut u8)}
+                unsafe{NonNull::new_unchecked(
+                    element_ptr_at(self.any_vec_ptr, self.end) as *mut u8
+                )}
             );
 
             Some(IterItem::element_to_item(element))

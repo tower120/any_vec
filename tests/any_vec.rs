@@ -4,7 +4,7 @@ use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::assert_equal;
 use any_vec::AnyVec;
-use any_vec::any_value::{AnyValueRaw, AnyValueWrapper};
+use any_vec::any_value::{AnyValueMut, AnyValueRaw, AnyValueWrapper};
 use any_vec::mem::Stack;
 
 #[allow(dead_code)]
@@ -175,7 +175,8 @@ fn any_vec_swap_remove_push_test() {
     any_vec.push(AnyValueWrapper::new(String::from("4")));
 
     let mut any_vec_other: AnyVec = AnyVec::new::<String>();
-    let element = any_vec.swap_remove(1);
+    let mut element = any_vec.swap_remove(1);
+    *element.downcast_mut::<String>().unwrap() += "+";
     any_vec_other.push(element);
 
     assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
@@ -184,7 +185,7 @@ fn any_vec_swap_remove_push_test() {
         String::from("3"),
     ]);
     assert_equal(any_vec_other.downcast_ref::<String>().unwrap().as_slice(), &[
-        String::from("1"),
+        String::from("1+"),
     ]);
 }
 

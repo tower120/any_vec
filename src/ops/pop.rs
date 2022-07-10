@@ -35,9 +35,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Pop<'a, AnyVecPtr>{
 
     #[inline]
     fn bytes(&self) -> *const u8 {
-        let any_vec_raw = unsafe{ self.any_vec_ptr.any_vec_raw() };
-        let index = any_vec_raw.len;
-        element_ptr_at(self.any_vec_ptr, index)
+        unsafe{
+            let any_vec_raw =  self.any_vec_ptr.any_vec_raw();
+            let index = any_vec_raw.len;
+            element_ptr_at(self.any_vec_ptr, index)
+        }
     }
 
     #[inline]

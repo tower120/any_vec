@@ -118,18 +118,21 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> IAnyVecPtr for AnyVecPtr<Traits, M> 
 
 
 /// Type knowledge optimized operations.
+///
+/// All unsafe, because dereferencing pointer is unsafe.
 pub(crate) mod utils{
     use std::{mem, ptr};
     use std::mem::size_of;
-    use crate::mem::Mem;
+    use std::ptr::NonNull;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
+    use crate::AnyVecTyped;
 
     #[inline]
-    pub fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
+    pub unsafe fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
     {
         if Unknown::is::<AnyVecPtr::Element>(){
-            let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw() };
+            let any_vec_raw = any_vec_ptr.any_vec_raw();
             any_vec_raw.element_layout().size()
         } else {
             size_of::<AnyVecPtr::Element>()
@@ -137,33 +140,34 @@ pub(crate) mod utils{
     }
 
     #[inline]
-    pub fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
+    pub unsafe fn element_ptr_at<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr, index: usize)
         -> *const u8
-    { unsafe{
+    {
         let any_vec_raw = any_vec_ptr.any_vec_raw();
         if Unknown::is::<AnyVecPtr::Element>(){
-            any_vec_raw.mem.as_ptr()
-                .add(any_vec_raw.element_layout().size() * index)
+            any_vec_raw.get_unchecked(index)
         } else {
-            any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
-                .add(index) as *const u8
+            // AnyVecTyped::get_unchecked cause MIRI error
+            AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
+                .as_ptr().add(index)
+                as *const _ as *const u8
         }
-    } }
+    }
 
     #[inline]
-    pub fn element_mut_ptr_at<AnyVecPtr: IAnyVecRawPtr>(mut any_vec_ptr: AnyVecPtr, index: usize)
+    pub unsafe fn element_mut_ptr_at<AnyVecPtr: IAnyVecRawPtr>(mut any_vec_ptr: AnyVecPtr, index: usize)
         -> *mut u8
-    { unsafe{
+    {
         let any_vec_raw = any_vec_ptr.any_vec_raw_mut();
         if Unknown::is::<AnyVecPtr::Element>(){
-            any_vec_raw.mem.as_mut_ptr()
-                .add(any_vec_raw.element_layout().size() * index)
+            any_vec_raw.get_unchecked_mut(index)
         } else {
-            any_vec_raw.mem.as_mut_ptr().cast::<AnyVecPtr::Element>()
-                .add(index) as *mut u8
+            // AnyVecTyped::get_unchecked_mut cause MIRI error
+            AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
+                .as_mut_ptr().add(index)
+                as *mut _ as *mut u8
         }
-    } }
-
+    }
 
     #[inline]
     pub unsafe fn move_elements_at<AnyVecPtr: IAnyVecRawPtr>

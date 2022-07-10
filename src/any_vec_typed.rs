@@ -94,6 +94,11 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        self.this_mut().set_len(new_len);
+    }
+
+    #[inline]
     pub fn insert(&mut self, index: usize, value: T){
         unsafe{
             self.this_mut().insert_unchecked(index, AnyValueWrapper::new(value));
@@ -224,10 +229,20 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
+    pub fn as_ptr(&self) -> *const T {
+        self.this().mem.as_ptr().cast::<T>()
+    }
+
+    #[inline]
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self.this_mut().mem.as_mut_ptr().cast::<T>()
+    }
+
+    #[inline]
     pub fn as_slice(&self) -> &'a [T] {
         unsafe{
             slice::from_raw_parts(
-                self.this().mem.as_ptr().cast::<T>(),
+                self.as_ptr(),
                 self.this().len,
             )
         }
@@ -237,7 +252,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     pub fn as_mut_slice(&mut self) -> &'a mut[T] {
         unsafe{
             slice::from_raw_parts_mut(
-                self.this_mut().mem.as_mut_ptr().cast::<T>(),
+                self.as_mut_ptr(),
                 self.this().len,
             )
         }

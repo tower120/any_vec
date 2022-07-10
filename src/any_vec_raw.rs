@@ -91,6 +91,16 @@ impl<M: MemBuilder> AnyVecRaw<M> {
         assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
     }
 
+    #[inline]
+    pub unsafe fn get_unchecked(&self, index: usize) -> *const u8{
+        self.mem.as_ptr().add(self.element_layout().size() * index)
+    }
+
+    #[inline]
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> *mut u8{
+        self.mem.as_mut_ptr().add(self.element_layout().size() * index)
+    }
+
     #[cold]
     #[inline(never)]
     fn expand_one(&mut self){
@@ -136,6 +146,12 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     {
         let new_len = cmp::max(self.len, min_capacity);
         self.mem.resize(new_len);
+    }
+
+    #[inline]
+    pub unsafe fn set_len(&mut self, new_len: usize) {
+        debug_assert!(new_len <= self.capacity());
+        self.len = new_len;
     }
 
     /// # Safety
