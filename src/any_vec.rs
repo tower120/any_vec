@@ -2,7 +2,7 @@ use std::alloc::Layout;
 use std::any::TypeId;
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
@@ -355,7 +355,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     pub fn as_bytes(&self) -> &[u8] {
         unsafe{from_raw_parts(
             self.raw.mem.as_ptr(),
-            self.len()
+            self.len() * self.element_layout().size()
         )}
     }
 
@@ -363,7 +363,15 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     pub fn as_bytes_mut(&mut self) -> &mut [u8]{
         unsafe{from_raw_parts_mut(
             self.raw.mem.as_mut_ptr(),
-            self.len()
+            self.len() * self.element_layout().size()
+        )}
+    }
+
+    #[inline]
+    pub fn spare_bytes_mut(&mut self) -> &mut [MaybeUninit<u8>]{
+        unsafe{from_raw_parts_mut(
+            self.raw.mem.as_mut_ptr().add(self.len()) as *mut MaybeUninit<u8>,
+            (self.capacity() - self.len()) * self.element_layout().size()
         )}
     }
 

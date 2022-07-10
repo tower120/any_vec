@@ -336,7 +336,7 @@ fn shrink_to_test(){
 #[test]
 fn mem_stack_test(){
     use any_vec::traits::None;
-    type FixedAnyVec<Traits = dyn None> = AnyVec<Traits, Stack<512>>;
+    type FixedAnyVec<Traits = dyn None> = AnyVec<Traits, Stack<513>>;
 
     let mut any_vec: FixedAnyVec = AnyVec::new::<String>();
     {
@@ -350,7 +350,7 @@ fn mem_stack_test(){
     // Should fail to compile.
     //any_vec.reserve(1);
 
-    assert_eq!(any_vec.capacity(), 512);
+    assert_eq!(any_vec.capacity(), 513/size_of::<String>());
     assert_eq!(any_vec.len(), 4);
     assert_equal(any_vec.downcast_ref::<String>().unwrap(), &[
         String::from("0"),

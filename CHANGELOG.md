@@ -12,9 +12,11 @@
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
 - `AnyValueMut::swap()`.
 - `AnyVec`/`AnyVecTyped` `::set_len()`.
+- `mem::StackN` added.
 
 ### Fixed
 - Stacked Borrow friendly now.
+- `mem::Stack` capacity fixed.
 
 ## 0.9.1
 ### Changed
