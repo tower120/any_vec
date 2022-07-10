@@ -40,8 +40,13 @@ impl<const SIZE: usize> Mem for StackMem<SIZE>{
         self.element_layout
     }
 
+    // TODO: improve
     #[inline]
     fn size(&self) -> usize {
-        SIZE
+        if self.element_layout.size(){
+            usize::MAX
+        } else{
+            SIZE / self.element_layout.size()
+        }
     }
 }

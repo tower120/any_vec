@@ -84,8 +84,8 @@ fn any_vec_heap_send_sync_test() {
         }
     }
     test_positive::<mem::Heap>();
-    test_positive::<mem::Stack<128>>();
+    test_positive::<mem::Stack<123>>();
 
     test_negative::<mem::Heap>();
-    test_negative::<mem::Stack<128>>();
+    test_negative::<mem::Stack<123>>();
 }
