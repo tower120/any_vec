@@ -4,7 +4,6 @@ use crate::any_value::Unknown;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;
-use crate::mem::Mem;
 use crate::ops::temp::Operation;
 
 pub struct Remove<'a, AnyVecPtr: IAnyVecRawPtr>{
