@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
+use std::mem::MaybeUninit;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
@@ -243,7 +244,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         unsafe{
             slice::from_raw_parts(
                 self.as_ptr(),
-                self.this().len,
+                self.len(),
             )
         }
     }
@@ -253,7 +254,17 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         unsafe{
             slice::from_raw_parts_mut(
                 self.as_mut_ptr(),
-                self.this().len,
+                self.len(),
+            )
+        }
+    }
+
+    #[inline]
+    pub fn spare_capacity_mut(&mut self) -> &'a mut[MaybeUninit<T>] {
+        unsafe {
+            slice::from_raw_parts_mut(
+                self.as_mut_ptr().add(self.len()) as *mut MaybeUninit<T>,
+                self.capacity() - self.len(),
             )
         }
     }

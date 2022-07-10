@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0
 ### Changed
 - `AnyValue::bytes()->*const u8` and `AnyValue::size()->usize` replaced with
 `AnyValue::as_bytes()->&[u8]`. Same for `AnyValueMut`.
@@ -10,8 +10,11 @@
 
 ### Added
 - `Debug` implemented for `AnyVec`, `AnyVecTyped`.
-- `AnyValueMut::swap()`.
-- `AnyVec`/`AnyVecTyped` `::set_len()`.
+- `AnyValueMut::swap()` added.
+- `AnyVec`/`AnyVecTyped` `::set_len()` added.
+- `AnyVec::as_bytes_mut` added.
+- `AnyVec::spare_bytes_mut` added.
+- `AnyVecTyped::spare_capacity_mut` added.
 - `mem::StackN` added.
 
 ### Fixed
