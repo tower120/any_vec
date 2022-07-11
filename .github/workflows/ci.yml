@@ -72,4 +72,4 @@ jobs:
     #  with:
     #    rust-version: stable
     - name: Build doc
-      run: RUSTFLAGS="--deny warnings" cargo doc --lib
+      run: RUSTDOCFLAGS="--deny warnings" cargo doc --lib
