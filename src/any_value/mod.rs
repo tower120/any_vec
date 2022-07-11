@@ -21,6 +21,9 @@ impl Unknown {
 }
 
 /// Type erased value interface.
+///
+/// Underlying value can be "own" only through [`move_into()`] - directly
+/// or indirectly.
 pub trait AnyValue {
     /// Concrete type, or [`Unknown`]
     type Type: 'static /*= Unknown*/;
@@ -68,6 +71,7 @@ pub trait AnyValue {
     ///
     /// `out` must have at least `as_bytes().len()` bytes.
     /// Will do compile-time optimisation if type/size known.
+    /// This is the only way to "extract" bytes from AnyValue.
     ///
     /// [`size`]: Self::size
     #[inline]

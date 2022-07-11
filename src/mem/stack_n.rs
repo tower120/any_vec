@@ -17,15 +17,15 @@ impl<const N:usize, const SIZE: usize> MemBuilder for StackN<N, SIZE>{
     fn build(&mut self, element_layout: Layout) -> Self::Mem {
         assert!(N*element_layout.size() <= SIZE, "Insufficient storage!");
         StackNMem{
-            mem: MaybeUninit::uninit(),
-            element_layout
+            mem: MaybeUninit::uninit()
         }
     }
+
+    unsafe fn destroy(&mut self, _: Layout, _: Self::Mem) {}
 }
 
 pub struct StackNMem<const N:usize, const SIZE: usize>{
-    mem: MaybeUninit<[u8; SIZE]>,
-    element_layout: Layout
+    mem: MaybeUninit<[u8; SIZE]>
 }
 
 impl<const N:usize, const SIZE: usize> Mem for StackNMem<N, SIZE>{
@@ -37,11 +37,6 @@ impl<const N:usize, const SIZE: usize> Mem for StackNMem<N, SIZE>{
     #[inline]
     fn as_mut_ptr(&mut self) -> *mut u8 {
         self.mem.as_mut_ptr() as *mut u8
-    }
-
-    #[inline]
-    fn element_layout(&self) -> Layout {
-        self.element_layout
     }
 
     #[inline]

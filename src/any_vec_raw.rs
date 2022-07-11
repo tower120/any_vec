@@ -1,6 +1,7 @@
 use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
+use std::mem::ManuallyDrop;
 use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
@@ -9,8 +10,9 @@ pub type DropFn = fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw<M: MemBuilder> {
     mem_builder: M,         // usually ZST
-    pub(crate) mem: M::Mem,
+    pub(crate) mem: ManuallyDrop<M::Mem>,
     pub(crate) len: usize,  // in elements
+    element_layout: Layout,
     type_id: TypeId,        // purely for safety checks
     drop_fn: Option<DropFn>
 }
@@ -20,8 +22,9 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     pub fn new<T: 'static>(mem_builder: M, mem: M::Mem) -> Self {
         Self{
             mem_builder,
-            mem,
+            mem: ManuallyDrop::new(mem),
             len: 0,
+            element_layout: Layout::new::<T>(),
             type_id: TypeId::of::<T>(),
             drop_fn:
                 if !mem::needs_drop::<T>(){
@@ -54,8 +57,9 @@ impl<M: MemBuilder> AnyVecRaw<M> {
         let mem = mem_builder.build(self.element_layout());
         AnyVecRaw{
             mem_builder,
-            mem,
+            mem: ManuallyDrop::new(mem),
             len: 0,
+            element_layout: self.element_layout,
             type_id: self.type_id,
             drop_fn: self.drop_fn,
         }
@@ -67,7 +71,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
         let mut cloned = self.clone_empty();
 
         // 2. allocate
-        cloned.mem.expand(self.len);
+        cloned.mem.expand(self.element_layout, self.len);
 
         // 3. copy/clone
         {
@@ -104,7 +108,9 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     #[cold]
     #[inline(never)]
     fn expand_one(&mut self){
-        self.mem.expand(1);
+        unsafe{
+            self.mem.expand(self.element_layout, 1);
+        }
     }
 
     #[inline]
@@ -121,7 +127,10 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     pub fn reserve(&mut self, additional: usize) {
         let new_len = self.len + additional;
         if self.capacity() < new_len{
-            self.mem.expand(new_len - self.capacity());
+            let additional_capacity = new_len - self.capacity();
+            unsafe{                
+                self.mem.expand(self.element_layout, additional_capacity);
+            }
         }
     }
 
@@ -131,21 +140,28 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     {
         let new_len = self.len + additional;
         if self.capacity() < new_len{
-            self.mem.expand_exact(new_len - self.capacity());
+            let additional_capacity = new_len - self.capacity();
+            unsafe{                
+                self.mem.expand_exact(self.element_layout, additional_capacity);
+            }
         }
     }
 
     pub fn shrink_to_fit(&mut self)
         where M::Mem: MemResizable
     {
-        self.mem.resize(self.len);
+        unsafe{
+            self.mem.resize(self.element_layout, self.len);
+        }
     }
 
     pub fn shrink_to(&mut self, min_capacity: usize)
         where M::Mem: MemResizable
     {
         let new_len = cmp::max(self.len, min_capacity);
-        self.mem.resize(new_len);
+        unsafe{
+            self.mem.resize(self.element_layout, new_len);
+        }
     }
 
     #[inline]
@@ -236,7 +252,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     /// Element Layout
     #[inline]
     pub fn element_layout(&self) -> Layout {
-        self.mem.element_layout()
+        self.element_layout
     }
 
     #[inline]
@@ -248,5 +264,11 @@ impl<M: MemBuilder> AnyVecRaw<M> {
 impl<M: MemBuilder> Drop for AnyVecRaw<M> {
     fn drop(&mut self) {
         self.clear();
+        unsafe{
+            self.mem_builder.destroy(
+                self.element_layout,
+                ManuallyDrop::take(&mut self.mem)
+            );
+        }
     }
 }

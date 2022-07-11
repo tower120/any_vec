@@ -26,15 +26,15 @@ impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
 
         StackMem{
             mem: MaybeUninit::uninit(),
-            element_layout,
             size
         }
     }
+
+    unsafe fn destroy(&mut self, _: Layout, _: Self::Mem) {}
 }
 
 pub struct StackMem<const SIZE: usize>{
     mem: MaybeUninit<[u8; SIZE]>,
-    element_layout: Layout,
     size: usize
 }
 
@@ -47,11 +47,6 @@ impl<const SIZE: usize> Mem for StackMem<SIZE>{
     #[inline]
     fn as_mut_ptr(&mut self) -> *mut u8 {
         self.mem.as_mut_ptr() as *mut u8
-    }
-
-    #[inline]
-    fn element_layout(&self) -> Layout {
-        self.element_layout
     }
 
     #[inline]

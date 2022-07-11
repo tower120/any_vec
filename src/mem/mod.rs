@@ -21,6 +21,12 @@ use std::alloc::Layout;
 pub trait MemBuilder: Clone {
     type Mem: Mem;
     fn build(&mut self, element_layout: Layout) -> Self::Mem;
+
+    /// # Safety
+    ///
+    /// * `mem` must be created by this builder.
+    /// * `element_layout` must be the same as constructed with.
+    unsafe fn destroy(&mut self, element_layout: Layout, mem: Self::Mem);
 }
 
 /// This allows to use [`AnyVec::with_capacity`] with it.
@@ -44,9 +50,6 @@ pub trait Mem{
 
     fn as_mut_ptr(&mut self) -> *mut u8;
 
-    /// Aligned.
-    fn element_layout(&self) -> Layout;
-
     /// In elements.
     fn size(&self) -> usize;
 
@@ -63,7 +66,12 @@ pub trait Mem{
     /// # Panics
     ///
     /// Implementation may panic, if fail to allocate/reallocate memory.
-    fn expand(&mut self, additional: usize){
+    ///
+    /// # Safety
+    ///
+    /// `element_layout` must be the same as constructed with.
+    unsafe fn expand(&mut self, element_layout: Layout, additional: usize){
+        drop(element_layout);
         drop(additional);
         panic!("Can't change capacity!");
 
@@ -81,8 +89,12 @@ pub trait MemResizable: Mem{
     /// # Panics
     ///
     /// Implementation may panic, if fail to allocate/reallocate memory.
-    fn expand_exact(&mut self, additional: usize){
-        self.resize(self.size() + additional);
+    ///
+    /// # Safety
+    ///
+    /// `element_layout` must be the same as constructed with.
+    unsafe fn expand_exact(&mut self, element_layout: Layout, additional: usize){
+        self.resize(element_layout, self.size() + additional);
     }
 
     /// Resize memory chunk to specified size.
@@ -90,5 +102,9 @@ pub trait MemResizable: Mem{
     /// # Panics
     ///
     /// Implementation may panic, if fail to allocate/reallocate/deallocate memory.
-    fn resize(&mut self, new_size: usize);
+    ///
+    /// # Safety
+    ///
+    /// `element_layout` must be the same as constructed with.
+    unsafe fn resize(&mut self, element_layout: Layout, new_size: usize);
 }
