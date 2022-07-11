@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+### Changed
+- `MemBuilder`, `Mem` interface changed. `element_layout` is now passed with 
+every mutation operation. `MemBuilder::destroy` added. This allows `Mem` not to store
+`element_layout` inside.
+
 ## 0.10.0
 ### Changed
 - `AnyValue::bytes()->*const u8` and `AnyValue::size()->usize` replaced with
