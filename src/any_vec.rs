@@ -93,11 +93,13 @@ where
 {
     pub mem_builder: M,
     pub mem_handle: <M::Mem as MemRawParts>::Handle,
-    pub element_layout: Layout,
-    pub element_typeid: TypeId,
     pub capacity:       usize,
     pub len:            usize,
+    pub element_layout: Layout,
+    pub element_typeid: TypeId,
     pub element_drop:   Option<DropFn>,
+
+    /// Ignored if non Cloneable.
     pub element_clone:  CloneFn,
 }
 
@@ -111,16 +113,15 @@ where
         Self{
             mem_builder: self.mem_builder.clone(),
             mem_handle: self.mem_handle.clone(),
-            element_layout: self.element_layout,
-            element_typeid: self.element_typeid,
             capacity: self.capacity,
             len: self.capacity,
+            element_layout: self.element_layout,
+            element_typeid: self.element_typeid,
             element_drop: self.element_drop,
             element_clone: self.element_clone,
         }
     }
 }
-
 
 /// Type erased vec-like container.
 /// All elements have the same type.
@@ -228,12 +229,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         RawParts{
             mem_builder,
             mem_handle,
-            element_layout,
-            element_typeid: this.raw.type_id,
             capacity,
             len: this.raw.len,
-            element_drop: None,
-            element_clone: <Traits as CloneType>::get(this.clone_fn)
+            element_layout,
+            element_typeid: this.raw.type_id,
+            element_drop: this.raw.drop_fn,
+            element_clone: this.clone_fn()
         }
     }
 
@@ -244,11 +245,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// ## Traits
     ///
     /// Traits validity not checked. `RawParts` of underlying type must implement Traits.
-    /// It is not safe to opt-in [`Clonable`], if initial `AnyVec` was not constructed with
+    /// It is not safe to opt-in [`Cloneable`], if initial `AnyVec` was not constructed with
     /// that trait.
     ///
     /// ## RawParts
+    ///
     /// `RawParts` validity not checked.
+    ///
     #[inline]
     pub unsafe fn from_raw_parts(raw_parts: RawParts<M>) -> Self
     where
@@ -695,13 +698,33 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// Element TypeId
     #[inline]
     pub fn element_typeid(&self) -> TypeId{
-        self.raw.element_typeid()
+        self.raw.type_id
     }
 
     /// Element Layout
     #[inline]
     pub fn element_layout(&self) -> Layout {
         self.raw.element_layout()
+    }
+
+    /// Element drop function.
+    ///
+    /// `len` - elements count.
+    /// None - drop is not needed.
+    #[inline]
+    pub fn element_drop(&self) -> Option<DropFn> {
+        self.raw.drop_fn
+    }
+
+    /// Element clone function.
+    ///
+    /// `len` - elements count.
+    #[inline]
+    pub fn element_clone(&self) -> CloneFn
+    where
+        Traits: Cloneable
+    {
+        self.clone_fn()
     }
 
     #[inline]

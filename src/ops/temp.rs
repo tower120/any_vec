@@ -55,7 +55,7 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     fn value_typeid(&self) -> TypeId {
         let typeid = TypeId::of::<Self::Type>();
         if typeid == TypeId::of::<Unknown>(){
-            self.any_vec_raw().element_typeid()
+            self.any_vec_raw().type_id
         } else {
             typeid
         }
@@ -103,7 +103,7 @@ impl<Op: Operation> Drop for TempValue<Op>{
     #[inline]
     fn drop(&mut self) {
         unsafe{
-            let drop_fn = self.any_vec_raw().drop_fn();
+            let drop_fn = self.any_vec_raw().drop_fn;
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
