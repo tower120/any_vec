@@ -5,11 +5,11 @@ use std::marker::PhantomData;
 use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::ptr::NonNull;
-use std::slice;
+use std::{ptr, slice};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
 use crate::any_value::{AnyValue};
-use crate::any_vec_raw::AnyVecRaw;
+use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
 use crate::any_vec::traits::{None};
@@ -17,7 +17,7 @@ use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
 use crate::iter::{Iter, IterMut, IterRef};
-use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 use crate::traits::{Cloneable, Trait};
 
 /// Trait constraints.
@@ -86,6 +86,40 @@ impl<T: Send + Sync> SatisfyTraits<dyn Send + Sync> for T{}
 impl<T: Clone + Send> SatisfyTraits<dyn Cloneable + Send> for T{}
 impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{}
 impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
+
+pub struct RawParts<M: MemBuilder>
+where
+    M::Mem: MemRawParts
+{
+    pub mem_builder: M,
+    pub mem_handle: <M::Mem as MemRawParts>::Handle,
+    pub element_layout: Layout,
+    pub element_typeid: TypeId,
+    pub capacity:       usize,
+    pub len:            usize,
+    pub element_drop:   Option<DropFn>,
+    pub element_clone:  CloneFn,
+}
+
+impl<M: MemBuilder> Clone for RawParts<M>
+where
+    M::Mem: MemRawParts,
+    <M::Mem as MemRawParts>::Handle: Clone
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self{
+            mem_builder: self.mem_builder.clone(),
+            mem_handle: self.mem_handle.clone(),
+            element_layout: self.element_layout,
+            element_typeid: self.element_typeid,
+            capacity: self.capacity,
+            len: self.capacity,
+            element_drop: self.element_drop,
+            element_clone: self.element_clone,
+        }
+    }
+}
 
 
 /// Type erased vec-like container.
@@ -179,6 +213,62 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         let mem = mem_builder.build_with_size(Layout::new::<T>(), capacity);
         let raw = AnyVecRaw::new::<T>(mem_builder, mem);
         Self::build::<T>(raw)
+    }
+
+    #[inline]
+    pub fn into_raw_parts(self) -> RawParts<M>
+    where
+        M::Mem: MemRawParts
+    {
+        let this = ManuallyDrop::new(self);
+
+        let mem_builder = unsafe{ ptr::read(&this.raw.mem_builder) };
+        let mem = unsafe{ ptr::read(&this.raw.mem) };
+        let (mem_handle, element_layout, capacity) = mem.into_raw_parts();
+        RawParts{
+            mem_builder,
+            mem_handle,
+            element_layout,
+            element_typeid: this.raw.type_id,
+            capacity,
+            len: this.raw.len,
+            element_drop: None,
+            element_clone: <Traits as CloneType>::get(this.clone_fn)
+        }
+    }
+
+    /// Construct `AnyVec` from previously deconstructed raw parts.
+    ///
+    /// # Safety
+    ///
+    /// ## Traits
+    ///
+    /// Traits validity not checked. `RawParts` of underlying type must implement Traits.
+    /// It is not safe to opt-in [`Clonable`], if initial `AnyVec` was not constructed with
+    /// that trait.
+    ///
+    /// ## RawParts
+    /// `RawParts` validity not checked.
+    #[inline]
+    pub unsafe fn from_raw_parts(raw_parts: RawParts<M>) -> Self
+    where
+        M::Mem: MemRawParts
+    {
+        Self{
+            raw: AnyVecRaw{
+                mem_builder: raw_parts.mem_builder,
+                mem: MemRawParts::from_raw_parts(
+                    raw_parts.mem_handle,
+                    raw_parts.element_layout,
+                    raw_parts.capacity
+                ),
+                len: raw_parts.len,
+                type_id: raw_parts.element_typeid,
+                drop_fn: raw_parts.element_drop
+            },
+            clone_fn: <Traits as CloneType>::new(raw_parts.element_clone),
+            phantom: PhantomData
+        }
     }
 
     /// Constructs **empty** [`AnyVec`] with the same elements type, `Traits` and `MemBuilder`.

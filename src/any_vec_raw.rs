@@ -2,17 +2,21 @@ use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
 use crate::any_value::{AnyValue, Unknown};
+use crate::any_vec::RawParts;
 use crate::clone_type::CloneFn;
-use crate::mem::{Mem, MemBuilder, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemRawParts, MemResizable};
 
 pub type DropFn = fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw<M: MemBuilder> {
-    mem_builder: M,         // usually ZST
+    pub(crate) mem_builder: M,         // usually ZST
     pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
-    type_id: TypeId,        // purely for safety checks
-    drop_fn: Option<DropFn>
+
+    // TODO: remove element_*
+
+    pub(crate) type_id: TypeId,        // purely for safety checks
+    pub(crate) drop_fn: Option<DropFn>
 }
 
 impl<M: MemBuilder> AnyVecRaw<M> {

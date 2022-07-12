@@ -1,7 +1,8 @@
 use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::cmp;
+use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
-use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 
 #[inline]
 fn dangling(layout: &Layout) -> NonNull<u8>{
@@ -114,6 +115,25 @@ impl MemResizable for HeapMem {
             }
         }
         self.size = new_size;
+    }
+}
+
+impl MemRawParts for HeapMem{
+    type Handle = NonNull<u8>;
+
+    #[inline]
+    fn into_raw_parts(self) -> (Self::Handle, Layout, usize) {
+        let this = ManuallyDrop::new(self);
+        (this.mem, this.element_layout, this.size)
+    }
+
+    #[inline]
+    unsafe fn from_raw_parts(handle: Self::Handle, element_layout: Layout, size: usize) -> Self {
+        Self{
+            mem: handle,
+            size,
+            element_layout
+        }
     }
 }
 
