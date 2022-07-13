@@ -7,8 +7,8 @@ use any_vec::AnyVec;
 
 const SIZE: usize = 10000;
 
-type Element = [u8;128];
-static VALUE: Element = [0;128];
+type Element = (usize, usize);
+static VALUE: Element = (0,0);
 
 fn vec_push(){
     let mut vec = Vec::new();
@@ -19,8 +19,8 @@ fn vec_push(){
 
 fn any_vec_push(){
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
+    let mut vec = any_vec.downcast_mut::<Element>().unwrap();
     for _ in 0..SIZE{
-        let mut vec = any_vec.downcast_mut::<Element>().unwrap();
         vec.push(VALUE.clone());
     }
 }

@@ -7,6 +7,9 @@ use crate::mem::{Mem, MemBuilder};
 /// Can contain `N` elements, with total size at most `SIZE` bytes.
 /// Unlike [`Stack`] does not involve heavy operations for building.
 ///
+/// N.B. It should be `ELEMENT_SIZE` instead of total `SIZE`, but Rust
+/// still can't do `N * ELEMENT_SIZE` in generic context.
+///
 /// [`Stack`]: super::Stack
 #[derive(Default, Clone)]
 pub struct StackN<const N:usize, const SIZE: usize>;

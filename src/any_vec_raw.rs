@@ -5,14 +5,14 @@ use crate::any_value::{AnyValue, Unknown};
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
 
-pub type DropFn = fn(ptr: *mut u8, len: usize);
+pub type DropFn = unsafe fn(ptr: *mut u8, len: usize);
 
 pub struct AnyVecRaw<M: MemBuilder> {
-    mem_builder: M,         // usually ZST
+    pub(crate) mem_builder: M,         // usually ZST
     pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
-    type_id: TypeId,        // purely for safety checks
-    drop_fn: Option<DropFn>
+    pub(crate) type_id: TypeId,        // purely for safety checks
+    pub(crate) drop_fn: Option<DropFn>
 }
 
 impl<M: MemBuilder> AnyVecRaw<M> {
@@ -37,11 +37,6 @@ impl<M: MemBuilder> AnyVecRaw<M> {
                     })
                 }
         }
-    }
-
-    #[inline]
-    pub fn drop_fn(&self) -> Option<DropFn>{
-        self.drop_fn
     }
 
     #[inline]
@@ -223,14 +218,10 @@ impl<M: MemBuilder> AnyVecRaw<M> {
         self.len = 0;
 
         if let Some(drop_fn) = self.drop_fn{
-            (drop_fn)(self.mem.as_mut_ptr(), len);
+            unsafe{
+                (drop_fn)(self.mem.as_mut_ptr(), len);
+            }
         }
-    }
-
-    /// Element TypeId
-    #[inline]
-    pub fn element_typeid(&self) -> TypeId{
-        self.type_id
     }
 
     /// Element Layout

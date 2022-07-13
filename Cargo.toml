@@ -49,3 +49,7 @@ harness = false
 [[bench]]
 name = "clone"
 harness = false
+
+[[bench]]
+name = "raw_parts"
+harness = false

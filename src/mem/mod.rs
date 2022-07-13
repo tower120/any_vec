@@ -92,3 +92,11 @@ pub trait MemResizable: Mem{
     /// Implementation may panic, if fail to allocate/reallocate/deallocate memory.
     fn resize(&mut self, new_size: usize);
 }
+
+/// [`Mem`] destructurable into raw parts.
+pub trait MemRawParts: Mem{
+    type Handle;
+
+    fn into_raw_parts(self) -> (Self::Handle, Layout, usize);
+    unsafe fn from_raw_parts(handle: Self::Handle, element_layout: Layout, size: usize) -> Self;
+}

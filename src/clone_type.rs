@@ -7,16 +7,14 @@ use crate::traits::*;
 #[derive(Copy, Clone, Default)]
 pub struct Empty;
 
-pub type CloneFn = fn(src: *const u8, dst: *mut u8, len: usize);
-fn clone_fn<T: Clone>(src: *const u8, dst: *mut u8, len: usize){
+pub type CloneFn = unsafe fn(src: *const u8, dst: *mut u8, len: usize);
+unsafe fn clone_fn<T: Clone>(src: *const u8, dst: *mut u8, len: usize){
     let src = src as *const T;
     let dst = dst as *mut T;
     for i in 0..len {
-        unsafe{
-            let dst = dst.add(i);
-            let src = src.add(i);
-            dst.write((*src).clone());
-        }
+        let dst = dst.add(i);
+        let src = src.add(i);
+        dst.write((*src).clone());
     }
 }
 fn nop_fn(_: *const u8, _: *mut u8, _: usize){}

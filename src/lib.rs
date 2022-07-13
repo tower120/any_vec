@@ -144,7 +144,7 @@ mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
 
-pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits};
+pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits, RawParts};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterRef, IterMut};
 

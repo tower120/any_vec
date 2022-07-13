@@ -81,8 +81,10 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
 impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn drop(&mut self) {
-        if let Some(drop_fn) = self.any_vec_raw().drop_fn(){
-            (drop_fn)(self.element.as_ptr(), 1);
+        if let Some(drop_fn) = self.any_vec_raw().drop_fn{
+            unsafe{
+                (drop_fn)(self.element.as_ptr(), 1);
+            }
         }
     }
 }
@@ -92,7 +94,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
 
     #[inline]
     fn value_typeid(&self) -> TypeId {
-        self.any_vec_raw().element_typeid()
+        self.any_vec_raw().type_id
     }
 
     #[inline]

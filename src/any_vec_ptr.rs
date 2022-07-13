@@ -199,7 +199,7 @@ pub(crate) mod utils{
 
         if Unknown::is::<AnyVecPtr::Element>(){
             let any_vec_raw = any_vec_ptr.any_vec_raw();
-            if let Some(drop_fn) = any_vec_raw.drop_fn(){
+            if let Some(drop_fn) = any_vec_raw.drop_fn{
                 (drop_fn)(
                     element_mut_ptr_at(any_vec_ptr, start_index),
                     end_index - start_index
