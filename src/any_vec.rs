@@ -87,6 +87,11 @@ impl<T: Clone + Send> SatisfyTraits<dyn Cloneable + Send> for T{}
 impl<T: Clone + Sync> SatisfyTraits<dyn Cloneable + Sync> for T{}
 impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 
+/// [`AnyVec`] raw parts.
+///
+/// You can get it with [`AnyVec::into_raw_parts`], or build/edit
+/// it manually. And with [`AnyVec::from_raw_parts`], you can construct
+/// [`AnyVec`].
 pub struct RawParts<M: MemBuilder>
 where
     M::Mem: MemRawParts
@@ -216,6 +221,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         Self::build::<T>(raw)
     }
 
+    /// Destructure `AnyVec` into [`RawParts`].
     #[inline]
     pub fn into_raw_parts(self) -> RawParts<M>
     where
