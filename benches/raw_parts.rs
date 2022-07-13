@@ -1,10 +1,5 @@
-use std::any::{Any, TypeId};
 use std::mem;
-use std::mem::size_of;
-use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
-use itertools::any;
-use any_vec::any_value::AnyValueRaw;
 use any_vec::AnyVec;
 
 const SIZE: usize = 10000;
