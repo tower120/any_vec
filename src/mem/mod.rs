@@ -93,6 +93,7 @@ pub trait MemResizable: Mem{
     fn resize(&mut self, new_size: usize);
 }
 
+/// [`Mem`] destructurable into raw parts.
 pub trait MemRawParts: Mem{
     type Handle;
 

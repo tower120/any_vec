@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+### Added
+- `AnyVec::into_raw_parts` / `AnyVec::from_raw_parts` / `RawParts`.
+- `MemRawParts`.
+- `AnyVec::element_drop`.
+- `AnyVec::element_clone`.
+
+### Changed 
+- `HeapMem` implements `MemRawParts`.
+
 ## 0.10.0
 ### Changed
 - `AnyValue::bytes()->*const u8` and `AnyValue::size()->usize` replaced with
