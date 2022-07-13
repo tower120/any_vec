@@ -2,9 +2,8 @@ use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
 use crate::any_value::{AnyValue, Unknown};
-use crate::any_vec::RawParts;
 use crate::clone_type::CloneFn;
-use crate::mem::{Mem, MemBuilder, MemRawParts, MemResizable};
+use crate::mem::{Mem, MemBuilder, MemResizable};
 
 pub type DropFn = unsafe fn(ptr: *mut u8, len: usize);
 
