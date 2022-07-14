@@ -237,6 +237,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
 }
 
 impl<M: MemBuilder> Drop for AnyVecRaw<M> {
+    #[inline]
     fn drop(&mut self) {
         self.clear();
     }

@@ -166,6 +166,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// Not available, if provided [`MemBuilder`] is not [`Default`].
     #[inline]
+    #[must_use]
     pub fn new<T: 'static>() -> Self
     where
         T: SatisfyTraits<Traits>,
@@ -179,6 +180,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// `T` should satisfy requested Traits.
     #[inline]
+    #[must_use]
     pub fn new_in<T: 'static>(mut mem_builder: M) -> Self
         where T: SatisfyTraits<Traits>
     {
@@ -195,6 +197,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// Not available, if provided [`MemBuilder`] is not
     /// [`MemBuilderSizeable`] and [`Default`].
     #[inline]
+    #[must_use]
     pub fn with_capacity<T: 'static>(capacity: usize) -> Self
     where
         T: SatisfyTraits<Traits>,
@@ -211,6 +214,8 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// Not available, if provided [`MemBuilder`] is not
     /// [`MemBuilderSizeable`].
+    #[inline]
+    #[must_use]
     pub fn with_capacity_in<T: 'static>(capacity: usize, mut mem_builder: M) -> Self
     where
         T: SatisfyTraits<Traits>,
@@ -223,6 +228,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 
     /// Destructure `AnyVec` into [`RawParts`].
     #[inline]
+    #[must_use]
     pub fn into_raw_parts(self) -> RawParts<M>
     where
         M::Mem: MemRawParts
@@ -259,6 +265,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// `RawParts` validity not checked.
     ///
     #[inline]
+    #[must_use]
     pub unsafe fn from_raw_parts(raw_parts: RawParts<M>) -> Self
     where
         M::Mem: MemRawParts
@@ -285,6 +292,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// [`clone`]: Clone::clone
     #[inline]
+    #[must_use]
     pub fn clone_empty(&self) -> Self {
         Self {
             raw: self.raw.clone_empty(),
@@ -312,6 +320,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// any_vec.push(tmp.pop().unwrap());
     /// ```
     #[inline]
+    #[must_use]
     pub fn clone_empty_in<NewM: MemBuilder>(&self, mem_builder: NewM) -> AnyVec<Traits, NewM> {
         AnyVec {
             raw: self.raw.clone_empty_in(mem_builder),
