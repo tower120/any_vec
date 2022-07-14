@@ -1,22 +1,22 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueUnchecked};
+use crate::any_value::{AnyValue, AnyValueMut, AnyValueUntyped};
 use crate::any_value::Unknown;
 
 
-pub struct AnyValueRawUnsafe{
+pub struct AnyValueRawUntyped {
     ptr: NonNull<u8>,
     size: usize,
 }
-impl AnyValueRawUnsafe{
+impl AnyValueRawUntyped {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
         Self{ptr, size}
     }
 }
 
-impl AnyValueUnchecked for AnyValueRawUnsafe{
+impl AnyValueUntyped for AnyValueRawUntyped {
     type Type = Unknown;
 
     #[inline]
@@ -52,7 +52,7 @@ impl AnyValueUnchecked for AnyValueRawUnsafe{
 /// any_vec.push(raw_value);
 /// ```
 pub struct AnyValueRaw{
-    raw_unsafe: AnyValueRawUnsafe,
+    raw_unsafe: AnyValueRawUntyped,
     typeid: TypeId
 }
 
@@ -60,13 +60,13 @@ impl AnyValueRaw{
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
         Self{
-            raw_unsafe: AnyValueRawUnsafe::new(ptr, size),
+            raw_unsafe: AnyValueRawUntyped::new(ptr, size),
             typeid
         }
     }
 }
 
-impl AnyValueUnchecked for AnyValueRaw{
+impl AnyValueUntyped for AnyValueRaw{
     type Type = Unknown;
 
     #[inline]

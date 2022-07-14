@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueUnchecked};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueUntyped};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
 /// Do clone on consumption.
@@ -20,7 +20,7 @@ impl<'a, T: AnyValueCloneable> LazyClone<'a, T>{
     }
 }
 
-impl<'a, T: AnyValueCloneable> AnyValueUnchecked for LazyClone<'a, T>{
+impl<'a, T: AnyValueCloneable> AnyValueUntyped for LazyClone<'a, T>{
     type Type = T::Type;
 
     #[inline]

@@ -4,7 +4,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUnchecked};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUntyped};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -89,7 +89,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueUnchecked for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueUntyped for ElementPointer<'a, AnyVecPtr>{
     type Type = AnyVecPtr::Element;
 
     #[inline]

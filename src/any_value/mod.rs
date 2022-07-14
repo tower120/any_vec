@@ -20,9 +20,8 @@ impl Unknown {
     }
 }
 
-// TODO: rename to unsafe
-/// Does not know it's type.
-pub trait AnyValueUnchecked {
+/// [`AnyValue`] that does not know it's type.
+pub trait AnyValueUntyped {
     /// Concrete type, or [`Unknown`]
     ///
     /// N.B. This should be in `AnyValue`. It is here due to ergonomic reasons,
@@ -62,7 +61,7 @@ pub trait AnyValueUnchecked {
 }
 
 /// Type erased value interface.
-pub trait AnyValue: AnyValueUnchecked {
+pub trait AnyValue: AnyValueUntyped {
     fn value_typeid(&self) -> TypeId;
 
     #[inline]
@@ -88,7 +87,7 @@ pub trait AnyValue: AnyValueUnchecked {
 
 /// Helper function, which utilize type knowledge.
 #[inline]
-pub(crate) unsafe fn copy_bytes<T: AnyValueUnchecked>(any_value: &T, out: *mut u8){
+pub(crate) unsafe fn copy_bytes<T: AnyValueUntyped>(any_value: &T, out: *mut u8){
     if !Unknown::is::<T::Type>() {
         ptr::copy_nonoverlapping(
             any_value.as_bytes().as_ptr() as *const T::Type,
@@ -155,7 +154,7 @@ pub trait AnyValueMut: AnyValue{
 }
 
 /// [`LazyClone`] friendly [`AnyValue`].
-pub trait AnyValueCloneable: AnyValueUnchecked {
+pub trait AnyValueCloneable: AnyValueUntyped {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]

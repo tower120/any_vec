@@ -4,7 +4,7 @@ use std::mem::MaybeUninit;
 use std::ops::{Range, RangeBounds};
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValueUnchecked, AnyValue, AnyValueWrapper};
+use crate::any_value::{AnyValueUntyped, AnyValue, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{Iter, pop, remove, swap_remove, TempValue};
 use crate::any_vec_ptr::AnyVecRawPtr;

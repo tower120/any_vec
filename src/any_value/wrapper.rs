@@ -1,7 +1,7 @@
 use std::any::TypeId;
 use std::mem::{ManuallyDrop, size_of};
 use std::{ptr, slice};
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueUnchecked};
+use crate::any_value::{AnyValue, AnyValueMut, AnyValueUntyped};
 
 /// Helper struct to convert concrete type to [`AnyValue`].
 pub struct AnyValueWrapper<T: 'static>{
@@ -13,7 +13,7 @@ impl<T: 'static> AnyValueWrapper<T> {
         Self{ value }
     }
 }
-impl<T: 'static> AnyValueUnchecked for AnyValueWrapper<T> {
+impl<T: 'static> AnyValueUntyped for AnyValueWrapper<T> {
     type Type = T;
 
     #[inline]

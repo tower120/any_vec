@@ -8,7 +8,7 @@ use std::ptr::NonNull;
 use std::{ptr, slice};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
-use crate::any_value::{AnyValue, AnyValueUnchecked};
+use crate::any_value::{AnyValue, AnyValueUntyped};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
@@ -572,7 +572,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
     #[inline]
-    pub unsafe fn insert_unchecked<V: AnyValueUnchecked>(&mut self, index: usize, value: V) {
+    pub unsafe fn insert_unchecked<V: AnyValueUntyped>(&mut self, index: usize, value: V) {
         self.raw.insert_unchecked(index, value);
     }
 
@@ -589,7 +589,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn push_unchecked<V: AnyValueUnchecked>(&mut self, value: V) {
+    pub unsafe fn push_unchecked<V: AnyValueUntyped>(&mut self, value: V) {
         self.raw.push_unchecked(value);
     }
 

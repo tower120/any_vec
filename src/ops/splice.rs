@@ -1,6 +1,6 @@
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::{any_vec_ptr, assert_types_equal, Iter};
-use crate::any_value::{AnyValueUnchecked, AnyValue};
+use crate::any_value::{AnyValueUntyped, AnyValue};
 use crate::ops::iter::Iterable;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
