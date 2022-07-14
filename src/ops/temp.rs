@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::{mem, ptr, slice};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUnchecked, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::AnyVec;
@@ -48,18 +48,8 @@ impl<Op: Operation> TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValue for TempValue<Op>{
+impl<Op: Operation> AnyValueUnchecked for TempValue<Op>{
     type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
-
-    #[inline]
-    fn value_typeid(&self) -> TypeId {
-        let typeid = TypeId::of::<Self::Type>();
-        if typeid == TypeId::of::<Unknown>(){
-            self.any_vec_raw().type_id
-        } else {
-            typeid
-        }
-    }
 
     #[inline]
     fn as_bytes(&self) -> &[u8]{
@@ -74,6 +64,17 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
         copy_bytes(&self, out);
         self.op.consume();
         mem::forget(self);
+    }
+}
+impl<Op: Operation> AnyValue for TempValue<Op>{
+    #[inline]
+    fn value_typeid(&self) -> TypeId {
+        let typeid = TypeId::of::<Self::Type>();
+        if typeid == TypeId::of::<Unknown>(){
+            self.any_vec_raw().type_id
+        } else {
+            typeid
+        }
     }
 }
 
@@ -107,12 +108,12 @@ impl<Op: Operation> Drop for TempValue<Op>{
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
-            if Unknown::is::<<Self as AnyValue>::Type>() {
+            if Unknown::is::<<Self as AnyValueUnchecked>::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element, 1);
                 }
             } else {
-                ptr::drop_in_place(element as *mut <Self as AnyValue>::Type);
+                ptr::drop_in_place(element as *mut <Self as AnyValueUnchecked>::Type);
             }
         }
         self.op.consume();

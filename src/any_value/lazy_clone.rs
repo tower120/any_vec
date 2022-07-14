@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use crate::any_value::{AnyValue, AnyValueCloneable};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueUnchecked};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
 /// Do clone on consumption.
@@ -20,13 +20,8 @@ impl<'a, T: AnyValueCloneable> LazyClone<'a, T>{
     }
 }
 
-impl<'a, T: AnyValueCloneable> AnyValue for LazyClone<'a, T>{
+impl<'a, T: AnyValueCloneable> AnyValueUnchecked for LazyClone<'a, T>{
     type Type = T::Type;
-
-    #[inline]
-    fn value_typeid(&self) -> TypeId {
-        self.value.value_typeid()
-    }
 
     #[inline]
     fn as_bytes(&self) -> &[u8]{
@@ -36,6 +31,13 @@ impl<'a, T: AnyValueCloneable> AnyValue for LazyClone<'a, T>{
     #[inline]
     unsafe fn move_into(self, out: *mut u8) {
         self.value.clone_into(out);
+    }
+}
+
+impl<'a, T: AnyValueCloneable + AnyValue> AnyValue for LazyClone<'a, T>{
+    #[inline]
+    fn value_typeid(&self) -> TypeId {
+        self.value.value_typeid()
     }
 }
 

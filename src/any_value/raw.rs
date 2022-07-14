@@ -1,8 +1,33 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueMut};
+use crate::any_value::{AnyValue, AnyValueMut, AnyValueUnchecked};
 use crate::any_value::Unknown;
+
+
+pub struct AnyValueRawUnsafe{
+    ptr: NonNull<u8>,
+    size: usize,
+}
+impl AnyValueRawUnsafe{
+    #[inline]
+    pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
+        Self{ptr, size}
+    }
+}
+
+impl AnyValueUnchecked for AnyValueRawUnsafe{
+    type Type = Unknown;
+
+    #[inline]
+    fn as_bytes(&self) -> &[u8]{
+        unsafe{slice::from_raw_parts(
+            self.ptr.as_ptr(),
+            self.size
+        )}
+    }
+}
+
 
 /// Non owning byte ptr wrapper.
 /// Source should be forgotten.
@@ -27,32 +52,33 @@ use crate::any_value::Unknown;
 /// any_vec.push(raw_value);
 /// ```
 pub struct AnyValueRaw{
-    ptr: NonNull<u8>,
-    size: usize,
+    raw_unsafe: AnyValueRawUnsafe,
     typeid: TypeId
 }
 
 impl AnyValueRaw{
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
-        Self{ptr, size, typeid}
+        Self{
+            raw_unsafe: AnyValueRawUnsafe::new(ptr, size),
+            typeid
+        }
+    }
+}
+
+impl AnyValueUnchecked for AnyValueRaw{
+    type Type = Unknown;
+
+    #[inline]
+    fn as_bytes(&self) -> &[u8]{
+        self.raw_unsafe.as_bytes()
     }
 }
 
 impl AnyValue for AnyValueRaw{
-    type Type = Unknown;
-
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
-    }
-
-    #[inline]
-    fn as_bytes(&self) -> &[u8]{
-        unsafe{slice::from_raw_parts(
-            self.ptr.as_ptr(),
-            self.size
-        )}
     }
 }
 
@@ -60,8 +86,8 @@ impl AnyValueMut for AnyValueRaw{
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
-            self.ptr.as_ptr(),
-            self.size
+            self.raw_unsafe.ptr.as_ptr(),
+            self.raw_unsafe.size
         )}
     }
 }

@@ -20,39 +20,21 @@ impl Unknown {
     }
 }
 
-/// Type erased value interface.
-pub trait AnyValue {
+// TODO: rename to unsafe
+/// Does not know it's type.
+pub trait AnyValueUnchecked {
     /// Concrete type, or [`Unknown`]
+    ///
+    /// N.B. This should be in `AnyValue`. It is here due to ergonomic reasons,
+    /// since Rust does not have impl specialization.
     type Type: 'static /*= Unknown*/;
-
-    fn value_typeid(&self) -> TypeId;
 
     /// Aligned.
     fn as_bytes(&self) -> &[u8];
 
     #[inline]
-    fn downcast_ref<T: 'static>(&self) -> Option<&T>{
-        if self.value_typeid() != TypeId::of::<T>(){
-            None
-        } else {
-            Some(unsafe{ self.downcast_ref_unchecked::<T>() })
-        }
-    }
-
-    #[inline]
     unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T{
         &*(self.as_bytes().as_ptr() as *const T)
-    }
-
-    #[inline]
-    fn downcast<T: 'static>(self) -> Option<T>
-        where Self: Sized
-    {
-        if self.value_typeid() != TypeId::of::<T>(){
-            None
-        } else {
-            Some(unsafe{ self.downcast_unchecked::<T>() })
-        }
     }
 
     #[inline]
@@ -79,9 +61,34 @@ pub trait AnyValue {
     }
 }
 
+/// Type erased value interface.
+pub trait AnyValue: AnyValueUnchecked {
+    fn value_typeid(&self) -> TypeId;
+
+    #[inline]
+    fn downcast_ref<T: 'static>(&self) -> Option<&T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_ref_unchecked::<T>() })
+        }
+    }
+
+    #[inline]
+    fn downcast<T: 'static>(self) -> Option<T>
+        where Self: Sized
+    {
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_unchecked::<T>() })
+        }
+    }
+}
+
 /// Helper function, which utilize type knowledge.
 #[inline]
-pub(crate) unsafe fn copy_bytes<T: AnyValue>(any_value: &T, out: *mut u8){
+pub(crate) unsafe fn copy_bytes<T: AnyValueUnchecked>(any_value: &T, out: *mut u8){
     if !Unknown::is::<T::Type>() {
         ptr::copy_nonoverlapping(
             any_value.as_bytes().as_ptr() as *const T::Type,
@@ -148,7 +155,7 @@ pub trait AnyValueMut: AnyValue{
 }
 
 /// [`LazyClone`] friendly [`AnyValue`].
-pub trait AnyValueCloneable: AnyValue {
+pub trait AnyValueCloneable: AnyValueUnchecked {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]

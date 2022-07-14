@@ -1,6 +1,6 @@
 use crate::any_vec_ptr::IAnyVecRawPtr;
-use crate::{any_vec_ptr, Iter};
-use crate::any_value::AnyValue;
+use crate::{any_vec_ptr, assert_types_equal, Iter};
+use crate::any_value::{AnyValueUnchecked, AnyValue};
 use crate::ops::iter::Iterable;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
@@ -100,9 +100,11 @@ where
 
         // 3. move replace_with in
         unsafe{
+            let type_id = element_typeid(any_vec_ptr);
             let element_size = element_size(any_vec_ptr);
             let mut ptr = element_mut_ptr_at(any_vec_ptr, self.start);
             while let Some(replace_element) = self.replace_with.next() {
+                assert_types_equal(type_id, replace_element.value_typeid());
                 replace_element.move_into(ptr);
                 ptr = ptr.add(element_size);
             }

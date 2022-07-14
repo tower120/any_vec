@@ -4,7 +4,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUnchecked};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -89,13 +89,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueUnchecked for ElementPointer<'a, AnyVecPtr>{
     type Type = AnyVecPtr::Element;
-
-    #[inline]
-    fn value_typeid(&self) -> TypeId {
-        self.any_vec_raw().type_id
-    }
 
     #[inline]
     fn as_bytes(&self) -> &[u8]{
@@ -103,6 +98,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
             self.element.as_ptr(),
             self.any_vec_raw().element_layout().size()
         )}
+    }
+}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
+    #[inline]
+    fn value_typeid(&self) -> TypeId {
+        self.any_vec_raw().type_id
     }
 }
 

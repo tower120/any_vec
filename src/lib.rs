@@ -144,6 +144,7 @@ mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
 
+use std::any::TypeId;
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits, RawParts};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterRef, IterMut};
@@ -237,4 +238,9 @@ fn into_range(
     assert!(start <= end);
     assert!(end <= len);
     start..end
+}
+
+#[inline]
+fn assert_types_equal(t1: TypeId, t2: TypeId){
+    assert_eq!(t1, t2, "Type mismatch!");
 }

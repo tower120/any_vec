@@ -122,11 +122,23 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> IAnyVecPtr for AnyVecPtr<Traits, M> 
 /// All unsafe, because dereferencing pointer is unsafe.
 pub(crate) mod utils{
     use std::{mem, ptr};
+    use std::any::TypeId;
     use std::mem::size_of;
     use std::ptr::NonNull;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
     use crate::AnyVecTyped;
+
+    #[inline]
+    pub unsafe fn element_typeid<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> TypeId
+    {
+        if Unknown::is::<AnyVecPtr::Element>(){
+            let any_vec_raw = any_vec_ptr.any_vec_raw();
+            any_vec_raw.type_id
+        } else {
+            TypeId::of::<AnyVecPtr::Element>()
+        }
+    }
 
     #[inline]
     pub unsafe fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
