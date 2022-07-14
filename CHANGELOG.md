@@ -2,6 +2,12 @@
 
 ## Unreleased
 ### Added
+#### `AnyValueUntyped`
+- `AnyValue` split into `AnyValueUntyped` + `AnyValue`.
+- `AnyVec::push_unchecked(AnyValueUntyped)`.
+- `AnyVec::insert_unchecked(usize, AnyValueUntyped)`.
+
+#### Raw parts
 - `AnyVec::into_raw_parts` / `AnyVec::from_raw_parts` / `RawParts`.
 - `MemRawParts`.
 - `AnyVec::element_drop`.
