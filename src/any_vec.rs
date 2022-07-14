@@ -567,10 +567,14 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
+    /// Same as [`insert`], but without type checks.
+    ///
     /// # Panics
     ///
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
+    ///
+    /// [`insert`]: Self::insert
     #[inline]
     pub unsafe fn insert_unchecked<V: AnyValueUntyped>(&mut self, index: usize, value: V) {
         self.raw.insert_unchecked(index, value);
@@ -588,6 +592,13 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
+    /// Same as [`push`], but without type checks.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if out of memory.
+    ///
+    /// [`push`]: Self::push
     #[inline]
     pub unsafe fn push_unchecked<V: AnyValueUntyped>(&mut self, value: V) {
         self.raw.push_unchecked(value);
