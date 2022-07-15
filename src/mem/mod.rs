@@ -1,14 +1,17 @@
 mod heap;
 mod stack;
 mod stack_n;
+mod empty;
 
 pub use heap::Heap;
 pub use stack::Stack;
 pub use stack_n::StackN;
+pub use empty::Empty;
 
 pub(crate) type Default = Heap;
 
 use std::alloc::Layout;
+use std::ptr::NonNull;
 
 /// This is [`Mem`] builder.
 ///
@@ -99,4 +102,16 @@ pub trait MemRawParts: Mem{
 
     fn into_raw_parts(self) -> (Self::Handle, Layout, usize);
     unsafe fn from_raw_parts(handle: Self::Handle, element_layout: Layout, size: usize) -> Self;
+}
+
+#[inline]
+const fn dangling(layout: &Layout) -> NonNull<u8>{
+    #[cfg(miri)]
+    {
+        layout.dangling()
+    }
+    #[cfg(not(miri))]
+    {
+        unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
+    }
 }

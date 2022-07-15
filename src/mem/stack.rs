@@ -10,7 +10,7 @@ use crate::mem::{Mem, MemBuilder};
 /// for intermediate storage instead.
 ///
 /// [`StackN`]: super::StackN
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Copy)]
 pub struct Stack<const SIZE: usize>;
 impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
     type Mem = StackMem<SIZE>;

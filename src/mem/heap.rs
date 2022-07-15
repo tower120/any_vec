@@ -2,22 +2,10 @@ use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
 use std::cmp;
 use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
-use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
-
-#[inline]
-fn dangling(layout: &Layout) -> NonNull<u8>{
-    #[cfg(miri)]
-    {
-        layout.dangling()
-    }
-    #[cfg(not(miri))]
-    {
-        unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
-    }
-}
+use crate::mem::{dangling, Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 
 /// Heap allocated memory.
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Copy)]
 pub struct Heap;
 impl MemBuilder for Heap {
     type Mem = HeapMem;
