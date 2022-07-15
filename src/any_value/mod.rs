@@ -160,7 +160,7 @@ pub trait AnyValueMut: AnyValueMutUnknown + AnyValue{
     }
 }
 
-/// [`LazyClone`] friendly [`AnyValue`].
+/// [`LazyClone`] friendly [`AnyValueUnknown`].
 pub trait AnyValueCloneable: AnyValueUnknown {
     unsafe fn clone_into(&self, out: *mut u8);
 
