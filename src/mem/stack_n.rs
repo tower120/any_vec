@@ -11,7 +11,7 @@ use crate::mem::{Mem, MemBuilder};
 /// still can't do `N * ELEMENT_SIZE` in generic context.
 ///
 /// [`Stack`]: super::Stack
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Copy)]
 pub struct StackN<const N:usize, const SIZE: usize>;
 impl<const N:usize, const SIZE: usize> MemBuilder for StackN<N, SIZE>{
     type Mem = StackNMem<N, SIZE>;

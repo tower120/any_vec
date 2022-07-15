@@ -8,6 +8,7 @@
 - `AnyVec::push_unchecked(AnyValueUnknown)`.
 - `AnyVec::insert_unchecked(usize, AnyValueUnknown)`.
 - `AnyValueRawUnknown`.
+- `mem::Empty`.
 
 #### Raw parts
 - `AnyVec::into_raw_parts` / `AnyVec::from_raw_parts` / `RawParts`.

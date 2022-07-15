@@ -92,7 +92,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can get it with [`AnyVec::into_raw_parts`], or build/edit
 /// it manually. And with [`AnyVec::from_raw_parts`], you can construct
 /// [`AnyVec`].
-pub struct RawParts<M: MemBuilder>
+pub struct RawParts<M: MemBuilder = mem::Default>
 where
     M::Mem: MemRawParts
 {
