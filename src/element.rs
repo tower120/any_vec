@@ -4,7 +4,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUntyped, AnyValueUntyped};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUnknown, AnyValueUnknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -89,7 +89,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueUntyped for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueUnknown for ElementPointer<'a, AnyVecPtr>{
     type Type = AnyVecPtr::Element;
 
     #[inline]
@@ -107,7 +107,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMutUntyped for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMutUnknown for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(

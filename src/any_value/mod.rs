@@ -4,7 +4,7 @@ mod lazy_clone;
 
 pub use lazy_clone::{LazyClone};
 pub use wrapper::AnyValueWrapper;
-pub use raw::{AnyValueRaw, AnyValueRawUntyped};
+pub use raw::{AnyValueRaw, AnyValueRawUnknown};
 
 use std::any::TypeId;
 use std::{mem, ptr};
@@ -21,7 +21,7 @@ impl Unknown {
 }
 
 /// [`AnyValue`] that does not know it's compiletime or runtime type.
-pub trait AnyValueUntyped {
+pub trait AnyValueUnknown {
     /// Concrete type, or [`Unknown`]
     ///
     /// N.B. This should be in `AnyValue`. It is here due to ergonomic reasons,
@@ -61,7 +61,7 @@ pub trait AnyValueUntyped {
 }
 
 /// Type erased value interface.
-pub trait AnyValue: AnyValueUntyped {
+pub trait AnyValue: AnyValueUnknown {
     fn value_typeid(&self) -> TypeId;
 
     #[inline]
@@ -87,7 +87,7 @@ pub trait AnyValue: AnyValueUntyped {
 
 /// Helper function, which utilize type knowledge.
 #[inline]
-pub(crate) unsafe fn copy_bytes<T: AnyValueUntyped>(any_value: &T, out: *mut u8){
+pub(crate) unsafe fn copy_bytes<T: AnyValueUnknown>(any_value: &T, out: *mut u8){
     if !Unknown::is::<T::Type>() {
         ptr::copy_nonoverlapping(
             any_value.as_bytes().as_ptr() as *const T::Type,
@@ -102,7 +102,8 @@ pub(crate) unsafe fn copy_bytes<T: AnyValueUntyped>(any_value: &T, out: *mut u8)
     }
 }
 
-pub trait AnyValueMutUntyped: AnyValueUntyped{
+/// [`AnyValueMut`] that does not know it's compiletime or runtime type.
+pub trait AnyValueMutUnknown: AnyValueUnknown {
     fn as_bytes_mut(&mut self) -> &mut [u8];
 
     #[inline]
@@ -135,7 +136,7 @@ pub trait AnyValueMutUntyped: AnyValueUntyped{
 }
 
 /// Type erased mutable value interface.
-pub trait AnyValueMut: AnyValueMutUntyped + AnyValue{
+pub trait AnyValueMut: AnyValueMutUnknown + AnyValue{
     #[inline]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -160,7 +161,7 @@ pub trait AnyValueMut: AnyValueMutUntyped + AnyValue{
 }
 
 /// [`LazyClone`] friendly [`AnyValue`].
-pub trait AnyValueCloneable: AnyValueUntyped {
+pub trait AnyValueCloneable: AnyValueUnknown {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]

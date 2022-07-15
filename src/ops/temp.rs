@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::{mem, ptr, slice};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUntyped, AnyValueUntyped, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUnknown, AnyValueUnknown, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::AnyVec;
@@ -48,7 +48,7 @@ impl<Op: Operation> TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValueUntyped for TempValue<Op>{
+impl<Op: Operation> AnyValueUnknown for TempValue<Op>{
     type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
 
     #[inline]
@@ -78,7 +78,7 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValueMutUntyped for TempValue<Op> {
+impl<Op: Operation> AnyValueMutUnknown for TempValue<Op> {
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
@@ -109,12 +109,12 @@ impl<Op: Operation> Drop for TempValue<Op>{
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
-            if Unknown::is::<<Self as AnyValueUntyped>::Type>() {
+            if Unknown::is::<<Self as AnyValueUnknown>::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element, 1);
                 }
             } else {
-                ptr::drop_in_place(element as *mut <Self as AnyValueUntyped>::Type);
+                ptr::drop_in_place(element as *mut <Self as AnyValueUnknown>::Type);
             }
         }
         self.op.consume();
