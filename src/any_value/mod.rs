@@ -4,7 +4,7 @@ mod lazy_clone;
 
 pub use lazy_clone::{LazyClone};
 pub use wrapper::AnyValueWrapper;
-pub use raw::AnyValueRaw;
+pub use raw::{AnyValueRaw, AnyValueRawUntyped};
 
 use std::any::TypeId;
 use std::{mem, ptr};
@@ -20,7 +20,7 @@ impl Unknown {
     }
 }
 
-/// [`AnyValue`] that does not know it's type.
+/// [`AnyValue`] that does not know it's compiletime or runtime type.
 pub trait AnyValueUntyped {
     /// Concrete type, or [`Unknown`]
     ///
@@ -102,35 +102,17 @@ pub(crate) unsafe fn copy_bytes<T: AnyValueUntyped>(any_value: &T, out: *mut u8)
     }
 }
 
-/// Type erased mutable value interface.
-pub trait AnyValueMut: AnyValue{
-
+pub trait AnyValueMutUntyped: AnyValueUntyped{
     fn as_bytes_mut(&mut self) -> &mut [u8];
-
-    #[inline]
-    fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
-        if self.value_typeid() != TypeId::of::<T>(){
-            None
-        } else {
-            Some(unsafe{ self.downcast_mut_unchecked::<T>() })
-        }
-    }
 
     #[inline]
     unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T{
         &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
     }
 
-    /// Swaps underlying values.
-    ///
-    /// # Panic
-    ///
-    /// Panics, if type mismatch.
     #[inline]
-    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
-        assert_eq!(self.value_typeid(), other.value_typeid());
-
-        unsafe{
+    unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other){
+        // compile-time check
         if !Unknown::is::<Self::Type>() {
             mem::swap(
                 self.downcast_mut_unchecked::<Self::Type>(),
@@ -149,7 +131,31 @@ pub trait AnyValueMut: AnyValue{
                 bytes.len()
             );
         }
-        } // unsafe
+    }
+}
+
+/// Type erased mutable value interface.
+pub trait AnyValueMut: AnyValueMutUntyped + AnyValue{
+    #[inline]
+    fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
+        if self.value_typeid() != TypeId::of::<T>(){
+            None
+        } else {
+            Some(unsafe{ self.downcast_mut_unchecked::<T>() })
+        }
+    }
+
+    /// Swaps underlying values.
+    ///
+    /// # Panic
+    ///
+    /// Panics, if type mismatch.
+    #[inline]
+    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
+        assert_eq!(self.value_typeid(), other.value_typeid());
+        unsafe{
+            self.swap_unchecked(other);
+        }
     }
 }
 

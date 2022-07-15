@@ -4,7 +4,7 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUntyped};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUntyped, AnyValueUntyped};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -107,7 +107,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMutUntyped for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
@@ -116,6 +116,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>
         )}
     }
 }
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
 
 impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits, M>>

@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::{mem, ptr, slice};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueUntyped, copy_bytes, Unknown};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueMutUntyped, AnyValueUntyped, copy_bytes, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::AnyVec;
@@ -78,7 +78,7 @@ impl<Op: Operation> AnyValue for TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValueMut for TempValue<Op> {
+impl<Op: Operation> AnyValueMutUntyped for TempValue<Op> {
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
@@ -87,6 +87,7 @@ impl<Op: Operation> AnyValueMut for TempValue<Op> {
         )}
     }
 }
+impl<Op: Operation> AnyValueMut for TempValue<Op> {}
 
 impl<Op: Operation> AnyValueCloneable for TempValue<Op>
 where

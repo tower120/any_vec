@@ -1,27 +1,37 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
 use std::slice;
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueUntyped};
+use crate::any_value::{AnyValue, AnyValueMut, AnyValueMutUntyped, AnyValueUntyped};
 use crate::any_value::Unknown;
 
 
+/// [`AnyValueRaw`] that does not know it's type.
 pub struct AnyValueRawUntyped {
     ptr: NonNull<u8>,
     size: usize,
 }
+
 impl AnyValueRawUntyped {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
         Self{ptr, size}
     }
 }
-
 impl AnyValueUntyped for AnyValueRawUntyped {
     type Type = Unknown;
 
     #[inline]
     fn as_bytes(&self) -> &[u8]{
         unsafe{slice::from_raw_parts(
+            self.ptr.as_ptr(),
+            self.size
+        )}
+    }
+}
+impl AnyValueMutUntyped for AnyValueRawUntyped {
+    #[inline]
+    fn as_bytes_mut(&mut self) -> &mut [u8] {
+        unsafe{slice::from_raw_parts_mut(
             self.ptr.as_ptr(),
             self.size
         )}
@@ -65,7 +75,6 @@ impl AnyValueRaw{
         }
     }
 }
-
 impl AnyValueUntyped for AnyValueRaw{
     type Type = Unknown;
 
@@ -74,15 +83,13 @@ impl AnyValueUntyped for AnyValueRaw{
         self.raw_unsafe.as_bytes()
     }
 }
-
 impl AnyValue for AnyValueRaw{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
     }
 }
-
-impl AnyValueMut for AnyValueRaw{
+impl AnyValueMutUntyped for AnyValueRaw{
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe{slice::from_raw_parts_mut(
@@ -91,3 +98,4 @@ impl AnyValueMut for AnyValueRaw{
         )}
     }
 }
+impl AnyValueMut for AnyValueRaw{}
