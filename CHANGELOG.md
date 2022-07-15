@@ -4,8 +4,10 @@
 ### Added
 #### `AnyValueUntyped`
 - `AnyValue` split into `AnyValueUntyped` + `AnyValue`.
+- `AnyValueMut` split into `AnyValueMutUntyped` + `AnyValueMut`.
 - `AnyVec::push_unchecked(AnyValueUntyped)`.
 - `AnyVec::insert_unchecked(usize, AnyValueUntyped)`.
+- `AnyValueRawUntyped`.
 
 #### Raw parts
 - `AnyVec::into_raw_parts` / `AnyVec::from_raw_parts` / `RawParts`.
@@ -15,6 +17,9 @@
 
 ### Changed 
 - `HeapMem` implements `MemRawParts`.
+
+### Fixed
+- `AnyVec::splice` now check types.
 
 ## 0.10.0
 ### Changed
