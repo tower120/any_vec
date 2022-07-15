@@ -2,6 +2,14 @@
 
 ## Unreleased
 ### Added
+#### `AnyValueUnknown`
+- `AnyValue` split into `AnyValueUnknown` + `AnyValue`.
+- `AnyValueMut` split into `AnyValueMutUnknown` + `AnyValueMut`.
+- `AnyVec::push_unchecked(AnyValueUnknown)`.
+- `AnyVec::insert_unchecked(usize, AnyValueUnknown)`.
+- `AnyValueRawUnknown`.
+
+#### Raw parts
 - `AnyVec::into_raw_parts` / `AnyVec::from_raw_parts` / `RawParts`.
 - `MemRawParts`.
 - `AnyVec::element_drop`.
@@ -9,6 +17,9 @@
 
 ### Changed 
 - `HeapMem` implements `MemRawParts`.
+
+### Fixed
+- `AnyVec::splice` now check types.
 
 ## 0.10.0
 ### Changed

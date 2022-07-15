@@ -1,7 +1,8 @@
 use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
-use crate::any_value::{AnyValue, Unknown};
+use crate::any_value::{AnyValue, AnyValueUnknown, Unknown};
+use crate::assert_types_equal;
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
 
@@ -83,7 +84,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
 
     #[inline]
     pub(crate) fn type_check<V: AnyValue>(&self, value: &V){
-        assert_eq!(value.value_typeid(), self.type_id, "Type mismatch!");
+        assert_types_equal(value.value_typeid(), self.type_id);
     }
 
     #[inline]
@@ -152,7 +153,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     /// # Safety
     ///
     /// Type is not checked.
-    pub unsafe fn insert_unchecked<V: AnyValue>(&mut self, index: usize, value: V) {
+    pub unsafe fn insert_unchecked<V: AnyValueUnknown>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
         self.reserve_one();
@@ -192,7 +193,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     ///
     /// Type is not checked.
     #[inline]
-    pub unsafe fn push_unchecked<V: AnyValue>(&mut self, value: V) {
+    pub unsafe fn push_unchecked<V: AnyValueUnknown>(&mut self, value: V) {
         self.reserve_one();
 
         // Compile time type optimization

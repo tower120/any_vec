@@ -8,7 +8,7 @@ use std::ptr::NonNull;
 use std::{ptr, slice};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
-use crate::any_value::{AnyValue};
+use crate::any_value::{AnyValue, AnyValueUnknown};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
@@ -567,6 +567,23 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         }
     }
 
+    /// Same as [`insert`], but without type checks.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if index is out of bounds.
+    /// * Panics if out of memory.
+    ///
+    /// # Safety
+    ///
+    /// Type not checked.
+    ///
+    /// [`insert`]: Self::insert
+    #[inline]
+    pub unsafe fn insert_unchecked<V: AnyValueUnknown>(&mut self, index: usize, value: V) {
+        self.raw.insert_unchecked(index, value);
+    }
+
     /// # Panics
     ///
     /// * Panics if type mismatch.
@@ -577,6 +594,22 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         unsafe{
             self.raw.push_unchecked(value);
         }
+    }
+
+    /// Same as [`push`], but without type checks.
+    ///
+    /// # Panics
+    ///
+    /// Panics if out of memory.
+    ///
+    /// # Safety
+    ///
+    /// Type not checked.
+    ///
+    /// [`push`]: Self::push
+    #[inline]
+    pub unsafe fn push_unchecked<V: AnyValueUnknown>(&mut self, value: V) {
+        self.raw.push_unchecked(value);
     }
 
     /// # Leaking
@@ -599,7 +632,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 
     /// # Panics
     ///
-    /// * Panics if index out of bounds.
+    /// Panics if index out of bounds.
     ///
     /// # Leaking
     ///
@@ -620,7 +653,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
 
     /// # Panics
     ///
-    /// * Panics if index out of bounds.
+    /// Panics if index out of bounds.
     ///
     /// # Leaking
     ///
