@@ -1,5 +1,5 @@
 use std::alloc::Layout;
-use crate::mem::{dangling, Mem, MemBuilder};
+use crate::mem::{dangling, Mem, MemBuilder, MemRawParts};
 
 /// Zero-size memory.
 ///
@@ -40,5 +40,23 @@ impl Mem for EmptyMem{
     #[inline]
     fn size(&self) -> usize {
         0
+    }
+}
+
+impl MemRawParts for EmptyMem{
+    type Handle = ();
+
+    #[inline]
+    fn into_raw_parts(self) -> (Self::Handle, Layout, usize) {
+        ((), self.element_layout, 0)
+    }
+
+    /// `size` must be 0.
+    #[inline]
+    unsafe fn from_raw_parts(_: Self::Handle, element_layout: Layout, size: usize) -> Self {
+        debug_assert!(size == 0);
+        Self{
+            element_layout
+        }
     }
 }
