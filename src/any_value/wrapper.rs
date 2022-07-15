@@ -25,7 +25,7 @@ impl<T: 'static> AnyValueUnknown for AnyValueWrapper<T> {
     }
 
     #[inline]
-    unsafe fn downcast_unchecked<U: 'static>(self) -> U {
+    unsafe fn downcast_unchecked<U>(self) -> U {
         // rust don't see that types are the same after assert.
         let value = ManuallyDrop::new(self.value);
         let ptr = &*value as *const T as *const U;

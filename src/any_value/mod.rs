@@ -32,12 +32,12 @@ pub trait AnyValueUnknown {
     fn as_bytes(&self) -> &[u8];
 
     #[inline]
-    unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &T{
+    unsafe fn downcast_ref_unchecked<T>(&self) -> &T{
         &*(self.as_bytes().as_ptr() as *const T)
     }
 
     #[inline]
-    unsafe fn downcast_unchecked<T: 'static>(self) -> T
+    unsafe fn downcast_unchecked<T>(self) -> T
         where Self: Sized
     {
         let mut tmp = MaybeUninit::<T>::uninit();
@@ -107,7 +107,7 @@ pub trait AnyValueMutUnknown: AnyValueUnknown {
     fn as_bytes_mut(&mut self) -> &mut [u8];
 
     #[inline]
-    unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut T{
+    unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T{
         &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
     }
 
