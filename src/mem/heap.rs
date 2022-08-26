@@ -8,6 +8,7 @@ use crate::mem::{dangling, Mem, MemBuilder, MemBuilderSizeable, MemRawParts, Mem
 #[derive(Default, Clone, Copy)]
 pub struct Heap;
 impl MemBuilder for Heap {
+    /// Implements [`MemResizable`], [`MemRawParts`].
     type Mem = HeapMem;
 
     #[inline]

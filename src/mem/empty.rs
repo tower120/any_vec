@@ -9,6 +9,7 @@ use crate::mem::{dangling, Mem, MemBuilder, MemRawParts};
 #[derive(Default, Clone, Copy)]
 pub struct Empty;
 impl MemBuilder for Empty{
+    /// Implements [`MemRawParts`].
     type Mem = EmptyMem;
 
     #[inline]

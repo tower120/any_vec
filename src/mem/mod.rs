@@ -77,6 +77,8 @@ pub trait Mem{
 }
 
 /// Resizable [`Mem`].
+///
+/// Implemented by [`Heap::Mem`].
 pub trait MemResizable: Mem{
     /// Expand `Mem` size for **exactly** `additional` more elements.
     /// Implementation encouraged to be as precise as possible with new memory size.
@@ -97,6 +99,8 @@ pub trait MemResizable: Mem{
 }
 
 /// [`Mem`] destructurable into raw parts.
+///
+/// Implemented by [`Heap::Mem`], [`Empty::Mem`].
 pub trait MemRawParts: Mem{
     type Handle;
 
