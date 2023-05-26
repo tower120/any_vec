@@ -41,6 +41,11 @@ impl AnyValueMutUnknown for AnyValueRawUnknown {
 
 /// Non owning byte ptr wrapper.
 /// Source should be forgotten.
+/// Drop for wrapped type will not be called on AnyValueRaw drop.
+///
+/// This is useful to fill AnyVec directly from raw bytes,
+/// without intermediate casting to concrete type.
+/// (You only need runtime data - size and typeid)
 ///
 /// # Example
 /// ```rust
