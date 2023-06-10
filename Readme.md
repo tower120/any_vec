@@ -50,6 +50,9 @@ let v2 = v1.clone();
 // This will fail to compile. 
 let v1: AnyVec<dyn Sync + Send> = AnyVec::new::<Rc<usize>>();
 ```
+
+Non-Clonable `AnyVec` has a size 1 pointer smaller. 
+
 ## LazyClone
 
  Whenever possible, `any_vec` type erased elements can be lazily cloned:
