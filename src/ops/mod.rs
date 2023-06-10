@@ -32,22 +32,22 @@ pub type Remove<'a, Traits, M> = TempValue<remove::Remove<'a, AnyVecPtr<Traits, 
 /// [`AnyVec::swap_remove`]: crate::AnyVec::swap_remove
 pub type SwapRemove<'a, Traits, M> = TempValue<swap_remove::SwapRemove<'a, AnyVecPtr<Traits, M>>>;
 
-///  A draining [`ElementIterator`] for [`AnyVec`]. Return items as [`ElementPointer`]s.
+///  A draining [`ElementIterator`] for [`AnyVec`]. Return items as [`Element`]s.
 ///
 /// This is created by [`AnyVec::drain`].
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::drain`]: crate::AnyVec::drain
-/// [`ElementPointer`]: crate::element::ElementPointer
+/// [`Element`]: crate::element::Element
 /// [`ElementIterator`]: crate::iter::ElementIterator
 pub type Drain<'a, Traits, M> = Iter<drain::Drain<'a, AnyVecPtr<Traits, M>>>;
 
-///  A splicing [`ElementIterator`] for [`AnyVec`]. Return items as [`ElementPointer`]s.
+///  A splicing [`ElementIterator`] for [`AnyVec`]. Return items as [`Element`]s.
 ///
 /// This is created by [`AnyVec::splice`].
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::splice`]: crate::AnyVec::splice
-/// [`ElementPointer`]: crate::element::ElementPointer
+/// [`Element`]: crate::element::Element
 /// [`ElementIterator`]: crate::iter::ElementIterator
 pub type Splice<'a, Traits, M, I> = Iter<splice::Splice<'a, AnyVecPtr<Traits, M>, I>>;

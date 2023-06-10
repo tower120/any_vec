@@ -3,7 +3,7 @@
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
-//! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped<Element>`] with `downcast`-family.
+//! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped`] with `downcast`-family.
 //! Or use [`AnyVec`] type erased operations, which works with [`AnyValue`].
 //!
 //! [`AnyValue`]: any_value::AnyValue

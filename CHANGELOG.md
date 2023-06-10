@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0
+### Added
+- `element::ElementReference` trait, implemented both for `ElementRef` and `ElementMut`.
+
+### Changed
+- Documentation clarification.
+
+### Fixed
+- Minor changes, to eliminate warnings with new compiler version. 
+
 ## 0.11.0
 ### Added
 #### `AnyValueUnknown`
