@@ -2,7 +2,7 @@
 
 ## 0.12.0
 ### Added
-- `element::ElementReference` trait, implemented both for `ElementRef` and `ElementMut`.
+- `element::ElementReference` trait, implemented both for `ElementRef`, `ElementMut` and &`Element`.
 
 ### Changed
 - Documentation clarification.

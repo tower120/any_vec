@@ -154,6 +154,11 @@ where
     AnyVec<Traits, M>: Sync
 {}
 
+impl<'a, Traits: ?Sized + Trait, M: MemBuilder> ElementReference<'a, Traits, M>
+    for &'a ElementPointer<'a, AnyVecPtr<Traits, M>>
+{}
+
+
 // Do not implement Send/Sync for AnyVecPtrRaw, since it will be casted to concrete type anyway.
 
 
@@ -166,7 +171,7 @@ pub type Element<'a, Traits = dyn None, M = mem::Default> = ElementPointer<'a, A
 
 /// Reference to [`AnyVec`] element.
 ///
-/// Implemented by [`ElementRef`] and [`ElementMut`].
+/// Implemented by [`ElementRef`], [`ElementMut`] and &[`Element`].
 pub trait ElementReference<'a, Traits: ?Sized + Trait = dyn None, M: MemBuilder + 'a = mem::Default>
     : Deref<Target = Element<'a, Traits, M> >
 {}
