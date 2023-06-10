@@ -14,15 +14,21 @@ use crate::traits::{Cloneable, None, Trait};
 // Typed operations will never use type-erased Element, so there is no
 // need in type-known-based optimizations.
 
-/// Owning pointer to [`AnyVec`] element.
+/// Owning pointer to type-erased [`AnyVec`] element.
 ///
-/// This is public, just so you can see what [`Element`] can do.
+/// Obtained by dereferencing [`ElementRef`], [`ElementMut`] or from some
+/// destructive [`AnyVec`] operations, like ['drop'] or [splice].
+///
+/// # Consuming
+///
+/// Whenever you have `ElementPointer` as a value (from destructive [`AnyVec`] operations),
+/// you can safely take pointed value, with [`AnyValue::downcast`] or [`AnyValueUnknown::move_into`].
+/// Otherwise, it will be destructed with destruction of `ElementPointer`.
 ///
 /// # Notes
 ///
-/// `Element` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
-/// This is done, so you don't have to keep ElementRef/Mut alive, while casting to concrete type.
-/// [`AnyValueMut`] implemented too - for the sake of interface compatibility.
+/// `ElementPointer` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
+/// This is done, so you don't have to keep `ElementRef`/`ElementMut` alive, while casting to concrete type.
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::get`]: crate::AnyVec::get
@@ -49,6 +55,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         unsafe { self.any_vec_ptr.any_vec_raw() }
     }
 
+    /// Same as [`AnyValue::downcast_ref`], but return `&'a T`, instead of `&T`.
     #[inline]
     pub fn downcast_ref<T: 'static>(&self) -> Option<&'a T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -58,11 +65,13 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         }
     }
 
+    /// Same as [`AnyValueUnknown::downcast_ref_unchecked`], but return `&'a T`, instead of `&T`.
     #[inline]
     pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &'a T{
         &*(self.as_bytes().as_ptr() as *const T)
     }
 
+    /// Same as [`AnyValueMut::downcast_mut`], but return `&'a mut T`, instead of `&mut T`.
     #[inline]
     pub fn downcast_mut<T: 'static>(&mut self) -> Option<&'a mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -72,6 +81,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         }
     }
 
+    /// Same as [`AnyValueMutUnknown::downcast_mut_unchecked`], but return `&'a mut T`, instead of `&mut T`.
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &'a mut T{
         &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
@@ -148,10 +158,10 @@ where
 /// [`AnyVec`] element.
 ///
 /// [`AnyVec`]: crate::AnyVec
-pub type Element<'a, Traits = dyn None, M = mem::Default> = ElementPointer<'a, AnyVecPtr<Traits, M>>;
+/*pub */type Element<'a, Traits = dyn None, M = mem::Default> = ElementPointer<'a, AnyVecPtr<Traits, M>>;
 
 
-/// Reference to [`Element`].
+/// Reference to [`AnyVec`] element.
 ///
 /// Created by  [`AnyVec::get`].
 ///
@@ -174,7 +184,7 @@ impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Clone for ElementRef<'a, Traits,
     }
 }
 
-/// Mutable reference to [`Element`].
+/// Mutable reference to [`AnyVec`] element.
 ///
 /// Created by  [`AnyVec::get_mut`].
 ///

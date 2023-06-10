@@ -32,7 +32,10 @@ use crate::traits::{Cloneable, Trait};
 ///
 /// ```
 pub mod traits{
-    /// Marker trait, for traits accepted by AnyVec.
+    // TODO: rename to TraitConstraints or Constraints?
+    /// [`AnyVec`]s trait constraints.
+    ///
+    /// [`AnyVec`]: crate::AnyVec
     pub trait Trait: 'static + crate::clone_type::CloneType{}
     impl Trait for dyn None {}
     impl Trait for dyn Sync{}
@@ -139,7 +142,7 @@ where
 /// Some operations return [`TempValue<Operation>`], which internally holds &mut to [`AnyVec`].
 /// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
 ///
-/// *`Element: 'static` due to TypeId requirements*
+/// *`T: 'static` due to TypeId requirements*
 pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>
 {
     pub(crate) raw: AnyVecRaw<M>,

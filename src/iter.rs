@@ -26,11 +26,11 @@ where
 
 /// [`AnyVec`] iterator.
 ///
-/// Return [`Element`], [`ElementRef`] or [`ElementMut`] items, depending on `IterItem`.
+/// Return [`ElementPointer`], [`ElementRef`] or [`ElementMut`] items, depending on `IterItem`.
 /// Cloneable for `Ref` and `Mut` versions.
 ///
 /// [`AnyVec`]: crate::AnyVec
-/// [`Element`]: crate::element::Element
+/// [`ElementPointer`]: crate::element::ElementPointer
 /// [`ElementRef`]: crate::element::ElementRef
 /// [`ElementMut`]: crate::element::ElementMut
 pub struct Iter<'a,
