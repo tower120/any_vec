@@ -49,7 +49,7 @@ fn any_vec_typed_drain() -> Duration {
 
     let start = Instant::now();
         while any_vec.len() >= DRAIN_SIZE {
-            any_vec.downcast_mut::<Element>().unwrap()
+            let _ = any_vec.downcast_mut::<Element>().unwrap()
                 .drain(0..DRAIN_SIZE);
         }
     start.elapsed()

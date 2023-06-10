@@ -67,7 +67,7 @@ pub trait Mem{
     ///
     /// Implementation may panic, if fail to allocate/reallocate memory.
     fn expand(&mut self, additional: usize){
-        drop(additional);
+        let _ = additional;
         panic!("Can't change capacity!");
 
         /*let requested_size = self.size() + additional;
