@@ -16,9 +16,7 @@ use crate::ops::splice::Splice;
 
 /// Concrete type [`AnyVec`] representation.
 ///
-/// Created with [`AnyVec::downcast_`]-family.
-/// Accessed through [`AnyVecRef<T>`] or [`AnyVecMut<T>`].
-/// See [`AnyVec`] for documentation.
+/// Obtained by dereferencing [`AnyVecRef<T>`] or [`AnyVecMut<T>`].
 ///
 /// Operations with concrete type are somewhat faster, due to
 /// the fact, that compiler are able to optimize harder with full

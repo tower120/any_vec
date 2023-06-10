@@ -1,10 +1,9 @@
 use std::any::TypeId;
-use std::ops::Deref;
 use itertools::{assert_equal};
 use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
-use any_vec::element::Element;
-use any_vec::mem::Stack;
+use any_vec::element::ElementReference;
+use any_vec::mem::{MemBuilder, Stack};
 use any_vec::traits::{Cloneable, Trait};
 
 #[test]
@@ -135,9 +134,7 @@ fn any_vec_iter_clone_test(){
         vec.push(100);
     }
 
-    fn into_usize<'a, E, Traits: ?Sized + Trait>(e: E) -> &'a usize
-    where
-        E: Deref<Target = Element<'a,Traits>>
+    fn into_usize<'a, T: ?Sized + Trait, M: MemBuilder + 'a>(e: impl ElementReference<'a, T, M>) -> &'a usize
     {
         e.downcast_ref::<usize>().unwrap()
     }

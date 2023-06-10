@@ -32,7 +32,7 @@ pub type Remove<'a, Traits, M> = TempValue<remove::Remove<'a, AnyVecPtr<Traits, 
 /// [`AnyVec::swap_remove`]: crate::AnyVec::swap_remove
 pub type SwapRemove<'a, Traits, M> = TempValue<swap_remove::SwapRemove<'a, AnyVecPtr<Traits, M>>>;
 
-///  A draining [`ElementIterator`] for [`AnyVec`]. Return [`Element`] items.
+///  A draining [`ElementIterator`] for [`AnyVec`]. Return items as [`Element`]s.
 ///
 /// This is created by [`AnyVec::drain`].
 ///
@@ -42,7 +42,7 @@ pub type SwapRemove<'a, Traits, M> = TempValue<swap_remove::SwapRemove<'a, AnyVe
 /// [`ElementIterator`]: crate::iter::ElementIterator
 pub type Drain<'a, Traits, M> = Iter<drain::Drain<'a, AnyVecPtr<Traits, M>>>;
 
-///  A splicing [`ElementIterator`] for [`AnyVec`]. Return [`Element`] items.
+///  A splicing [`ElementIterator`] for [`AnyVec`]. Return items as [`Element`]s.
 ///
 /// This is created by [`AnyVec::splice`].
 ///
