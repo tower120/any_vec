@@ -1,7 +1,8 @@
 use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
-use crate::any_value::{AnyValue, AnyValueUnknown, Unknown};
+use std::mem::size_of;
+use crate::any_value::{AnyValueTyped, Unknown, AnyValuePtr};
 use crate::assert_types_equal;
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
@@ -83,7 +84,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     }
 
     #[inline]
-    pub(crate) fn type_check<V: AnyValue>(&self, value: &V){
+    pub(crate) fn type_check<V: AnyValueTyped>(&self, value: &V){
         assert_types_equal(value.value_typeid(), self.type_id);
     }
 
@@ -153,7 +154,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     /// # Safety
     ///
     /// Type is not checked.
-    pub unsafe fn insert_unchecked<V: AnyValueUnknown>(&mut self, index: usize, value: V) {
+    pub unsafe fn insert_unchecked<V: AnyValuePtr>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
         self.reserve_one();
@@ -170,7 +171,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
             );
 
             // 2. write value
-            value.move_into(element as *mut u8);
+            value.move_into::<V::Type>(element as *mut u8, size_of::<V::Type>());
         } else {
             let element_size = self.element_layout().size();
             let element = self.mem.as_mut_ptr().add(element_size * index);
@@ -183,7 +184,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
             );
 
             // 2. write value
-            value.move_into(element);
+            value.move_into::<V::Type>(element, element_size);
         }
 
         self.len += 1;
@@ -193,19 +194,18 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     ///
     /// Type is not checked.
     #[inline]
-    pub unsafe fn push_unchecked<V: AnyValueUnknown>(&mut self, value: V) {
+    pub unsafe fn push_unchecked<V: AnyValuePtr>(&mut self, value: V) {
         self.reserve_one();
 
         // Compile time type optimization
-        let element =
-            if !Unknown::is::<V::Type>(){
-                 self.mem.as_mut_ptr().cast::<V::Type>().add(self.len) as *mut u8
-            } else {
-                let element_size = self.element_layout().size();
-                self.mem.as_mut_ptr().add(element_size * self.len)
-            };
-
-        value.move_into(element);
+        if !Unknown::is::<V::Type>(){
+            let element = self.mem.as_mut_ptr().cast::<V::Type>().add(self.len) as *mut u8;
+            value.move_into::<V::Type>(element, size_of::<V::Type>());
+        } else {
+            let element_size = self.element_layout().size();
+            let element = self.mem.as_mut_ptr().add(element_size * self.len);
+            value.move_into::<V::Type>(element, element_size);
+        };
 
         self.len += 1;
     }

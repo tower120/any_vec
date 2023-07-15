@@ -4,13 +4,11 @@
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped`] with `downcast`-family.
-//! Or use [`AnyVec`] type erased operations, which works with [`AnyValue`].
-//!
-//! [`AnyValue`]: any_value::AnyValue
+//! Or use [`AnyVec`] type erased operations, which works with [`any_value`].
 //!
 //! ```rust
 //!     use any_vec::AnyVec;
-//!     use any_vec::any_value::AnyValue;
+//!     use any_vec::any_value::AnyValueTyped;
 //!     let mut vec: AnyVec = AnyVec::new::<String>();
 //!     {
 //!         // Typed operations.
@@ -124,18 +122,18 @@
 //! # AnyValue
 //!
 //! Being type erased, [`AnyVec`] need a way to operate on untyped values safely.
-//! Instead of working with plain `*mut u8`, [`AnyVec`] operates with [`AnyValue`].
+//! Instead of working with plain `*mut u8`, [`AnyVec`] operates with [any_value].
 //!
-//! [`AnyValue`] is trait, which provide operations to work with type erased values.
-//! Any type that implement [`AnyValue`] can be used with [`AnyVec`].
-//! [`AnyValue`] interface allows to perform postponed operations on consumption.
+//! `AnyValueXXX` is a trait family, which provide operations to work with type erased values.
+//! Any type that implements `AnyValueXXX` can be used with [`AnyVec`].
+//! `AnyValueXXX` interface allows to perform postponed operations on consumption.
 //! This trick used heavily by [`AnyVec`] destructive operations, which instead of concrete
-//! type return [`AnyValue`], which perform actual operation on value drop.
+//! type return [AnyValueTyped], which perform actual operation on value drop.
 //!
-//! Implementing [`AnyValueMut`] and [`AnyValueCloneable`] makes type mutable and
+//! Implementing `AnyValueXXXMut` and [`AnyValueCloneable`] makes type mutable and
 //! cloneable respectively.
 //!
-//! [`AnyValueMut`]: crate::any_value::AnyValueMut`
+//! [AnyValueTyped]: any_value::AnyValueTyped
 
 mod any_vec;
 mod clone_type;

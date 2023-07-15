@@ -2,7 +2,7 @@ mod utils;
 
 use std::time::{Duration, Instant};
 use criterion::{criterion_group, criterion_main, Criterion, black_box};
-use any_vec::any_value::{AnyValueUnknown, AnyValueCloneable};
+use any_vec::any_value::{AnyValueCloneable, AnyValuePtr};
 use any_vec::AnyVec;
 use any_vec::traits::Cloneable;
 use crate::utils::bench_custom;

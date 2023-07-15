@@ -1,52 +1,15 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
-use std::slice;
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueMutUnknown, AnyValueUnknown};
+use crate::any_value::{AnyValueTyped, AnyValueTypedMut, AnyValueSizedMut, AnyValueSized, AnyValuePtr, AnyValuePtrMut};
 use crate::any_value::Unknown;
-
-
-/// [`AnyValueRaw`] that does not know it's type.
-pub struct AnyValueRawUnknown {
-    ptr: NonNull<u8>,
-    size: usize,
-}
-
-impl AnyValueRawUnknown {
-    #[inline]
-    pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
-        Self{ptr, size}
-    }
-}
-impl AnyValueUnknown for AnyValueRawUnknown {
-    type Type = Unknown;
-
-    #[inline]
-    fn as_bytes(&self) -> &[u8]{
-        unsafe{slice::from_raw_parts(
-            self.ptr.as_ptr(),
-            self.size
-        )}
-    }
-}
-impl AnyValueMutUnknown for AnyValueRawUnknown {
-    #[inline]
-    fn as_bytes_mut(&mut self) -> &mut [u8] {
-        unsafe{slice::from_raw_parts_mut(
-            self.ptr.as_ptr(),
-            self.size
-        )}
-    }
-}
-
 
 /// Non owning byte ptr wrapper for feeding AnyVec.
 ///
 /// Source should be forgotten, before pushing to AnyVec.
-/// Contained value will not be dropped on AnyValueRaw drop.
+/// Contained value **WILL NOT** be dropped on AnyValueRawPtr drop.
 ///
-/// This is useful to fill AnyVec directly from raw bytes,
+/// This is useful to fill [AnyVec] directly from raw bytes,
 /// without intermediate casting to concrete type.
-/// (You only need runtime data - size and typeid)
 ///
 /// # Example
 /// ```rust
@@ -55,53 +18,124 @@ impl AnyValueMutUnknown for AnyValueRawUnknown {
 /// # use std::mem::size_of;
 /// # use std::ptr::NonNull;
 /// # use any_vec::AnyVec;
-/// # use any_vec::any_value::AnyValueRaw;
+/// # use any_vec::any_value::AnyValueRawPtr;
 /// let s = String::from("Hello!");
-/// let raw_value = unsafe{AnyValueRaw::new(
-///     NonNull::from(&s).cast::<u8>(),
-///     size_of::<String>(),
-///     TypeId::of::<String>()
+/// let raw_value = unsafe{AnyValueRawPtr::new(
+///     NonNull::from(&s).cast::<u8>()
 /// )};
 /// mem::forget(s);
 ///
 /// let mut any_vec: AnyVec = AnyVec::new::<String>();
-/// any_vec.push(raw_value);
+/// unsafe{
+///     any_vec.push_unchecked(raw_value);
+/// }
 /// ```
-pub struct AnyValueRaw{
-    raw_unsafe: AnyValueRawUnknown,
+///
+/// [AnyVec]: crate::AnyVec
+pub struct AnyValueRawPtr {
+    ptr: NonNull<u8>
+}
+
+impl AnyValueRawPtr {
+    #[inline]
+    pub unsafe fn new(ptr: NonNull<u8>) -> Self{
+        Self{ptr}
+    }
+}
+impl AnyValuePtr for AnyValueRawPtr {
+    type Type = Unknown;
+
+    #[inline]
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.ptr.as_ptr()
+    }
+}
+impl AnyValuePtrMut for AnyValueRawPtr {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.ptr.as_ptr()
+    }
+}
+
+
+/// [AnyValueRawPtr] that know it's size.
+pub struct AnyValueRawSized {
+    ptr: NonNull<u8>,
+    size: usize,
+}
+
+impl AnyValueRawSized {
+    #[inline]
+    pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
+        Self{ptr, size}
+    }
+}
+
+impl AnyValuePtr for AnyValueRawSized {
+    type Type = Unknown;
+
+    #[inline]
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.ptr.as_ptr()
+    }
+}
+impl AnyValuePtrMut for AnyValueRawSized {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.ptr.as_ptr()
+    }
+}
+impl AnyValueSized for AnyValueRawSized {
+    #[inline]
+    fn size(&self) -> usize {
+        self.size
+    }
+}
+impl AnyValueSizedMut for AnyValueRawSized {}
+
+
+/// [AnyValueRawSized] that know it's type.
+pub struct AnyValueRawTyped {
+    raw_unsafe: AnyValueRawSized,
     typeid: TypeId
 }
 
-impl AnyValueRaw{
+impl AnyValueRawTyped {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
         Self{
-            raw_unsafe: AnyValueRawUnknown::new(ptr, size),
+            raw_unsafe: AnyValueRawSized::new(ptr, size),
             typeid
         }
     }
 }
-impl AnyValueUnknown for AnyValueRaw{
+
+impl AnyValuePtr for AnyValueRawTyped {
     type Type = Unknown;
 
     #[inline]
-    fn as_bytes(&self) -> &[u8]{
-        self.raw_unsafe.as_bytes()
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.raw_unsafe.ptr.as_ptr()
     }
 }
-impl AnyValue for AnyValueRaw{
+impl AnyValuePtrMut   for AnyValueRawTyped {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.raw_unsafe.ptr.as_ptr()
+    }
+}
+impl AnyValueSized for AnyValueRawTyped {
+    #[inline]
+    fn size(&self) -> usize {
+        self.raw_unsafe.size
+    }
+}
+impl AnyValueTyped for AnyValueRawTyped {
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
     }
 }
-impl AnyValueMutUnknown for AnyValueRaw{
-    #[inline]
-    fn as_bytes_mut(&mut self) -> &mut [u8] {
-        unsafe{slice::from_raw_parts_mut(
-            self.raw_unsafe.ptr.as_ptr(),
-            self.raw_unsafe.size
-        )}
-    }
-}
-impl AnyValueMut for AnyValueRaw{}
+
+impl AnyValueSizedMut for AnyValueRawTyped {}
+impl AnyValueTypedMut for AnyValueRawTyped {}

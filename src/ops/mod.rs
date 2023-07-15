@@ -1,3 +1,9 @@
+//! [AnyVec] operations.
+//!
+//! You don't need, nor can't construct anything from this module manually.
+//!
+//! [AnyVec]: crate::AnyVec
+
 mod temp;
 mod iter;
 pub(crate) mod swap_remove;

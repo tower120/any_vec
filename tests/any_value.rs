@@ -1,7 +1,7 @@
 use std::any::TypeId;
 use std::mem::size_of;
 use std::ptr::NonNull;
-use any_vec::any_value::{AnyValue, AnyValueMut, AnyValueRaw, AnyValueWrapper};
+use any_vec::any_value::{AnyValueTyped, AnyValueTypedMut, AnyValueRawTyped, AnyValueWrapper};
 
 #[test]
 fn swap_test(){
@@ -20,12 +20,14 @@ fn swap_test(){
         let mut s1 = String::from("1");
         let mut s2 = String::from("2");
 
-        let mut a1 = unsafe{AnyValueRaw::new(
+        let mut a1 = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&mut s1).cast::<u8>(),
             size_of::<String>(),
             TypeId::of::<String>()
         )};
-        let mut a2 = unsafe{AnyValueRaw::new(
+        let mut a2 = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&mut s2).cast::<u8>(),
             size_of::<String>(),
             TypeId::of::<String>()
@@ -39,7 +41,8 @@ fn swap_test(){
     // untyped <-> typed
     {
         let mut s1 = String::from("1");
-        let mut a1 = unsafe{AnyValueRaw::new(
+        let mut a1 = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&mut s1).cast::<u8>(),
             size_of::<String>(),
             TypeId::of::<String>()

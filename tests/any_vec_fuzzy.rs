@@ -2,7 +2,7 @@ use std::cmp;
 use std::ops::Range;
 use itertools::assert_equal;
 use rand::Rng;
-use any_vec::any_value::{AnyValue, AnyValueWrapper};
+use any_vec::any_value::{AnyValueTyped, AnyValueWrapper};
 use any_vec::AnyVec;
 
 const REPEATS: usize = if cfg!(miri){ 4 }else{ 100 };

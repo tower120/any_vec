@@ -140,6 +140,7 @@ pub(crate) mod utils{
         }
     }
 
+    /// In bytes.
     #[inline]
     pub unsafe fn element_size<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> usize
     {

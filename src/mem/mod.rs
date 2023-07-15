@@ -62,6 +62,7 @@ pub trait Mem{
     /// Implement this only if your type [`MemResizable`].
     ///
     /// It's here, only due to technical reasons (see `AnyVecRaw::reserve`).
+    /// _Rust does not support specialization_
     ///
     /// # Panics
     ///
