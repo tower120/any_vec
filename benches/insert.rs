@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::mem::size_of;
 use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::any_value::{AnyValueRaw};
+use any_vec::any_value::{AnyValueRawTyped};
 use any_vec::AnyVec;
 
 const SIZE: usize = 10000;
@@ -17,7 +17,8 @@ fn vec_insert_front(){
 fn any_vec_insert_front(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     for i in 0..SIZE{
-        let raw_value = unsafe{AnyValueRaw::new(
+        let raw_value = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&i).cast::<u8>(),
             size_of::<usize>(),
             TypeId::of::<usize>()
@@ -44,7 +45,8 @@ fn vec_insert_back(){
 fn any_vec_insert_back(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     for i in 0..SIZE{
-        let raw_value = unsafe{AnyValueRaw::new(
+        let raw_value = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&i).cast::<u8>(),
             size_of::<usize>(),
             TypeId::of::<usize>()

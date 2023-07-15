@@ -8,7 +8,7 @@ use std::ptr::NonNull;
 use std::{ptr, slice};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
-use crate::any_value::{AnyValue, AnyValueUnknown};
+use crate::any_value::{AnyValueTyped, AnyValuePtr};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
@@ -140,9 +140,11 @@ where
 /// specifying trait constraints: `AnyVec<dyn Cloneable + Sync + Send>`. See [`traits`].
 ///
 /// Some operations return [`TempValue<Operation>`], which internally holds &mut to [`AnyVec`].
-/// You can drop it, cast to concrete type, or put into another vector. (See [`AnyValue`])
+/// You can drop it, cast to concrete type, or put into another vector. (See [any_value])
 ///
 /// *`T: 'static` due to TypeId requirements*
+///
+/// [any_value]: crate::any_value
 pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Default>
 {
     pub(crate) raw: AnyVecRaw<M>,
@@ -563,7 +565,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// * Panics if index is out of bounds.
     /// * Panics if out of memory.
     #[inline]
-    pub fn insert<V: AnyValue>(&mut self, index: usize, value: V) {
+    pub fn insert<V: AnyValueTyped>(&mut self, index: usize, value: V) {
         self.raw.type_check(&value);
         unsafe{
             self.raw.insert_unchecked(index, value);
@@ -583,7 +585,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// [`insert`]: Self::insert
     #[inline]
-    pub unsafe fn insert_unchecked<V: AnyValueUnknown>(&mut self, index: usize, value: V) {
+    pub unsafe fn insert_unchecked<V: AnyValuePtr>(&mut self, index: usize, value: V) {
         self.raw.insert_unchecked(index, value);
     }
 
@@ -592,7 +594,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// * Panics if type mismatch.
     /// * Panics if out of memory.
     #[inline]
-    pub fn push<V: AnyValue>(&mut self, value: V) {
+    pub fn push<V: AnyValueTyped>(&mut self, value: V) {
         self.raw.type_check(&value);
         unsafe{
             self.raw.push_unchecked(value);
@@ -611,7 +613,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// [`push`]: Self::push
     #[inline]
-    pub unsafe fn push_unchecked<V: AnyValueUnknown>(&mut self, value: V) {
+    pub unsafe fn push_unchecked<V: AnyValuePtr>(&mut self, value: V) {
         self.raw.push_unchecked(value);
     }
 
@@ -730,7 +732,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
         -> Splice<Traits, M, I::IntoIter>
     where
         I::IntoIter: ExactSizeIterator,
-        I::Item: AnyValue
+        I::Item: AnyValueTyped
     {
         let Range{start, end} = into_range(self.len(), range);
         ops::Iter(splice::Splice::new(

@@ -4,7 +4,7 @@ use std::mem::forget;
 use std::ptr::NonNull;
 use itertools::assert_equal;
 use any_vec::AnyVec;
-use any_vec::any_value::{AnyValueMut, AnyValueRaw, AnyValueWrapper};
+use any_vec::any_value::{AnyValueTypedMut, AnyValueRawTyped, AnyValueWrapper};
 use any_vec::mem::Stack;
 
 #[allow(dead_code)]
@@ -39,21 +39,21 @@ fn any_value_raw_test() {
 
     unsafe{
         let str1 = "Hello".to_string();
-        any_vec.push(AnyValueRaw::new(
+        any_vec.push(AnyValueRawTyped::new(
             NonNull::from(&str1).cast::<u8>(), size_of::<String>(),
             TypeId::of::<String>()
         ));
         forget(str1);
 
         let str2 = " to ".to_string();
-        any_vec.push(AnyValueRaw::new(
+        any_vec.push(AnyValueRawTyped::new(
             NonNull::from(&str2).cast::<u8>(), size_of::<String>(),
             TypeId::of::<String>()
         ));
         forget(str2);
 
         let str3 = "world".to_string();
-        any_vec.push(AnyValueRaw::new(
+        any_vec.push(AnyValueRawTyped::new(
             NonNull::from(&str3).cast::<u8>(), size_of::<String>(),
             TypeId::of::<String>()
         ));

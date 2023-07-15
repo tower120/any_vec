@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.13.0
+### Added
+- `AnyVec` now can work with `AnyValuePtr`.
+
+### Optimized
+- `AnyValue`- family downcast now use provided type for compile-time optimization, 
+instead of potentially unknown underlying type (which disabled optimization technique). 
+
+### Breaking Changes
+- Changed AnyValue trait family names:  
+  - `AnyValue` -> `AnyValueTyped`.
+  - `AnyValueUnknown` -> `AnyValueSized`.
+  - Introduced `AnyValuePtr`.
+- Changed AnyValueRaw non-owning wrappers names:
+  - `AnyValueRaw` -> `AnyValueRawTyped`.
+  - `AnyValueRawUnknown` -> `AnyValueRawSized`.
+  - Introduced `AnyValueRawPtr`.
+
+
 ## 0.12.0
 ### Added
 - `element::ElementReference` trait, implemented both for `ElementRef`, `ElementMut` and &`Element`.

@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::mem::size_of;
 use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::any_value::AnyValueRaw;
+use any_vec::any_value::{AnyValueRawPtr, AnyValueRawTyped};
 use any_vec::AnyVec;
 
 const SIZE: usize = 10000;
@@ -29,7 +29,8 @@ fn any_vec_push_untyped(){
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
     for _ in 0..SIZE{
         let value = VALUE.clone();
-        let raw_value = unsafe{AnyValueRaw::new(
+        let raw_value = unsafe{
+            AnyValueRawTyped::new(
             NonNull::from(&value).cast::<u8>(),
             size_of::<Element>(),
             TypeId::of::<Element>()
@@ -38,9 +39,24 @@ fn any_vec_push_untyped(){
     }
 }
 
+fn any_vec_push_untyped_unchecked(){
+    let mut any_vec: AnyVec = AnyVec::new::<Element>();
+    for _ in 0..SIZE{
+        let value = VALUE.clone();
+        let raw_value = unsafe{
+            AnyValueRawPtr::new(
+            NonNull::from(&value).cast::<u8>(),
+        )};
+        unsafe{
+            any_vec.push_unchecked(raw_value);
+        }
+    }
+}
+
 pub fn bench_push(c: &mut Criterion) {
     c.bench_function("Vec push", |b|b.iter(||vec_push()));
     c.bench_function("AnyVec push", |b|b.iter(||any_vec_push()));
+    c.bench_function("AnyVec push untyped unchecked", |b|b.iter(||any_vec_push_untyped_unchecked()));
     c.bench_function("AnyVec push untyped", |b|b.iter(||any_vec_push_untyped()));
 }
 
