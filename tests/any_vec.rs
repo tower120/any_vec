@@ -107,7 +107,13 @@ fn remove_test() {
     }
 
     // type erased remove
-    any_vec.remove(2);
+    {
+        let mut removed = any_vec.remove(2);
+        // test temp_mut_access
+        let str = removed.downcast_mut::<String>().unwrap();
+        str.push_str("xxx");
+        assert_eq!(str, "2xxx");
+    }
     assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
         String::from("0"),
         String::from("1"),

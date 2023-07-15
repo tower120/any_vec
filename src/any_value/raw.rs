@@ -46,13 +46,16 @@ impl AnyValuePtr for AnyValueRawPtr {
     type Type = Unknown;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
-        unsafe{
-            NonNull::from(self.ptr.as_ref())
-        }
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.ptr.as_ptr()
     }
 }
-impl AnyValuePtrMut for AnyValueRawPtr {}
+impl AnyValuePtrMut for AnyValueRawPtr {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.ptr.as_ptr()
+    }
+}
 
 
 /// [AnyValueRawPtr] that know it's size.
@@ -72,10 +75,14 @@ impl AnyValuePtr for AnyValueRawSized {
     type Type = Unknown;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
-        unsafe{
-            NonNull::from(self.ptr.as_ref())
-        }
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.ptr.as_ptr()
+    }
+}
+impl AnyValuePtrMut for AnyValueRawSized {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.ptr.as_ptr()
     }
 }
 impl AnyValueSized for AnyValueRawSized {
@@ -84,8 +91,6 @@ impl AnyValueSized for AnyValueRawSized {
         self.size
     }
 }
-
-impl AnyValuePtrMut for AnyValueRawSized {}
 impl AnyValueSizedMut for AnyValueRawSized {}
 
 
@@ -109,8 +114,14 @@ impl AnyValuePtr for AnyValueRawTyped {
     type Type = Unknown;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
-        self.raw_unsafe.ptr
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.raw_unsafe.ptr.as_ptr()
+    }
+}
+impl AnyValuePtrMut   for AnyValueRawTyped {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.raw_unsafe.ptr.as_ptr()
     }
 }
 impl AnyValueSized for AnyValueRawTyped {
@@ -126,6 +137,5 @@ impl AnyValueTyped for AnyValueRawTyped {
     }
 }
 
-impl AnyValuePtrMut   for AnyValueRawTyped {}
 impl AnyValueSizedMut for AnyValueRawTyped {}
 impl AnyValueTypedMut for AnyValueRawTyped {}

@@ -106,8 +106,8 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtr for ElementPointer<'a, AnyVecPtr>
     type Type = AnyVecPtr::Element;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
-        self.element
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.element.as_ptr()
     }
 }
 impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSized for ElementPointer<'a, AnyVecPtr>{
@@ -123,7 +123,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTyped for ElementPointer<'a, AnyVecPt
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtrMut   for ElementPointer<'a, AnyVecPtr>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtrMut   for ElementPointer<'a, AnyVecPtr>{
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        self.element.as_ptr()
+    }
+}
 impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSizedMut for ElementPointer<'a, AnyVecPtr>{}
 impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTypedMut for ElementPointer<'a, AnyVecPtr>{}
 

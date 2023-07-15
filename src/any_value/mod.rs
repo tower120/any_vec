@@ -21,7 +21,6 @@ pub use raw::{AnyValueRawTyped, AnyValueRawSized, AnyValueRawPtr};
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::{MaybeUninit, size_of};
-use std::ptr::NonNull;
 use crate::{copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 
 /// Marker for unknown type.
@@ -42,11 +41,11 @@ pub trait AnyValuePtr {
     type Type: 'static /*= Unknown*/;
 
     /// Aligned address.
-    fn as_bytes_ptr(&self) -> NonNull<u8>;
+    fn as_bytes_ptr(&self) -> *const u8;
 
     #[inline]
     unsafe fn downcast_ref_unchecked<T>(&self) -> &T{
-        &*(self.as_bytes_ptr().as_ptr() as *const T)
+        &*(self.as_bytes_ptr() as *const T)
     }
 
     #[inline]
@@ -110,7 +109,7 @@ pub trait AnyValueSized: AnyValuePtr {
     #[inline]
     fn as_bytes(&self) -> &[u8]{
         unsafe{std::slice::from_raw_parts(
-            self.as_bytes_ptr().as_ptr(),
+            self.as_bytes_ptr(),
             self.size()
         )}
     }
@@ -147,16 +146,16 @@ pub trait AnyValueTyped: AnyValueSized {
 /// Helper function, which utilize type knowledge.
 #[inline]
 pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
-    input: NonNull<u8>, out: *mut u8, bytes_size: usize
+    input: *const u8, out: *mut u8, bytes_size: usize
 ) {
     if !Unknown::is::<KnownType>() {
         ptr::copy_nonoverlapping(
-            input.as_ptr() as *const KnownType,
+            input as *const KnownType,
             out as *mut KnownType,
             1);
     } else {
         copy_bytes_nonoverlapping(
-            input.as_ptr(),
+            input,
             out,
             bytes_size);
     }
@@ -164,9 +163,13 @@ pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
 
 /// Mutable [AnyValuePtr].
 pub trait AnyValuePtrMut: AnyValuePtr {
+    // Rust MIRI requires mut pointer to actually come from mut self.
+    /// Aligned address.
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8;
+
     #[inline]
     unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T{
-        &mut *(self.as_bytes_ptr().as_ptr() as *mut T)
+        &mut *(self.as_bytes_mut_ptr() as *mut T)
     }
 }
 
@@ -175,7 +178,7 @@ pub trait AnyValueSizedMut: AnyValueSized + AnyValuePtrMut {
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8]{
         unsafe{std::slice::from_raw_parts_mut(
-            self.as_bytes_ptr().as_ptr(),
+            self.as_bytes_mut_ptr(),
             self.size()
         )}
     }

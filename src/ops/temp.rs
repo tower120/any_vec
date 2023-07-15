@@ -1,6 +1,5 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use std::ptr::NonNull;
 use crate::any_value::{AnyValueTyped, AnyValueCloneable, AnyValueTypedMut, AnyValueSizedMut, AnyValueSized, Unknown, AnyValuePtr, copy_bytes, AnyValuePtrMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
@@ -53,10 +52,8 @@ impl<Op: Operation> AnyValuePtr for TempValue<Op> {
     type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
-        unsafe{
-            NonNull::new_unchecked(self.op.bytes() as *mut u8)
-        }
+    fn as_bytes_ptr(&self) -> *const u8 {
+        self.op.bytes()
     }
 
     #[inline]
@@ -64,6 +61,13 @@ impl<Op: Operation> AnyValuePtr for TempValue<Op> {
         copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         self.op.consume();
         mem::forget(self);
+    }
+}
+impl<Op: Operation> AnyValuePtrMut for TempValue<Op> {
+    #[inline]
+    fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
+        // Somehow this is OK with MIRI.
+        self.op.bytes() as *mut u8
     }
 }
 impl<Op: Operation> AnyValueSized for TempValue<Op>{
@@ -84,7 +88,6 @@ impl<Op: Operation> AnyValueTyped for TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValuePtrMut   for TempValue<Op> {}
 impl<Op: Operation> AnyValueSizedMut for TempValue<Op> {}
 impl<Op: Operation> AnyValueTypedMut for TempValue<Op> {}
 

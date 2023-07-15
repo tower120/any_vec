@@ -1,5 +1,4 @@
 use std::any::TypeId;
-use std::ptr::NonNull;
 use crate::any_value::{AnyValueTyped, AnyValueCloneable, AnyValueSized, AnyValuePtr};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
@@ -25,7 +24,7 @@ impl<'a, T: AnyValueCloneable> AnyValuePtr for LazyClone<'a, T> {
     type Type = T::Type;
 
     #[inline]
-    fn as_bytes_ptr(&self) -> NonNull<u8> {
+    fn as_bytes_ptr(&self) -> *const u8 {
         self.value.as_bytes_ptr()
     }
 
