@@ -159,9 +159,14 @@ use std::ops::{Bound, Range, RangeBounds};
 // when count is runtime value, and count is small.
 #[inline]
 unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
-    // MIRI hack
+    // Somehow, it looks ok now.
+    // Tracking issue https://github.com/rust-lang/rust/issues/97022
+    ptr::copy_nonoverlapping(src, dst, count);
+    return;
+
+    /*// MIRI hack
     if cfg!(miri)
-//        || count >= 128
+     //   || count >= 128
     {
         ptr::copy_nonoverlapping(src, dst, count);
         return;
@@ -169,7 +174,7 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
 
     for i in 0..count{
         *dst.add(i) = *src.add(i);
-    }
+    }*/
 }
 
 // This is faster then ptr::copy,

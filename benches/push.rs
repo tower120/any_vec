@@ -8,27 +8,30 @@ use any_vec::AnyVec;
 const SIZE: usize = 10000;
 
 type Element = (usize, usize);
-static VALUE: Element = (0,0);
+#[inline]
+fn make_element(i: usize) -> Element{
+    (i,i)
+}
 
-fn vec_push(){
+fn vec_push(size: usize){
     let mut vec = Vec::new();
-    for _ in 0..SIZE{
-        vec.push(VALUE.clone());
+    for i in 0..size{
+        vec.push(make_element(i));
     }
 }
 
-fn any_vec_push(){
+fn any_vec_push(size: usize){
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
     let mut vec = any_vec.downcast_mut::<Element>().unwrap();
-    for _ in 0..SIZE{
-        vec.push(VALUE.clone());
+    for i in 0..size{
+        vec.push(make_element(i));
     }
 }
 
-fn any_vec_push_untyped(){
+fn any_vec_push_untyped(size: usize){
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        let value = VALUE.clone();
+    for i in 0..size{
+        let value = make_element(i);
         let raw_value = unsafe{
             AnyValueRawTyped::new(
             NonNull::from(&value).cast::<u8>(),
@@ -39,10 +42,10 @@ fn any_vec_push_untyped(){
     }
 }
 
-fn any_vec_push_untyped_unchecked(){
+fn any_vec_push_untyped_unchecked(size: usize){
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        let value = VALUE.clone();
+    for i in 0..size{
+        let value = make_element(i);
         let raw_value = unsafe{
             AnyValueRawPtr::new(
             NonNull::from(&value).cast::<u8>(),
@@ -54,10 +57,12 @@ fn any_vec_push_untyped_unchecked(){
 }
 
 pub fn bench_push(c: &mut Criterion) {
-    c.bench_function("Vec push", |b|b.iter(||vec_push()));
-    c.bench_function("AnyVec push", |b|b.iter(||any_vec_push()));
-    c.bench_function("AnyVec push untyped unchecked", |b|b.iter(||any_vec_push_untyped_unchecked()));
-    c.bench_function("AnyVec push untyped", |b|b.iter(||any_vec_push_untyped()));
+    use criterion::black_box;
+
+    c.bench_function("Vec push", |b|b.iter(||vec_push(black_box(SIZE))));
+    c.bench_function("AnyVec push", |b|b.iter(||any_vec_push(black_box(SIZE))));
+    c.bench_function("AnyVec push untyped unchecked", |b|b.iter(||any_vec_push_untyped_unchecked(black_box(SIZE))));
+    c.bench_function("AnyVec push untyped", |b|b.iter(||any_vec_push_untyped(black_box(SIZE))));
 }
 
 criterion_group!(benches, bench_push);
