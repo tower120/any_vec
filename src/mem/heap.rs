@@ -4,6 +4,8 @@ use std::mem::ManuallyDrop;
 use std::ptr::NonNull;
 use crate::mem::{dangling, Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 
+use super::compact_layout::*;
+
 /// Heap allocated memory.
 #[derive(Default, Clone, Copy)]
 pub struct Heap;
@@ -16,7 +18,7 @@ impl MemBuilder for Heap {
         HeapMem {
             mem: dangling(&element_layout),
             size: 0,
-            element_layout
+            element_layout: pack(&element_layout)
         }
     }
 }
@@ -33,7 +35,7 @@ impl MemBuilderSizeable for Heap{
 pub struct HeapMem {
     mem: NonNull<u8>,
     size: usize,        // in elements
-    element_layout: Layout, // size is aligned
+    element_layout: CompactLayout, // size is aligned
 }
 
 impl Mem for HeapMem {
@@ -49,7 +51,7 @@ impl Mem for HeapMem {
 
     #[inline]
     fn element_layout(&self) -> Layout {
-        self.element_layout
+        unpack(self.element_layout)
     }
 
     #[inline]
@@ -70,24 +72,25 @@ impl MemResizable for HeapMem {
             return;
         }
 
-        if self.element_layout.size() != 0 {
+        let element_layout = self.element_layout();
+        if element_layout.size() != 0 {
             unsafe{
                 // Non checked mul, because this memory size already allocated.
                 let mem_layout = Layout::from_size_align_unchecked(
-                    self.element_layout.size() * self.size,
-                    self.element_layout.align()
+                    element_layout.size() * self.size,
+                    element_layout.align()
                 );
 
                 self.mem =
                     if new_size == 0 {
                         dealloc(self.mem.as_ptr(), mem_layout);
-                        dangling(&self.element_layout)
+                        dangling(&element_layout)
                     } else {
                         // mul carefully, to prevent overflow.
-                        let new_mem_size = self.element_layout.size()
+                        let new_mem_size = element_layout.size()
                             .checked_mul(new_size).unwrap();
                         let new_mem_layout = Layout::from_size_align_unchecked(
-                            new_mem_size, self.element_layout.align()
+                            new_mem_size, element_layout.align()
                         );
 
                         if self.size == 0 {
@@ -113,7 +116,7 @@ impl MemRawParts for HeapMem{
     #[inline]
     fn into_raw_parts(self) -> (Self::Handle, Layout, usize) {
         let this = ManuallyDrop::new(self);
-        (this.mem, this.element_layout, this.size)
+        (this.mem, unpack(this.element_layout), this.size)
     }
 
     #[inline]
@@ -121,7 +124,7 @@ impl MemRawParts for HeapMem{
         Self{
             mem: handle,
             size,
-            element_layout
+            element_layout: pack(&element_layout)
         }
     }
 }

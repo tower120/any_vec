@@ -2,6 +2,7 @@ mod heap;
 mod stack;
 mod stack_n;
 mod empty;
+mod compact_layout;
 
 pub use heap::Heap;
 pub use stack::Stack;
