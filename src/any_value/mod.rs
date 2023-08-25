@@ -18,6 +18,7 @@
 //!       but that is unstable Rust now.
 //! 
 //! [AnyVec]: crate::AnyVec
+//! [move_into]: AnyValueSizeless::move_into
 
 mod wrapper;
 mod raw;
@@ -76,7 +77,7 @@ pub trait AnyValueSizeless {
 
     /// Move self into `out`.
     ///
-    /// Will do compile-time optimisation if type/size known.
+    /// Will do compile-time optimization if type/size known.
     ///
     /// # Safety
     ///
@@ -84,9 +85,12 @@ pub trait AnyValueSizeless {
     /// `out` must have at least `bytes_size` bytes.
     /// `KnownType` must be correct object type or [Unknown].
     ///
-    /// Use [move_into] as safe version.
+    /// # Helpers
+    /// 
+    /// Due to Rust limitations in generic department, you may found
+    /// useful helpers [move_out] and [move_out_w_size].
     #[inline]
-    unsafe fn move_into<KnownType:'static /*= Unknown*/>(self, out: *mut u8, bytes_size: usize)
+    unsafe fn move_into<KnownType:'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
         where Self: Sized
     {
         copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
@@ -94,30 +98,29 @@ pub trait AnyValueSizeless {
     }
 }
 
-/// Move AnyValue into `out` location.
+/// Wrapper for AnyValueTypeless around [move_into].
 ///
-/// If `T` has known [Type] compile time optimizations will be applied.
-///
-/// [Type]: AnyValueSizeless::Type
+/// You may need this because of Rust's generics limitations.
+/// 
+/// [move_into]: AnyValueSizeless::move_into
 #[inline]
-pub fn move_into<T: AnyValueTypeless>(this: T, out: *mut u8) {
-    let size = this.as_bytes().len();
-    unsafe{
-        move_into_w_size::<T>(this, out, size);
-    }
+pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
+    let size = this.size();
+    this.move_into::<T::Type>(out, size);
 }
 
-/// [move_into] but with `bytes_size` hint.
+/// Wrapper for AnyValueSizeless around [move_into].
 ///
-/// In loops, compiler may generate more optimized code, if will
-/// know that the same size is used for all moves.
-/// Acts the same as [move_into] if [Type] is known.
+/// You may need this because of Rust's generics limitations.
 ///
-/// [Type]: AnyValueSizeless::Type
+/// N.B. For moving out values of [Unknown] type, of the same size, in tight loops -
+/// this may perform faster then [move_out], since compiler will be
+/// able to optimize better, knowing that all values have the same size.
+/// 
+/// [move_into]: AnyValueSizeless::move_into
 #[inline]
-pub unsafe fn move_into_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
-    copy_bytes::<T::Type>(this.as_bytes_ptr(), out, bytes_size);
-    mem::forget(this);
+pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
+    this.move_into::<T::Type>(out, bytes_size);
 }
 
 /// [AnyValue] that doesn't know it's type, but know it's size.
