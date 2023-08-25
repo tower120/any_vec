@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::mem::size_of;
 use std::ptr::NonNull;
 use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::any_value::{AnyValueRawPtr, AnyValueRawTyped};
+use any_vec::any_value::{AnyValueSizelessRaw, AnyValueRaw};
 use any_vec::AnyVec;
 
 const SIZE: usize = 10000;
@@ -33,7 +33,7 @@ fn any_vec_push_untyped(size: usize){
     for i in 0..size{
         let value = make_element(i);
         let raw_value = unsafe{
-            AnyValueRawTyped::new(
+            AnyValueRaw::new(
             NonNull::from(&value).cast::<u8>(),
             size_of::<Element>(),
             TypeId::of::<Element>()
@@ -47,7 +47,7 @@ fn any_vec_push_untyped_unchecked(size: usize){
     for i in 0..size{
         let value = make_element(i);
         let raw_value = unsafe{
-            AnyValueRawPtr::new(
+            AnyValueSizelessRaw::new(
             NonNull::from(&value).cast::<u8>(),
         )};
         unsafe{

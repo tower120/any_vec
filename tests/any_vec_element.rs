@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use itertools::{assert_equal};
-use any_vec::any_value::{AnyValueTyped, AnyValueCloneable, LazyClone};
+use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
 use any_vec::AnyVec;
 use any_vec::element::ElementReference;
 use any_vec::mem::{MemBuilder, Stack};

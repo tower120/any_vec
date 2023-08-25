@@ -2,7 +2,7 @@ use std::{cmp, mem, ptr};
 use std::alloc::Layout;
 use std::any::TypeId;
 use std::mem::size_of;
-use crate::any_value::{AnyValueTyped, Unknown, AnyValuePtr};
+use crate::any_value::{AnyValue, Unknown, AnyValueSizeless};
 use crate::assert_types_equal;
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
@@ -84,7 +84,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     }
 
     #[inline]
-    pub(crate) fn type_check<V: AnyValueTyped>(&self, value: &V){
+    pub(crate) fn type_check<V: AnyValue>(&self, value: &V){
         assert_types_equal(value.value_typeid(), self.type_id);
     }
 
@@ -154,7 +154,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     /// # Safety
     ///
     /// Type is not checked.
-    pub unsafe fn insert_unchecked<V: AnyValuePtr>(&mut self, index: usize, value: V) {
+    pub unsafe fn insert_unchecked<V: AnyValueSizeless>(&mut self, index: usize, value: V) {
         assert!(index <= self.len, "Index out of range!");
 
         self.reserve_one();
@@ -194,7 +194,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
     ///
     /// Type is not checked.
     #[inline]
-    pub unsafe fn push_unchecked<V: AnyValuePtr>(&mut self, value: V) {
+    pub unsafe fn push_unchecked<V: AnyValueSizeless>(&mut self, value: V) {
         self.reserve_one();
 
         // Compile time type optimization

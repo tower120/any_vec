@@ -8,7 +8,6 @@
 //!
 //! ```rust
 //!     use any_vec::AnyVec;
-//!     use any_vec::any_value::AnyValueTyped;
 //!     let mut vec: AnyVec = AnyVec::new::<String>();
 //!     {
 //!         // Typed operations.
@@ -121,19 +120,21 @@
 //!
 //! # AnyValue
 //!
-//! Being type erased, [`AnyVec`] need a way to operate on untyped values safely.
-//! Instead of working with plain `*mut u8`, [`AnyVec`] operates with [any_value].
+//! Being type erased, [AnyVec] needs a way to operate on untyped values safely.
+//! Instead of working with plain `*mut u8`, [AnyVec] operates with [any_value].
 //!
-//! `AnyValueXXX` is a trait family, which provide operations to work with type erased values.
-//! Any type that implements `AnyValueXXX` can be used with [`AnyVec`].
-//! `AnyValueXXX` interface allows to perform postponed operations on consumption.
-//! This trick used heavily by [`AnyVec`] destructive operations, which instead of concrete
-//! type return [AnyValueTyped], which perform actual operation on value drop.
+//! [AnyValue] is a trait, that provide operations to work with type erased values.
+//! Any type that implements [AnyValue] can be used with [AnyVec].
+//! [AnyValue] interface allows to perform postponed operations on consumption.
+//! This trick used heavily by [AnyVec] destructive operations, which instead of concrete
+//! type return [AnyValue], which perform actual operation on value drop.
 //!
-//! Implementing `AnyValueXXXMut` and [`AnyValueCloneable`] makes type mutable and
+//! Implementing [AnyValueMut] and [AnyValueCloneable] makes type mutable and
 //! cloneable respectively.
 //!
-//! [AnyValueTyped]: any_value::AnyValueTyped
+//! [AnyValue]: any_value::AnyValue
+//! [AnyValueMut]: any_value::AnyValueMut
+//! [AnyValueCloneable]: any_value::AnyValueCloneable
 
 mod any_vec;
 mod clone_type;

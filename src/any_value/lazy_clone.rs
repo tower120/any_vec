@@ -1,12 +1,14 @@
 use std::any::TypeId;
-use crate::any_value::{AnyValueTyped, AnyValueCloneable, AnyValueSized, AnyValuePtr};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueTypeless, AnyValueSizeless};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.
-/// Do clone on consumption.
+/// Clone underlying value on consumption.
 ///
 /// Source must outlive `LazyClone`. `LazyClone` let you
 /// take element from one [`AnyVec`] and put it multiple times
 /// into another, without intermediate copies and cast to concrete type.
+/// 
+/// Can be constructed by calling [AnyValueCloneable::lazy_clone].
 ///
 /// [`AnyVec`]: crate::AnyVec
 pub struct LazyClone<'a, T: AnyValueCloneable>{
@@ -20,7 +22,7 @@ impl<'a, T: AnyValueCloneable> LazyClone<'a, T>{
     }
 }
 
-impl<'a, T: AnyValueCloneable> AnyValuePtr for LazyClone<'a, T> {
+impl<'a, T: AnyValueCloneable> AnyValueSizeless for LazyClone<'a, T> {
     type Type = T::Type;
 
     #[inline]
@@ -34,14 +36,14 @@ impl<'a, T: AnyValueCloneable> AnyValuePtr for LazyClone<'a, T> {
     }
 }
 
-impl<'a, T: AnyValueCloneable + AnyValueSized> AnyValueSized for LazyClone<'a, T>{
+impl<'a, T: AnyValueCloneable + AnyValueTypeless> AnyValueTypeless for LazyClone<'a, T>{
     #[inline]
     fn size(&self) -> usize {
         self.value.size()
     }
 }
 
-impl<'a, T: AnyValueCloneable + AnyValueTyped> AnyValueTyped for LazyClone<'a, T>{
+impl<'a, T: AnyValueCloneable + AnyValue> AnyValue for LazyClone<'a, T>{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.value.value_typeid()

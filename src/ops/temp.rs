@@ -1,6 +1,6 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use crate::any_value::{AnyValueTyped, AnyValueCloneable, AnyValueTypedMut, AnyValueSizedMut, AnyValueSized, Unknown, AnyValuePtr, copy_bytes, AnyValuePtrMut};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, Unknown, AnyValueSizeless, copy_bytes, AnyValueSizelessMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
 use crate::AnyVec;
@@ -48,7 +48,7 @@ impl<Op: Operation> TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValuePtr for TempValue<Op> {
+impl<Op: Operation> AnyValueSizeless for TempValue<Op> {
     type Type = <Op::AnyVecPtr as IAnyVecRawPtr>::Element;
 
     #[inline]
@@ -63,20 +63,20 @@ impl<Op: Operation> AnyValuePtr for TempValue<Op> {
         mem::forget(self);
     }
 }
-impl<Op: Operation> AnyValuePtrMut for TempValue<Op> {
+impl<Op: Operation> AnyValueSizelessMut for TempValue<Op> {
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         // Somehow this is OK with MIRI.
         self.op.bytes() as *mut u8
     }
 }
-impl<Op: Operation> AnyValueSized for TempValue<Op>{
+impl<Op: Operation> AnyValueTypeless for TempValue<Op>{
     #[inline]
     fn size(&self) -> usize {
         self.bytes_len()
     }
 }
-impl<Op: Operation> AnyValueTyped for TempValue<Op>{
+impl<Op: Operation> AnyValue for TempValue<Op>{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         let typeid = TypeId::of::<Self::Type>();
@@ -88,8 +88,8 @@ impl<Op: Operation> AnyValueTyped for TempValue<Op>{
     }
 }
 
-impl<Op: Operation> AnyValueSizedMut for TempValue<Op> {}
-impl<Op: Operation> AnyValueTypedMut for TempValue<Op> {}
+impl<Op: Operation> AnyValueTypelessMut for TempValue<Op> {}
+impl<Op: Operation> AnyValueMut for TempValue<Op> {}
 
 impl<Op: Operation> AnyValueCloneable for TempValue<Op>
 where
@@ -111,12 +111,12 @@ impl<Op: Operation> Drop for TempValue<Op>{
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
-            if Unknown::is::<<Self as AnyValuePtr>::Type>() {
+            if Unknown::is::<<Self as AnyValueSizeless>::Type>() {
                 if let Some(drop_fn) = drop_fn{
                     (drop_fn)(element, 1);
                 }
             } else {
-                ptr::drop_in_place(element as *mut <Self as AnyValuePtr>::Type);
+                ptr::drop_in_place(element as *mut <Self as AnyValueSizeless>::Type);
             }
         }
         self.op.consume();

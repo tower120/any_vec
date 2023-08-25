@@ -1,11 +1,11 @@
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::{any_vec_ptr, assert_types_equal, Iter};
-use crate::any_value::{AnyValueTyped, move_into_w_size};
+use crate::any_value::{AnyValue, move_into_w_size};
 use crate::ops::iter::Iterable;
 
 pub struct Splice<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
 where
-    ReplaceIter::Item: AnyValueTyped
+    ReplaceIter::Item: AnyValue
 {
     iter: Iter<'a, AnyVecPtr>,
     start: usize,
@@ -16,7 +16,7 @@ where
 impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator>
     Splice<'a, AnyVecPtr, ReplaceIter>
 where
-    ReplaceIter::Item: AnyValueTyped
+    ReplaceIter::Item: AnyValue
 {
     #[inline]
     pub fn new(
@@ -44,7 +44,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Iterable
 for
     Splice<'a, AnyVecPtr, ReplaceIter>
 where
-    ReplaceIter::Item: AnyValueTyped
+    ReplaceIter::Item: AnyValue
 {
     type Iter = Iter<'a, AnyVecPtr>;
 
@@ -63,7 +63,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, ReplaceIter: ExactSizeIterator> Drop
 for
     Splice<'a, AnyVecPtr, ReplaceIter>
 where
-    ReplaceIter::Item: AnyValueTyped
+    ReplaceIter::Item: AnyValue
 {
     fn drop(&mut self) {
         use any_vec_ptr::utils::*;
