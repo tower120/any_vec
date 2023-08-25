@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
-use crate::any_value::{AnyValueTyped, AnyValueCloneable, AnyValueTypedMut, AnyValueSizedMut, AnyValueSized, AnyValuePtr, AnyValuePtrMut};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};
 use crate::{AnyVec, mem};
@@ -21,7 +21,7 @@ use crate::traits::{Cloneable, None, Trait};
 /// # Consuming
 ///
 /// Whenever you have `ElementPointer` as a value (from destructive [`AnyVec`] operations),
-/// you can safely take pointed value, with [`AnyValueTyped::downcast`] or [`any_value::move_into`].
+/// you can safely take pointed value, with [`AnyValue::downcast`] or [`any_value::move_out`].
 /// Otherwise, it will be destructed with destruction of `Element`.
 ///
 /// # Notes
@@ -34,7 +34,7 @@ use crate::traits::{Cloneable, None, Trait};
 /// [`drain`]: crate::AnyVec::drain
 /// [`splice`]: crate::AnyVec::splice
 /// [`any_value`]: crate::any_value
-/// [`any_value::move_into`]: crate::any_value::move_into
+/// [`any_value::move_out`]: crate::any_value::move_out
 pub struct ElementPointer<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: NonNull<u8>,
@@ -58,7 +58,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         unsafe { self.any_vec_ptr.any_vec_raw() }
     }
 
-    /// Same as [`AnyValueTyped::downcast_ref`], but return `&'a T`, instead of `&T`.
+    /// Same as [`AnyValue::downcast_ref`], but return `&'a T`, instead of `&T`.
     #[inline]
     pub fn downcast_ref<T: 'static>(&self) -> Option<&'a T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -68,13 +68,13 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         }
     }
 
-    /// Same as [`AnyValuePtr::downcast_ref_unchecked`], but return `&'a T`, instead of `&T`.
+    /// Same as [`AnyValueSizeless::downcast_ref_unchecked`], but return `&'a T`, instead of `&T`.
     #[inline]
     pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &'a T{
         &*(self.as_bytes().as_ptr() as *const T)
     }
 
-    /// Same as [`AnyValueTypedMut::downcast_mut`], but return `&'a mut T`, instead of `&mut T`.
+    /// Same as [`AnyValueMut::downcast_mut`], but return `&'a mut T`, instead of `&mut T`.
     #[inline]
     pub fn downcast_mut<T: 'static>(&mut self) -> Option<&'a mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -84,7 +84,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> ElementPointer<'a, AnyVecPtr>{
         }
     }
 
-    /// Same as [`AnyValuePtrMut::downcast_mut_unchecked`], but return `&'a mut T`, instead of `&mut T`.
+    /// Same as [`AnyValueSizelessMut::downcast_mut_unchecked`], but return `&'a mut T`, instead of `&mut T`.
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &'a mut T{
         &mut *(self.as_bytes_mut().as_mut_ptr() as *mut T)
@@ -102,7 +102,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Drop for ElementPointer<'a, AnyVecPtr>{
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtr for ElementPointer<'a, AnyVecPtr> {
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSizeless for ElementPointer<'a, AnyVecPtr> {
     type Type = AnyVecPtr::Element;
 
     #[inline]
@@ -110,27 +110,27 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtr for ElementPointer<'a, AnyVecPtr>
         self.element.as_ptr()
     }
 }
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSized for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTypeless for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn size(&self) -> usize {
         self.any_vec_raw().element_layout().size()
     }
 }
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTyped for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValue for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.any_vec_raw().type_id
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValuePtrMut   for ElementPointer<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSizelessMut   for ElementPointer<'a, AnyVecPtr>{
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         self.element.as_ptr()
     }
 }
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueSizedMut for ElementPointer<'a, AnyVecPtr>{}
-impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTypedMut for ElementPointer<'a, AnyVecPtr>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueTypelessMut for ElementPointer<'a, AnyVecPtr>{}
+impl<'a, AnyVecPtr: IAnyVecRawPtr> AnyValueMut for ElementPointer<'a, AnyVecPtr>{}
 
 impl<'a, Traits: ?Sized + Cloneable + Trait, M: MemBuilder>
     AnyValueCloneable for ElementPointer<'a, AnyVecPtr<Traits, M>>

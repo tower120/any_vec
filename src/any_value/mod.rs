@@ -1,22 +1,32 @@
 //! AnyValue is concept of type-erased object, that
 //! can be moved around without type knowledge.
+//! 
+//! With default trait implementation, all "consume" operations
+//! boils down to [move_into]. By redefining [move_into] and [Drop][^1] behavior -
+//! you can have some additional logic on AnyValue consumption.
+//! (Consumption - is any operation that "move out" data from AnyValue)
 //!
-//! [AnyValuePtr] -> [AnyValueSized] -> [AnyValueTyped]
+//! [AnyValueSizeless] -> [AnyValueTypeless] -> [AnyValue]
 //!
-//! Some [AnyVec] operations will return [AnyValueTyped],
-//! [AnyVec] operations also accept AnyValue as arguments.
+//! # Usage
+//! 
+//! Some [AnyVec] operations will accept and return [AnyValue].
 //! This allows to move data between [AnyVec]s in
 //! fast, safe, type erased way.
 //!
+//! [^1]: AnyValue could have blanket implementation for Drop as well,
+//!       but that is unstable Rust now.
+//! 
 //! [AnyVec]: crate::AnyVec
+//! [move_into]: AnyValueSizeless::move_into
 
 mod wrapper;
 mod raw;
 mod lazy_clone;
 
-pub use lazy_clone::{LazyClone};
+pub use lazy_clone::LazyClone;
 pub use wrapper::AnyValueWrapper;
-pub use raw::{AnyValueRawTyped, AnyValueRawSized, AnyValueRawPtr};
+pub use raw::{AnyValueRaw, AnyValueTypelessRaw, AnyValueSizelessRaw};
 
 use std::any::TypeId;
 use std::{mem, ptr};
@@ -32,8 +42,16 @@ impl Unknown {
     }
 }
 
-/// AnyValue that can provide only object ptr.
-pub trait AnyValuePtr {
+/// Prelude for traits.
+pub mod traits{
+    pub use super::{AnyValueSizeless, AnyValueSizelessMut};
+    pub use super::{AnyValueTypeless, AnyValueTypelessMut};
+    pub use super::{AnyValue, AnyValueMut};
+    pub use super::AnyValueCloneable;
+}
+
+/// [AnyValue] that doesn't know its size or type, and can provide only object ptr.
+pub trait AnyValueSizeless {
     /// Concrete type, or [`Unknown`]
     ///
     /// N.B. This should be in `AnyValueTyped`. It is here due to ergonomic reasons,
@@ -59,7 +77,7 @@ pub trait AnyValuePtr {
 
     /// Move self into `out`.
     ///
-    /// Will do compile-time optimisation if type/size known.
+    /// Will do compile-time optimization if type/size known.
     ///
     /// # Safety
     ///
@@ -67,9 +85,12 @@ pub trait AnyValuePtr {
     /// `out` must have at least `bytes_size` bytes.
     /// `KnownType` must be correct object type or [Unknown].
     ///
-    /// Use [move_into] as safe version.
+    /// # Helpers
+    /// 
+    /// Due to Rust limitations in generic department, you may found
+    /// useful helpers [move_out] and [move_out_w_size].
     #[inline]
-    unsafe fn move_into<KnownType:'static /*= Unknown*/>(self, out: *mut u8, bytes_size: usize)
+    unsafe fn move_into<KnownType:'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
         where Self: Sized
     {
         copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
@@ -77,34 +98,33 @@ pub trait AnyValuePtr {
     }
 }
 
-/// Move AnyValue into `out` location.
+/// Wrapper for AnyValueTypeless around [move_into].
 ///
-/// If `T` has known [Type] compile time optimizations will be applied.
-///
-/// [Type]: AnyValuePtr::Type
+/// You may need this because of Rust's generics limitations.
+/// 
+/// [move_into]: AnyValueSizeless::move_into
 #[inline]
-pub fn move_into<T: AnyValueSized>(this: T, out: *mut u8) {
-    let size = this.as_bytes().len();
-    unsafe{
-        move_into_w_size::<T>(this, out, size);
-    }
+pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
+    let size = this.size();
+    this.move_into::<T::Type>(out, size);
 }
 
-/// [move_into] but with `bytes_size` hint.
+/// Wrapper for AnyValueSizeless around [move_into].
 ///
-/// In loops, compiler may generate more optimized code, if will
-/// know that the same size is used for all moves.
-/// Acts the same as [move_into] if [Type] is known.
+/// You may need this because of Rust's generics limitations.
 ///
-/// [Type]: AnyValuePtr::Type
+/// N.B. For moving out values of [Unknown] type, of the same size, in tight loops -
+/// this may perform faster then [move_out], since compiler will be
+/// able to optimize better, knowing that all values have the same size.
+/// 
+/// [move_into]: AnyValueSizeless::move_into
 #[inline]
-pub unsafe fn move_into_w_size<T: AnyValuePtr>(this: T, out: *mut u8, bytes_size: usize) {
-    copy_bytes::<T::Type>(this.as_bytes_ptr(), out, bytes_size);
-    mem::forget(this);
+pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
+    this.move_into::<T::Type>(out, bytes_size);
 }
 
-/// [AnyValuePtr] that know it's size.
-pub trait AnyValueSized: AnyValuePtr {
+/// [AnyValue] that doesn't know it's type, but know it's size.
+pub trait AnyValueTypeless: AnyValueSizeless {
     /// Aligned.
     #[inline]
     fn as_bytes(&self) -> &[u8]{
@@ -118,8 +138,10 @@ pub trait AnyValueSized: AnyValuePtr {
     fn size(&self) -> usize;
 }
 
-/// [AnyValueSized] that know it's type, possibly compiletime.
-pub trait AnyValueTyped: AnyValueSized {
+/// Type erased value interface.
+/// 
+/// Know it's type and size, possibly compile-time.
+pub trait AnyValue: AnyValueTypeless {
     fn value_typeid(&self) -> TypeId;
 
     #[inline]
@@ -161,8 +183,8 @@ pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
     }
 }
 
-/// Mutable [AnyValuePtr].
-pub trait AnyValuePtrMut: AnyValuePtr {
+/// Mutable [AnyValueSizeless].
+pub trait AnyValueSizelessMut: AnyValueSizeless {
     // Rust MIRI requires mut pointer to actually come from mut self.
     /// Aligned address.
     fn as_bytes_mut_ptr(&mut self) -> *mut u8;
@@ -173,8 +195,8 @@ pub trait AnyValuePtrMut: AnyValuePtr {
     }
 }
 
-/// Mutable [AnyValueSized].
-pub trait AnyValueSizedMut: AnyValueSized + AnyValuePtrMut {
+/// Mutable [AnyValueTypeless].
+pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
     #[inline]
     fn as_bytes_mut(&mut self) -> &mut [u8]{
         unsafe{std::slice::from_raw_parts_mut(
@@ -184,7 +206,7 @@ pub trait AnyValueSizedMut: AnyValueSized + AnyValuePtrMut {
     }
 
     #[inline]
-    unsafe fn swap_unchecked<Other: AnyValueTypedMut>(&mut self, other: &mut Other){
+    unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other){
         // compile-time check
         if !Unknown::is::<Self::Type>() {
             mem::swap(
@@ -207,8 +229,8 @@ pub trait AnyValueSizedMut: AnyValueSized + AnyValuePtrMut {
     }
 }
 
-/// Mutable [AnyValueTyped].
-pub trait AnyValueTypedMut: AnyValueSizedMut + AnyValueTyped {
+/// Mutable [AnyValue].
+pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
     #[inline]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
@@ -224,7 +246,7 @@ pub trait AnyValueTypedMut: AnyValueSizedMut + AnyValueTyped {
     ///
     /// Panics, if type mismatch.
     #[inline]
-    fn swap<Other: AnyValueTypedMut>(&mut self, other: &mut Other){
+    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
         assert_eq!(self.value_typeid(), other.value_typeid());
         unsafe{
             self.swap_unchecked(other);
@@ -232,8 +254,8 @@ pub trait AnyValueTypedMut: AnyValueSizedMut + AnyValueTyped {
     }
 }
 
-/// [`LazyClone`] friendly [`AnyValuePtr`].
-pub trait AnyValueCloneable: AnyValuePtr {
+/// [`LazyClone`] friendly [`AnyValueSizeless`].
+pub trait AnyValueCloneable: AnyValueSizeless {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]

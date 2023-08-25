@@ -1,15 +1,12 @@
 use std::any::TypeId;
 use std::ptr::NonNull;
-use crate::any_value::{AnyValueTyped, AnyValueTypedMut, AnyValueSizedMut, AnyValueSized, AnyValuePtr, AnyValuePtrMut};
+use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 use crate::any_value::Unknown;
 
-/// Non owning byte ptr wrapper for feeding AnyVec.
-///
-/// Source should be forgotten, before pushing to AnyVec.
-/// Contained value **WILL NOT** be dropped on AnyValueRawPtr drop.
-///
-/// This is useful to fill [AnyVec] directly from raw bytes,
-/// without intermediate casting to concrete type.
+/// [AnyValueSizeless] non-owning byte ptr wrapper, that knows nothing about it's type.
+/// 
+/// Source should be forgotten, before pushing to [AnyVec].
+/// Contained value **WILL NOT** be dropped on wrapper drop.
 ///
 /// # Example
 /// ```rust
@@ -18,9 +15,9 @@ use crate::any_value::Unknown;
 /// # use std::mem::size_of;
 /// # use std::ptr::NonNull;
 /// # use any_vec::AnyVec;
-/// # use any_vec::any_value::AnyValueRawPtr;
+/// # use any_vec::any_value::AnyValueSizelessRaw;
 /// let s = String::from("Hello!");
-/// let raw_value = unsafe{AnyValueRawPtr::new(
+/// let raw_value = unsafe{AnyValueSizelessRaw::new(
 ///     NonNull::from(&s).cast::<u8>()
 /// )};
 /// mem::forget(s);
@@ -32,17 +29,17 @@ use crate::any_value::Unknown;
 /// ```
 ///
 /// [AnyVec]: crate::AnyVec
-pub struct AnyValueRawPtr {
+pub struct AnyValueSizelessRaw {
     ptr: NonNull<u8>
 }
 
-impl AnyValueRawPtr {
+impl AnyValueSizelessRaw {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>) -> Self{
         Self{ptr}
     }
 }
-impl AnyValuePtr for AnyValueRawPtr {
+impl AnyValueSizeless for AnyValueSizelessRaw {
     type Type = Unknown;
 
     #[inline]
@@ -50,28 +47,53 @@ impl AnyValuePtr for AnyValueRawPtr {
         self.ptr.as_ptr()
     }
 }
-impl AnyValuePtrMut for AnyValueRawPtr {
+impl AnyValueSizelessMut for AnyValueSizelessRaw {
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         self.ptr.as_ptr()
     }
 }
 
-
-/// [AnyValueRawPtr] that know it's size.
-pub struct AnyValueRawSized {
+/// [AnyValueTypeless] byte ptr wrapper, that know it's type size.
+/// 
+/// Source should be forgotten, before pushing to [AnyVec].
+/// Contained value **WILL NOT** be dropped on wrapper drop.
+///
+/// # Example
+/// ```rust
+/// # use std::any::TypeId;
+/// # use std::mem;
+/// # use std::mem::size_of;
+/// # use std::ptr::NonNull;
+/// # use any_vec::AnyVec;
+/// # use any_vec::any_value::AnyValueTypelessRaw;
+/// let s = String::from("Hello!");
+/// let raw_value = unsafe{AnyValueTypelessRaw::new(
+///     NonNull::from(&s).cast::<u8>(),
+///     size_of::<String>()
+/// )};
+/// mem::forget(s);
+///
+/// let mut any_vec: AnyVec = AnyVec::new::<String>();
+/// unsafe{
+///     any_vec.push_unchecked(raw_value);
+/// }
+/// ```
+///
+/// [AnyVec]: crate::AnyVec
+pub struct AnyValueTypelessRaw {
     ptr: NonNull<u8>,
     size: usize,
 }
 
-impl AnyValueRawSized {
+impl AnyValueTypelessRaw {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
         Self{ptr, size}
     }
 }
 
-impl AnyValuePtr for AnyValueRawSized {
+impl AnyValueSizeless for AnyValueTypelessRaw {
     type Type = Unknown;
 
     #[inline]
@@ -79,38 +101,65 @@ impl AnyValuePtr for AnyValueRawSized {
         self.ptr.as_ptr()
     }
 }
-impl AnyValuePtrMut for AnyValueRawSized {
+impl AnyValueSizelessMut for AnyValueTypelessRaw {
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         self.ptr.as_ptr()
     }
 }
-impl AnyValueSized for AnyValueRawSized {
+impl AnyValueTypeless for AnyValueTypelessRaw {
     #[inline]
     fn size(&self) -> usize {
         self.size
     }
 }
-impl AnyValueSizedMut for AnyValueRawSized {}
+impl AnyValueTypelessMut for AnyValueTypelessRaw {}
 
 
-/// [AnyValueRawSized] that know it's type.
-pub struct AnyValueRawTyped {
-    raw_unsafe: AnyValueRawSized,
+/// [AnyValue] byte ptr wrapper, that know it's type.
+/// 
+/// Source should be forgotten, before pushing to [AnyVec].
+/// Contained value **WILL NOT** be dropped on wrapper drop.
+///
+/// # Example
+/// ```rust
+/// # use std::any::TypeId;
+/// # use std::mem;
+/// # use std::mem::size_of;
+/// # use std::ptr::NonNull;
+/// # use any_vec::AnyVec;
+/// # use any_vec::any_value::AnyValueRaw;
+/// let s = String::from("Hello!");
+/// let raw_value = unsafe{AnyValueRaw::new(
+///     NonNull::from(&s).cast::<u8>(),
+///     size_of::<String>(),
+///     TypeId::of::<String>()
+/// )};
+/// mem::forget(s);
+///
+/// let mut any_vec: AnyVec = AnyVec::new::<String>();
+/// unsafe{
+///     any_vec.push_unchecked(raw_value);
+/// }
+/// ```
+///
+/// [AnyVec]: crate::AnyVec
+pub struct AnyValueRaw {
+    raw_unsafe: AnyValueTypelessRaw,
     typeid: TypeId
 }
 
-impl AnyValueRawTyped {
+impl AnyValueRaw {
     #[inline]
     pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
         Self{
-            raw_unsafe: AnyValueRawSized::new(ptr, size),
+            raw_unsafe: AnyValueTypelessRaw::new(ptr, size),
             typeid
         }
     }
 }
 
-impl AnyValuePtr for AnyValueRawTyped {
+impl AnyValueSizeless for AnyValueRaw {
     type Type = Unknown;
 
     #[inline]
@@ -118,24 +167,24 @@ impl AnyValuePtr for AnyValueRawTyped {
         self.raw_unsafe.ptr.as_ptr()
     }
 }
-impl AnyValuePtrMut   for AnyValueRawTyped {
+impl AnyValueSizelessMut   for AnyValueRaw {
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         self.raw_unsafe.ptr.as_ptr()
     }
 }
-impl AnyValueSized for AnyValueRawTyped {
+impl AnyValueTypeless for AnyValueRaw {
     #[inline]
     fn size(&self) -> usize {
         self.raw_unsafe.size
     }
 }
-impl AnyValueTyped for AnyValueRawTyped {
+impl AnyValue for AnyValueRaw {
     #[inline]
     fn value_typeid(&self) -> TypeId {
         self.typeid
     }
 }
 
-impl AnyValueSizedMut for AnyValueRawTyped {}
-impl AnyValueTypedMut for AnyValueRawTyped {}
+impl AnyValueTypelessMut for AnyValueRaw {}
+impl AnyValueMut for AnyValueRaw {}

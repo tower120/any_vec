@@ -2,22 +2,21 @@
 
 ## 0.13.0
 ### Added
-- `AnyVec` now can work with `AnyValuePtr`.
+- `AnyVec` now can work with `AnyValueSizeless`.
+- `any_value::traits` prelude.
 
 ### Optimized
 - `AnyValue`- family downcast now use provided type for compile-time optimization, 
 instead of potentially unknown underlying type (which disabled optimization technique). 
 
 ### Breaking Changes
-- Changed AnyValue trait family names:  
-  - `AnyValue` -> `AnyValueTyped`.
-  - `AnyValueUnknown` -> `AnyValueSized`.
-  - Introduced `AnyValuePtr`.
+- `AnyValue` + `AnyValueUnknown` traits broken down into:
+  - `AnyValueUnknown` -> `AnyValueTypeless`.
+  - Introduced `AnyValueSizeless` - `AnyValue` that does know size and type.
+  - Added `any_value::move_out`, `any_value::move_out_w_size` helpers.
 - Changed AnyValueRaw non-owning wrappers names:
-  - `AnyValueRaw` -> `AnyValueRawTyped`.
-  - `AnyValueRawUnknown` -> `AnyValueRawSized`.
-  - Introduced `AnyValueRawPtr`.
-
+  - `AnyValueRawUnknown` -> `AnyValueTypelessRaw`.
+  - Introduced `AnyValueSizelessRaw`.
 
 ## 0.12.0
 ### Added
