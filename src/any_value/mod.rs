@@ -28,9 +28,9 @@ pub use lazy_clone::LazyClone;
 pub use wrapper::AnyValueWrapper;
 pub use raw::{AnyValueRaw, AnyValueSizelessRaw, AnyValueTypelessRaw};
 
-use std::any::TypeId;
-use std::{mem, ptr};
-use std::mem::{MaybeUninit, size_of};
+use core::any::TypeId;
+use core::{mem, ptr, slice};
+use core::mem::{MaybeUninit, size_of};
 
 /// Marker for unknown type.
 pub struct Unknown;
@@ -98,7 +98,7 @@ pub trait AnyValueTypeless: AnyValueSizeless {
     /// Aligned.
     #[inline]
     fn as_bytes(&self) -> &[u8]{
-        unsafe{std::slice::from_raw_parts(
+        unsafe{slice::from_raw_parts(
             self.as_bytes_ptr(),
             self.size()
         )}
@@ -151,7 +151,7 @@ pub trait AnyValueSizelessMut: AnyValueSizeless {
 pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
     #[inline(always)]
     fn as_bytes_mut(&mut self) -> &mut [u8]{
-        unsafe{std::slice::from_raw_parts_mut(
+        unsafe{slice::from_raw_parts_mut(
             self.as_bytes_mut_ptr(),
             self.size()
         )}

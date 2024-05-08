@@ -1,6 +1,9 @@
 # Changelog
 
 ## 0.14.0
+### Added
+- Now library `no_std` friendly.
+
 ### Removed
 - Helpers `any_value::move_out`, `any_value::move_out_w_size` removed as redundant.
 

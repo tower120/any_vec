@@ -1,9 +1,9 @@
-use std::fmt::{Debug, Formatter};
-use std::marker::PhantomData;
-use std::mem::MaybeUninit;
-use std::ops::{Range, RangeBounds};
-use std::ptr::NonNull;
-use std::slice;
+use core::fmt::{Debug, Formatter};
+use core::marker::PhantomData;
+use core::mem::MaybeUninit;
+use core::ops::{Range, RangeBounds};
+use core::ptr::NonNull;
+use core::{fmt, slice};
 use crate::any_value::{AnyValueSizeless, AnyValueWrapper};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::ops::{Iter, pop, remove, swap_remove, TempValue};
@@ -284,7 +284,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
 }
 
 impl<'a, T: 'static + Debug, M: MemBuilder> Debug for AnyVecTyped<'a, T, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         (*self.as_slice()).fmt(f)
     }
 }

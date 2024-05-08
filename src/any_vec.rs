@@ -1,12 +1,12 @@
-use std::alloc::Layout;
-use std::any::TypeId;
-use std::fmt::{Debug, Formatter};
-use std::marker::PhantomData;
-use std::mem::{ManuallyDrop, MaybeUninit};
-use std::ops::{Deref, DerefMut, Range, RangeBounds};
-use std::ptr::NonNull;
-use std::{ptr, slice};
-use std::slice::{from_raw_parts, from_raw_parts_mut};
+use core::alloc::Layout;
+use core::any::TypeId;
+use core::fmt::{Debug, Formatter};
+use core::marker::PhantomData;
+use core::mem::{ManuallyDrop, MaybeUninit};
+use core::ops::{Deref, DerefMut, Range, RangeBounds};
+use core::ptr::NonNull;
+use core::{fmt, ptr, slice};
+use core::slice::{from_raw_parts, from_raw_parts_mut};
 use crate::{AnyVecTyped, into_range, mem, ops};
 use crate::any_value::{AnyValue, AnyValueSizeless};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
@@ -49,9 +49,9 @@ pub mod traits{
     /// Does not enforce anything. Default.
     pub trait None {}
 
-    pub use std::marker::Sync;
+    pub use core::marker::Sync;
 
-    pub use std::marker::Send;
+    pub use core::marker::Send;
 
     /// Enforce type [`Clone`]-ability.
     pub trait Cloneable{}
@@ -95,7 +95,7 @@ impl<T: Clone + Send + Sync> SatisfyTraits<dyn Cloneable + Send + Sync> for T{}
 /// You can get it with [`AnyVec::into_raw_parts`], or build/edit
 /// it manually. And with [`AnyVec::from_raw_parts`], you can construct
 /// [`AnyVec`].
-pub struct RawParts<M: MemBuilder = mem::Default>
+pub struct RawParts<M: MemBuilder/* = mem::Default*/>
 where
     M::Mem: MemRawParts
 {
@@ -814,7 +814,7 @@ impl<Traits: ?Sized + Cloneable + Trait, M: MemBuilder> Clone for AnyVec<Traits,
 }
 
 impl<Traits: ?Sized + Trait, M: MemBuilder> Debug for AnyVec<Traits, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("AnyVec")
          .field("typeid", &self.element_typeid())
          .field("len", &self.len())
@@ -873,7 +873,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecRef<'a, T, M>{
     }
 }
 impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecRef<'a, T, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
@@ -909,7 +909,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecMut<'a, T, M>{
     }
 }
 impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecMut<'a, T, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }

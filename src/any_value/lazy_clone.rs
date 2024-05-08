@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use core::any::TypeId;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueTypeless, AnyValueSizeless};
 
 /// Makes [`AnyValueCloneable`] actually [`Clone`]able.

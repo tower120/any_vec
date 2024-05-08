@@ -1,3 +1,4 @@
+#![no_std]
 #![cfg_attr(miri, feature(alloc_layout_extra) )]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
@@ -143,7 +144,7 @@ mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
 
-use std::any::TypeId;
+use core::any::TypeId;
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterMut, IterRef};
@@ -153,8 +154,8 @@ pub mod any_value;
 pub mod ops;
 pub mod element;
 
-use std::ptr;
-use std::ops::{Bound, Range, RangeBounds};
+use core::ptr;
+use core::ops::{Bound, Range, RangeBounds};
 use crate::any_value::Unknown;
 
 /// This is faster then ptr::copy,

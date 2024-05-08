@@ -1,5 +1,5 @@
-use std::any::TypeId;
-use std::{mem, ptr};
+use core::any::TypeId;
+use core::{mem, ptr};
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueSizeless, AnyValueSizelessMut, AnyValueTypeless, AnyValueTypelessMut, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};

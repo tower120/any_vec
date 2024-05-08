@@ -1,4 +1,4 @@
-use std::iter::FusedIterator;
+use core::iter::FusedIterator;
 
 pub trait Iterable {
     type Iter: Iterator;

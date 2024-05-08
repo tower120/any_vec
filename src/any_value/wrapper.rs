@@ -1,5 +1,5 @@
-use std::any::TypeId;
-use std::mem::size_of;
+use core::any::TypeId;
+use core::mem::size_of;
 use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 
 /// Helper struct to convert concrete type to [`AnyValueMut`].

@@ -10,8 +10,8 @@ pub use empty::Empty;
 
 pub(crate) type Default = Heap;
 
-use std::alloc::Layout;
-use std::ptr::NonNull;
+use core::alloc::Layout;
+use core::ptr::NonNull;
 
 /// This is [`Mem`] builder.
 ///
