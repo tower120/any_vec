@@ -22,12 +22,12 @@ use crate::traits::{Cloneable, None, Trait};
 ///
 /// Whenever you have `ElementPointer` as a value (from destructive [`AnyVec`] operations),
 /// you can safely take pointed value, with [`AnyValue::downcast`] or [`any_value::move_out`].
-/// Otherwise, it will be destructed with destruction of `Element`.
+/// Otherwise, it will be destructed with destruction of [`Element`].
 ///
 /// # Notes
 ///
 /// `ElementPointer` have it's own implementation of `downcast_` family (which return `&'a T`, instead of `&T`).
-/// This is done, so you don't have to keep `ElementRef`/`ElementMut` alive, while casting to concrete type.
+/// This is done, so you don't have to keep [`ElementRef`]/[`ElementMut`] alive, while casting to concrete type.
 ///
 /// [`AnyVec`]: crate::AnyVec
 /// [`AnyVec::get`]: crate::AnyVec::get
