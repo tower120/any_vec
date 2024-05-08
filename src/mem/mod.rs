@@ -5,6 +5,7 @@ mod stack_n;
 mod empty;
 
 #[cfg(feature="alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub use heap::Heap;
 pub use stack::Stack;
 pub use stack_n::StackN;

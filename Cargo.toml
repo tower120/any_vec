@@ -15,6 +15,10 @@ default = ["alloc"]
 # Include alloc crate. This allows to use mem::Heap.  
 alloc = []
 
+[package.metadata.docs.rs]
+features = []
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dependencies]
 
 [dev-dependencies]

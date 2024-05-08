@@ -1,5 +1,6 @@
 #![no_std]
 #![cfg_attr(miri, feature(alloc_layout_extra) )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
 //! Have same performance and *operations* as `std::vec::Vec`.
@@ -136,6 +137,16 @@
 //! [AnyValue]: any_value::AnyValue
 //! [AnyValueMut]: any_value::AnyValueMut
 //! [AnyValueCloneable]: any_value::AnyValueCloneable
+//! 
+//! # No `alloc`
+//! 
+//! This library is `no_std` and can work without `alloc`.
+//! For this - disable default `alloc` feature. [mem::Heap] will become unavailable
+//! after that, and you'll have to specify [MemBuilder] for [AnyVec]. You can use
+//! [mem::Stack], or specify your own [Mem].
+//! 
+//! [MemBuilder]: mem::MemBuilder
+//! [Mem]: mem::Mem
 
 mod any_vec;
 mod clone_type;
