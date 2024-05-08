@@ -6,8 +6,8 @@ version = "0.13.0"
 edition = "2021"
 description = "Type erased vector. Most operations can be done without type knowledge. Mostly zero overhead."
 repository = "https://github.com/tower120/any_vec"
-keywords = ["vec", "any", "container"]
-categories = ["data-structures"]
+keywords = ["vec", "any", "container", "no-std"]
+categories = ["data-structures", "no-std"]
 exclude = [".github"]
 
 [dependencies]

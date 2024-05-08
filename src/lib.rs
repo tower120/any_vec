@@ -2,7 +2,7 @@
 #![cfg_attr(miri, feature(alloc_layout_extra) )]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
-//! Have same performance and *operations* as [`std::vec::Vec`].
+//! Have same performance and *operations* as `std::vec::Vec`.
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped`] with `downcast`-family.
 //! Or use [`AnyVec`] type erased operations, which works with [`any_value`].
@@ -116,7 +116,7 @@
 //!
 //! [`MemBuilder`]: mem::MemBuilder
 //! [`Mem`]: mem::Mem
-//! [`Allocator`]: std::alloc::Allocator
+//! [`Allocator`]: core::alloc::Allocator
 //! [`clone_empty_in`]: AnyVec::clone_empty_in
 //!
 //! # AnyValue

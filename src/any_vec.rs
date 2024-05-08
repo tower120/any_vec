@@ -622,7 +622,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// If the returned [`TempValue`] goes out of scope without being dropped (due to
     /// [`mem::forget`], for example), the vector will lost and leak last element.
     ///
-    /// [`mem::forget`]: std::mem::forget
+    /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
     pub fn pop(&mut self) -> Option<Pop<Traits, M>> {
@@ -645,7 +645,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
     ///
-    /// [`mem::forget`]: std::mem::forget
+    /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
     pub fn remove(&mut self, index: usize) -> Remove<Traits, M> {
@@ -666,7 +666,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices >= index.
     ///
-    /// [`mem::forget`]: std::mem::forget
+    /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
     pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits, M> {
@@ -694,7 +694,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices in and past the range.
     ///
-    /// [`mem::forget`]: std::mem::forget
+    /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits, M> {
@@ -725,7 +725,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`], for example), the vector may have lost and leaked
     /// elements with indices in and past the range.
     ///
-    /// [`mem::forget`]: std::mem::forget
+    /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
