@@ -22,7 +22,7 @@ use crate::traits::{Cloneable, None, Trait};
 ///
 /// Whenever you have `ElementPointer` as a value (from destructive [`AnyVec`] operations),
 /// you can safely take pointed value with [`AnyValue::downcast`], or unsafely
-/// take its content with [`AnyValue::move_into`].
+/// take its content with [`AnyValueSizeless::move_into`].
 /// Otherwise, it will be destructed with destruction of [`Element`].
 ///
 /// # Notes
@@ -35,7 +35,6 @@ use crate::traits::{Cloneable, None, Trait};
 /// [`drain`]: crate::AnyVec::drain
 /// [`splice`]: crate::AnyVec::splice
 /// [`any_value`]: crate::any_value
-/// [`any_value::move_out`]: crate::any_value::move_out
 pub struct ElementPointer<'a, AnyVecPtr: IAnyVecRawPtr>{
     any_vec_ptr: AnyVecPtr,
     element: NonNull<u8>,
