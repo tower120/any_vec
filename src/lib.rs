@@ -144,9 +144,9 @@ mod any_vec_typed;
 mod iter;
 
 use std::any::TypeId;
-pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits, RawParts};
+pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
-pub use iter::{ElementIterator, Iter, IterRef, IterMut};
+pub use iter::{ElementIterator, Iter, IterMut, IterRef};
 
 pub mod mem;
 pub mod any_value;
@@ -155,11 +155,13 @@ pub mod element;
 
 use std::ptr;
 use std::ops::{Bound, Range, RangeBounds};
+use crate::any_value::Unknown;
 
-// TODO: remove
-// This is faster then ptr::copy,
-// when count is runtime value, and count is small.
-#[inline]
+/// This is faster then ptr::copy,
+/// when count is runtime value, and count is small.
+///
+/// Last time benchmarked on nightly 1.80
+#[inline(always)]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
     // MIRI hack
     if cfg!(miri)
@@ -171,6 +173,26 @@ unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
 
     for i in 0..count{
         *dst.add(i) = *src.add(i);
+    }
+}
+
+/// One element copy_nonoverlapping, that utilize type knowledge.
+#[inline(always)]
+pub(crate) unsafe fn copy_nonoverlapping_value<KnownType: 'static>(
+    input: *const u8, out: *mut u8, value_size: usize
+) {
+    if !Unknown::is::<KnownType>() {
+        ptr::copy_nonoverlapping(
+            input as *const KnownType,
+            out as *mut KnownType,
+            1
+        );
+    } else {
+        ptr::copy_nonoverlapping(
+            input,
+            out,
+            value_size
+        );
     }
 }
 

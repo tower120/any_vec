@@ -26,7 +26,7 @@ mod lazy_clone;
 
 pub use lazy_clone::LazyClone;
 pub use wrapper::AnyValueWrapper;
-pub use raw::{AnyValueRaw, AnyValueTypelessRaw, AnyValueSizelessRaw};
+pub use raw::{AnyValueRaw, AnyValueSizelessRaw, AnyValueTypelessRaw};
 
 use std::any::TypeId;
 use std::{mem, ptr};
@@ -80,46 +80,17 @@ pub trait AnyValueSizeless {
     ///
     /// # Safety
     ///
-    /// `bytes_size` must be correct object size.
-    /// `out` must have at least `bytes_size` bytes.
-    /// `KnownType` must be correct object type or [Unknown].
-    ///
-    /// # Helpers
-    /// 
-    /// Due to Rust limitations in generic department, you may found
-    /// useful helpers [move_out] and [move_out_w_size].
+    /// - `bytes_size` must be correct object size.
+    /// - `out` must not overlap with `self`.
+    /// - `out` must have at least `bytes_size` bytes.
+    /// - `KnownType` must be correct object type or [Unknown].
     #[inline]
     unsafe fn move_into<KnownType:'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
         where Self: Sized
     {
-        copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
+        crate::copy_nonoverlapping_value::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         mem::forget(self);
     }
-}
-
-/// Wrapper for AnyValueTypeless around [move_into].
-///
-/// You may need this because of Rust's generics limitations.
-/// 
-/// [move_into]: AnyValueSizeless::move_into
-#[inline]
-pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
-    let size = this.size();
-    this.move_into::<T::Type>(out, size);
-}
-
-/// Wrapper for AnyValueSizeless around [move_into].
-///
-/// You may need this because of Rust's generics limitations.
-///
-/// N.B. For moving out values of [Unknown] type, of the same size, in tight loops -
-/// this may perform faster then [move_out], since compiler will be
-/// able to optimize better, knowing that all values have the same size.
-/// 
-/// [move_into]: AnyValueSizeless::move_into
-#[inline]
-pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
-    this.move_into::<T::Type>(out, bytes_size);
 }
 
 /// [AnyValue] that doesn't know it's type, but know it's size.
@@ -161,26 +132,6 @@ pub trait AnyValue: AnyValueTypeless {
         } else {
             Some(unsafe{ self.downcast_unchecked::<T>() })
         }
-    }
-}
-
-/// Helper function, which utilize type knowledge.
-#[inline(always)]
-pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
-    input: *const u8, out: *mut u8, bytes_size: usize
-) {
-    if !Unknown::is::<KnownType>() {
-        ptr::copy_nonoverlapping(
-            input as *const KnownType,
-            out as *mut KnownType,
-            1
-        );
-    } else {
-        ptr::copy_nonoverlapping(
-            input,
-            out,
-            bytes_size
-        );
     }
 }
 

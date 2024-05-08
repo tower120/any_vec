@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+### Removed
+- Helpers `any_value::move_out`, `any_value::move_out_w_size` removed as redundant.
+
 ## 0.13.0
 ### Added
 - `AnyVec` now can work with `AnyValueSizeless`.

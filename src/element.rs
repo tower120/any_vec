@@ -21,7 +21,8 @@ use crate::traits::{Cloneable, None, Trait};
 /// # Consuming
 ///
 /// Whenever you have `ElementPointer` as a value (from destructive [`AnyVec`] operations),
-/// you can safely take pointed value, with [`AnyValue::downcast`] or [`any_value::move_out`].
+/// you can safely take pointed value with [`AnyValue::downcast`], or unsafely
+/// take its content with [`AnyValue::move_into`].
 /// Otherwise, it will be destructed with destruction of [`Element`].
 ///
 /// # Notes
