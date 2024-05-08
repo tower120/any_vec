@@ -1,5 +1,3 @@
-#![cfg_attr(miri, feature(alloc_layout_extra))]
-
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
 //! Have same performance and *operations* as [`std::vec::Vec`].
 //!
@@ -164,61 +162,19 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize) 
     // Tracking issue https://github.com/rust-lang/rust/issues/97022
     ptr::copy_nonoverlapping(src, dst, count);
     return;
-
-    /*// MIRI hack
-    if cfg!(miri)
-     //   || count >= 128
-    {
-        ptr::copy_nonoverlapping(src, dst, count);
-        return;
-    }
-
-    for i in 0..count{
-        *dst.add(i) = *src.add(i);
-    }*/
 }
 
 // This is faster then ptr::copy,
 // when count is runtime value, and count is small.
-#[inline]
+#[inline(always)]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize) {
-    // MIRI hack
-    if cfg!(miri) || count >= 128 {
-        ptr::copy(src, dst, count);
-        return;
-    }
-
-    for i in 0..count {
-        *dst.add(i) = *src.add(i);
-    }
+    ptr::copy(src, dst, count);
 }
 
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
-#[inline]
+#[inline(always)]
 unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize) {
-    // MIRI hack
-    if cfg!(miri) {
-        let mut tmp = Vec::<u8>::new();
-        tmp.resize(count, 0);
-
-        // src -> tmp
-        ptr::copy_nonoverlapping(src, tmp.as_mut_ptr(), count);
-        // dst -> src
-        ptr::copy_nonoverlapping(dst, src, count);
-        // tmp -> dst
-        ptr::copy_nonoverlapping(tmp.as_ptr(), dst, count);
-
-        return;
-    }
-
-    for i in 0..count {
-        let src_pos = src.add(i);
-        let dst_pos = dst.add(i);
-
-        let tmp = *src_pos;
-        *src_pos = *dst_pos;
-        *dst_pos = tmp;
-    }
+    ptr::swap_nonoverlapping(src, dst, count)
 }
 
 #[inline]

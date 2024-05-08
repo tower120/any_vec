@@ -127,8 +127,6 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
 {
 }
 
-// According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
-#[allow(suspicious_auto_trait_impls)]
 unsafe impl<
         'a,
         Traits: ?Sized + Trait,
@@ -139,7 +137,7 @@ where
     AnyVec<Traits, M>: Send,
 {
 }
-#[allow(suspicious_auto_trait_impls)]
+
 unsafe impl<'a, T, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Send
     for Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where
@@ -147,7 +145,6 @@ where
 {
 }
 
-#[allow(suspicious_auto_trait_impls)]
 unsafe impl<
         'a,
         Traits: ?Sized + Trait,
@@ -158,7 +155,7 @@ where
     AnyVec<Traits, M>: Sync,
 {
 }
-#[allow(suspicious_auto_trait_impls)]
+
 unsafe impl<'a, T: Sync, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Sync
     for Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where

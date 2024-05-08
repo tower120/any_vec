@@ -111,12 +111,5 @@ pub trait MemRawParts: Mem {
 
 #[inline]
 const fn dangling(layout: &Layout) -> NonNull<u8> {
-    #[cfg(miri)]
-    {
-        layout.dangling()
-    }
-    #[cfg(not(miri))]
-    {
-        unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
-    }
+    unsafe { NonNull::new_unchecked(layout.align() as *mut u8) }
 }
