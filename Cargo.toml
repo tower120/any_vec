@@ -6,15 +6,20 @@ version = "0.13.0"
 edition = "2021"
 description = "Type erased vector. Most operations can be done without type knowledge. Mostly zero overhead."
 repository = "https://github.com/tower120/any_vec"
-keywords = ["vec", "any", "container", "no-std"]
-categories = ["data-structures", "no-std"]
+keywords = ["vec", "any", "container", "no_std"]
+categories = ["data-structures", "no-std", "no-std::no-alloc"]
 exclude = [".github"]
+
+[features]
+default = ["alloc"]
+# Include alloc crate. This allows to use mem::Heap.  
+alloc = []
 
 [dependencies]
 
 [dev-dependencies]
-itertools = "0.10.3"
-criterion = "0.3.5"
+itertools = "0.12.1"
+criterion = "0.5.1"
 rand = "0.8.5"
 impls = "1.0.3"
 

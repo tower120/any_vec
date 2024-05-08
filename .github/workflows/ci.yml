@@ -18,6 +18,7 @@ jobs:
     - uses: actions/checkout@v4
     - run: RUSTFLAGS="--deny warnings" cargo build
     - run: RUSTFLAGS="--deny warnings" cargo build --all-features
+    - run: RUSTFLAGS="--deny warnings" cargo build --no-default-features
 
   tests:
     name: Run careful tests    

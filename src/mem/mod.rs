@@ -1,14 +1,19 @@
+#[cfg(feature="alloc")]
 mod heap;
 mod stack;
 mod stack_n;
 mod empty;
 
+#[cfg(feature="alloc")]
 pub use heap::Heap;
 pub use stack::Stack;
 pub use stack_n::StackN;
 pub use empty::Empty;
 
+#[cfg(feature="alloc")]
 pub(crate) type Default = Heap;
+#[cfg(not(feature="alloc"))]
+pub(crate) type Default = Empty;
 
 use core::alloc::Layout;
 use core::ptr::NonNull;
