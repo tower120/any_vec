@@ -31,7 +31,6 @@ pub use raw::{AnyValueRaw, AnyValueTypelessRaw, AnyValueSizelessRaw};
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::{MaybeUninit, size_of};
-use crate::{copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 
 /// Marker for unknown type.
 pub struct Unknown;
@@ -166,7 +165,7 @@ pub trait AnyValue: AnyValueTypeless {
 }
 
 /// Helper function, which utilize type knowledge.
-#[inline]
+#[inline(always)]
 pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
     input: *const u8, out: *mut u8, bytes_size: usize
 ) {
@@ -174,12 +173,14 @@ pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
         ptr::copy_nonoverlapping(
             input as *const KnownType,
             out as *mut KnownType,
-            1);
+            1
+        );
     } else {
-        copy_bytes_nonoverlapping(
+        ptr::copy_nonoverlapping(
             input,
             out,
-            bytes_size);
+            bytes_size
+        );
     }
 }
 
@@ -197,7 +198,7 @@ pub trait AnyValueSizelessMut: AnyValueSizeless {
 
 /// Mutable [AnyValueTypeless].
 pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
-    #[inline]
+    #[inline(always)]
     fn as_bytes_mut(&mut self) -> &mut [u8]{
         unsafe{std::slice::from_raw_parts_mut(
             self.as_bytes_mut_ptr(),
@@ -205,7 +206,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
         )}
     }
 
-    #[inline]
+    #[inline(always)]
     unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other){
         // compile-time check
         if !Unknown::is::<Self::Type>() {
@@ -220,7 +221,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
             );
         } else {
             let bytes = self.as_bytes_mut();
-            swap_bytes_nonoverlapping(
+            ptr::swap_nonoverlapping(
                 bytes.as_mut_ptr(),
                 other.as_bytes_mut().as_mut_ptr(),
                 bytes.len()
@@ -231,7 +232,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
 
 /// Mutable [AnyValue].
 pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
-    #[inline]
+    #[inline(always)]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
             None
@@ -245,7 +246,7 @@ pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
     /// # Panic
     ///
     /// Panics, if type mismatch.
-    #[inline]
+    #[inline(always)]
     fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
         assert_eq!(self.value_typeid(), other.value_typeid());
         unsafe{
