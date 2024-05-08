@@ -45,12 +45,12 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for Remove<'a, AnyVecPtr>{
         if !Unknown::is::<AnyVecPtr::Element>() {
             let dst = self.bytes() as *mut AnyVecPtr::Element;
             let src = dst.add(1);
-            ptr::copy(src, dst,self.last_index - self.index);
+            ptr::copy(src, dst, self.last_index - self.index);
         } else {
             let size = self.any_vec_ptr.any_vec_raw().element_layout().size();
             let dst = self.bytes() as *mut u8;
             let src = dst.add(size);
-            crate::copy_bytes(src, dst,size * (self.last_index - self.index));
+            crate::copy_bytes(src, dst, size * (self.last_index - self.index));
         }
 
         // 3. shrink len `self.any_vec.len -= 1`

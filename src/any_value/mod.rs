@@ -26,12 +26,11 @@ mod lazy_clone;
 
 pub use lazy_clone::LazyClone;
 pub use wrapper::AnyValueWrapper;
-pub use raw::{AnyValueRaw, AnyValueTypelessRaw, AnyValueSizelessRaw};
+pub use raw::{AnyValueRaw, AnyValueSizelessRaw, AnyValueTypelessRaw};
 
 use std::any::TypeId;
 use std::{mem, ptr};
 use std::mem::{MaybeUninit, size_of};
-use crate::{copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
 
 /// Marker for unknown type.
 pub struct Unknown;
@@ -81,46 +80,17 @@ pub trait AnyValueSizeless {
     ///
     /// # Safety
     ///
-    /// `bytes_size` must be correct object size.
-    /// `out` must have at least `bytes_size` bytes.
-    /// `KnownType` must be correct object type or [Unknown].
-    ///
-    /// # Helpers
-    /// 
-    /// Due to Rust limitations in generic department, you may found
-    /// useful helpers [move_out] and [move_out_w_size].
+    /// - `bytes_size` must be correct object size.
+    /// - `out` must not overlap with `self`.
+    /// - `out` must have at least `bytes_size` bytes.
+    /// - `KnownType` must be correct object type or [Unknown].
     #[inline]
     unsafe fn move_into<KnownType:'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
         where Self: Sized
     {
-        copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
+        crate::copy_nonoverlapping_value::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         mem::forget(self);
     }
-}
-
-/// Wrapper for AnyValueTypeless around [move_into].
-///
-/// You may need this because of Rust's generics limitations.
-/// 
-/// [move_into]: AnyValueSizeless::move_into
-#[inline]
-pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
-    let size = this.size();
-    this.move_into::<T::Type>(out, size);
-}
-
-/// Wrapper for AnyValueSizeless around [move_into].
-///
-/// You may need this because of Rust's generics limitations.
-///
-/// N.B. For moving out values of [Unknown] type, of the same size, in tight loops -
-/// this may perform faster then [move_out], since compiler will be
-/// able to optimize better, knowing that all values have the same size.
-/// 
-/// [move_into]: AnyValueSizeless::move_into
-#[inline]
-pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
-    this.move_into::<T::Type>(out, bytes_size);
 }
 
 /// [AnyValue] that doesn't know it's type, but know it's size.
@@ -165,24 +135,6 @@ pub trait AnyValue: AnyValueTypeless {
     }
 }
 
-/// Helper function, which utilize type knowledge.
-#[inline]
-pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
-    input: *const u8, out: *mut u8, bytes_size: usize
-) {
-    if !Unknown::is::<KnownType>() {
-        ptr::copy_nonoverlapping(
-            input as *const KnownType,
-            out as *mut KnownType,
-            1);
-    } else {
-        copy_bytes_nonoverlapping(
-            input,
-            out,
-            bytes_size);
-    }
-}
-
 /// Mutable [AnyValueSizeless].
 pub trait AnyValueSizelessMut: AnyValueSizeless {
     // Rust MIRI requires mut pointer to actually come from mut self.
@@ -197,7 +149,7 @@ pub trait AnyValueSizelessMut: AnyValueSizeless {
 
 /// Mutable [AnyValueTypeless].
 pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
-    #[inline]
+    #[inline(always)]
     fn as_bytes_mut(&mut self) -> &mut [u8]{
         unsafe{std::slice::from_raw_parts_mut(
             self.as_bytes_mut_ptr(),
@@ -205,7 +157,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
         )}
     }
 
-    #[inline]
+    #[inline(always)]
     unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other){
         // compile-time check
         if !Unknown::is::<Self::Type>() {
@@ -220,7 +172,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
             );
         } else {
             let bytes = self.as_bytes_mut();
-            swap_bytes_nonoverlapping(
+            ptr::swap_nonoverlapping(
                 bytes.as_mut_ptr(),
                 other.as_bytes_mut().as_mut_ptr(),
                 bytes.len()
@@ -231,7 +183,7 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
 
 /// Mutable [AnyValue].
 pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
-    #[inline]
+    #[inline(always)]
     fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
         if self.value_typeid() != TypeId::of::<T>(){
             None
@@ -245,7 +197,7 @@ pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
     /// # Panic
     ///
     /// Panics, if type mismatch.
-    #[inline]
+    #[inline(always)]
     fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
         assert_eq!(self.value_typeid(), other.value_typeid());
         unsafe{

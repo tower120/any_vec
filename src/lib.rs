@@ -144,9 +144,9 @@ mod any_vec_typed;
 mod iter;
 
 use std::any::TypeId;
-pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits, RawParts};
+pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
-pub use iter::{ElementIterator, Iter, IterRef, IterMut};
+pub use iter::{ElementIterator, Iter, IterMut, IterRef};
 
 pub mod mem;
 pub mod any_value;
@@ -155,32 +155,13 @@ pub mod element;
 
 use std::ptr;
 use std::ops::{Bound, Range, RangeBounds};
+use crate::any_value::Unknown;
 
-// This is faster then ptr::copy_nonoverlapping,
-// when count is runtime value, and count is small.
-#[inline]
-unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
-    // Somehow, it looks ok now.
-    // Tracking issue https://github.com/rust-lang/rust/issues/97022
-    ptr::copy_nonoverlapping(src, dst, count);
-    return;
-
-    /*// MIRI hack
-    if cfg!(miri)
-     //   || count >= 128
-    {
-        ptr::copy_nonoverlapping(src, dst, count);
-        return;
-    }
-
-    for i in 0..count{
-        *dst.add(i) = *src.add(i);
-    }*/
-}
-
-// This is faster then ptr::copy,
-// when count is runtime value, and count is small.
-#[inline]
+/// This is faster then ptr::copy,
+/// when count is runtime value, and count is small.
+///
+/// Last time benchmarked on nightly 1.80
+#[inline(always)]
 unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
     // MIRI hack
     if cfg!(miri)
@@ -195,32 +176,23 @@ unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
     }
 }
 
-
-// same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
-#[inline]
-unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
-    // MIRI hack
-    if cfg!(miri) {
-        let mut tmp = Vec::<u8>::new();
-        tmp.resize(count, 0);
-
-        // src -> tmp
-        ptr::copy_nonoverlapping(src, tmp.as_mut_ptr(), count);
-        // dst -> src
-        ptr::copy_nonoverlapping(dst, src, count);
-        // tmp -> dst
-        ptr::copy_nonoverlapping(tmp.as_ptr(), dst, count);
-
-        return;
-    }
-
-    for i in 0..count{
-        let src_pos = src.add(i);
-        let dst_pos = dst.add(i);
-
-        let tmp = *src_pos;
-        *src_pos = *dst_pos;
-        *dst_pos = tmp;
+/// One element copy_nonoverlapping, that utilize type knowledge.
+#[inline(always)]
+pub(crate) unsafe fn copy_nonoverlapping_value<KnownType: 'static>(
+    input: *const u8, out: *mut u8, value_size: usize
+) {
+    if !Unknown::is::<KnownType>() {
+        ptr::copy_nonoverlapping(
+            input as *const KnownType,
+            out as *mut KnownType,
+            1
+        );
+    } else {
+        ptr::copy_nonoverlapping(
+            input,
+            out,
+            value_size
+        );
     }
 }
 

@@ -1,9 +1,9 @@
 use std::any::TypeId;
 use std::{mem, ptr};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, Unknown, AnyValueSizeless, copy_bytes, AnyValueSizelessMut};
+use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueSizeless, AnyValueSizelessMut, AnyValueTypeless, AnyValueTypelessMut, Unknown};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
-use crate::AnyVec;
+use crate::{AnyVec, copy_nonoverlapping_value};
 use crate::traits::Cloneable;
 
 pub trait Operation {
@@ -58,7 +58,7 @@ impl<Op: Operation> AnyValueSizeless for TempValue<Op> {
 
     #[inline]
     unsafe fn move_into<KnownType:'static /*= Unknown*/>(mut self, out: *mut u8, bytes_size: usize) {
-        copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
+        copy_nonoverlapping_value::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         self.op.consume();
         mem::forget(self);
     }

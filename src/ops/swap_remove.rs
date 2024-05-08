@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
-use std::ptr;
-use crate::copy_bytes_nonoverlapping;
-use crate::any_value::Unknown;
+use crate::copy_nonoverlapping_value;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_ptr::utils::{element_mut_ptr_at, element_ptr_at};
 use crate::any_vec_raw::AnyVecRaw;
@@ -49,19 +47,11 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
         let any_vec_raw = self.any_vec_ptr.any_vec_raw_mut();
 
         if self.element as *const u8 != last_element {
-            if !Unknown::is::<AnyVecPtr::Element>() {
-                ptr::copy_nonoverlapping(
-                    last_element as *const AnyVecPtr::Element,
-                    self.element as *mut AnyVecPtr::Element,
-                    1
-                );
-            } else {
-                copy_bytes_nonoverlapping(
-                    last_element,
-                    self.element,
-                    any_vec_raw.element_layout().size()
-                );
-            }
+            copy_nonoverlapping_value::<AnyVecPtr::Element>(
+                last_element,
+                self.element,
+                any_vec_raw.element_layout().size()
+            );
         }
 
         // 3. shrink len `self.any_vec.len -= 1`
