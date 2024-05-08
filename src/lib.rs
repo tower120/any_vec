@@ -1,4 +1,4 @@
-#![cfg_attr(miri, feature(alloc_layout_extra) )]
+#![cfg_attr(miri, feature(alloc_layout_extra))]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
 //! Have same performance and *operations* as [`std::vec::Vec`].
@@ -137,29 +137,29 @@
 //! [AnyValueCloneable]: any_value::AnyValueCloneable
 
 mod any_vec;
-mod clone_type;
 mod any_vec_ptr;
 mod any_vec_raw;
 mod any_vec_typed;
+mod clone_type;
 mod iter;
 
-use std::any::TypeId;
-pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, SatisfyTraits, traits, RawParts};
+pub use crate::any_vec::{traits, AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits};
 pub use any_vec_typed::AnyVecTyped;
-pub use iter::{ElementIterator, Iter, IterRef, IterMut};
+pub use iter::{ElementIterator, Iter, IterMut, IterRef};
+use std::any::TypeId;
 
-pub mod mem;
 pub mod any_value;
-pub mod ops;
 pub mod element;
+pub mod mem;
+pub mod ops;
 
-use std::ptr;
 use std::ops::{Bound, Range, RangeBounds};
+use std::ptr;
 
 // This is faster then ptr::copy_nonoverlapping,
 // when count is runtime value, and count is small.
 #[inline]
-unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
+unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize) {
     // Somehow, it looks ok now.
     // Tracking issue https://github.com/rust-lang/rust/issues/97022
     ptr::copy_nonoverlapping(src, dst, count);
@@ -181,24 +181,21 @@ unsafe fn copy_bytes_nonoverlapping(src: *const u8, dst: *mut u8, count: usize){
 // This is faster then ptr::copy,
 // when count is runtime value, and count is small.
 #[inline]
-unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize){
+unsafe fn copy_bytes(src: *const u8, dst: *mut u8, count: usize) {
     // MIRI hack
-    if cfg!(miri)
-        || count >= 128
-    {
+    if cfg!(miri) || count >= 128 {
         ptr::copy(src, dst, count);
         return;
     }
 
-    for i in 0..count{
+    for i in 0..count {
         *dst.add(i) = *src.add(i);
     }
 }
 
-
 // same as copy_bytes_nonoverlapping but for swap_nonoverlapping.
 #[inline]
-unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
+unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize) {
     // MIRI hack
     if cfg!(miri) {
         let mut tmp = Vec::<u8>::new();
@@ -214,7 +211,7 @@ unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
         return;
     }
 
-    for i in 0..count{
+    for i in 0..count {
         let src_pos = src.add(i);
         let dst_pos = dst.add(i);
 
@@ -225,10 +222,7 @@ unsafe fn swap_bytes_nonoverlapping(src: *mut u8, dst: *mut u8, count: usize){
 }
 
 #[inline]
-fn into_range(
-    len: usize,
-    range: impl RangeBounds<usize>
-) -> Range<usize> {
+fn into_range(len: usize, range: impl RangeBounds<usize>) -> Range<usize> {
     let start = match range.start_bound() {
         Bound::Included(i) => *i,
         Bound::Excluded(i) => *i + 1,
@@ -245,6 +239,6 @@ fn into_range(
 }
 
 #[inline]
-fn assert_types_equal(t1: TypeId, t2: TypeId){
+fn assert_types_equal(t1: TypeId, t2: TypeId) {
     assert_eq!(t1, t2, "Type mismatch!");
 }

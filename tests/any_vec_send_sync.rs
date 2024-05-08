@@ -1,19 +1,18 @@
-use std::iter;
-use impls::impls;
-use any_vec::{AnyVec, AnyVecMut, IterMut, IterRef, mem};
 use any_vec::any_value::AnyValueWrapper;
 use any_vec::mem::MemBuilder;
 use any_vec::ops::Drain;
 use any_vec::ops::Splice;
 use any_vec::traits::None;
+use any_vec::{mem, AnyVec, AnyVecMut, IterMut, IterRef};
+use impls::impls;
+use std::iter;
 
-const fn is_send(_: &impl Send){}
-const fn is_sync(_: &impl Sync){}
+const fn is_send(_: &impl Send) {}
+const fn is_sync(_: &impl Sync) {}
 
 #[test]
 fn any_vec_heap_send_sync_test() {
-    fn test_negative<M: MemBuilder + Default>()
-    {
+    fn test_negative<M: MemBuilder + Default>() {
         let mut any_vec: AnyVec<dyn None, M> = AnyVec::new::<String>();
         assert!(!impls!(AnyVec<dyn None, M>: Send));
         assert!(!impls!(AnyVec<dyn None, M>: Sync));
@@ -44,7 +43,7 @@ fn any_vec_heap_send_sync_test() {
             drop(drained);
         }
         {
-            let drained: Splice<dyn None, M, iter::Empty::<AnyValueWrapper<String>>> =
+            let drained: Splice<dyn None, M, iter::Empty<AnyValueWrapper<String>>> =
                 any_vec.splice(.., iter::empty::<AnyValueWrapper<String>>());
             assert!(!impls!(Splice<dyn None, M, iter::Empty::<AnyValueWrapper<String>>>: Send));
             assert!(!impls!(Splice<dyn None, M, iter::Empty::<AnyValueWrapper<String>>>: Sync));
@@ -53,7 +52,8 @@ fn any_vec_heap_send_sync_test() {
     }
 
     fn test_positive<M: MemBuilder + Default + Sync + Send>()
-        where M::Mem: Sync + Send
+    where
+        M::Mem: Sync + Send,
     {
         let mut any_vec: AnyVec<dyn Sync + Send, M> = AnyVec::new::<String>();
         is_sync(&any_vec);

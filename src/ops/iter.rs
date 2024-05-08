@@ -11,9 +11,7 @@ pub trait Iterable {
 /// [`AnyVec`]: crate::AnyVec
 pub struct Iter<I: Iterable>(pub(crate) I);
 
-impl<I: Iterable> Iterator
-    for Iter<I>
-{
+impl<I: Iterable> Iterator for Iter<I> {
     type Item = <I::Iter as Iterator>::Item;
 
     #[inline]
@@ -27,10 +25,9 @@ impl<I: Iterable> Iterator
     }
 }
 
-impl<I: Iterable> DoubleEndedIterator
-    for Iter<I>
+impl<I: Iterable> DoubleEndedIterator for Iter<I>
 where
-    I::Iter: DoubleEndedIterator
+    I::Iter: DoubleEndedIterator,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -38,11 +35,9 @@ where
     }
 }
 
-impl<I: Iterable> ExactSizeIterator
-for
-    Iter<I>
+impl<I: Iterable> ExactSizeIterator for Iter<I>
 where
-    I::Iter: ExactSizeIterator
+    I::Iter: ExactSizeIterator,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -50,9 +45,4 @@ where
     }
 }
 
-impl<I: Iterable> FusedIterator
-for
-    Iter<I>
-where
-    I::Iter: FusedIterator
-{}
+impl<I: Iterable> FusedIterator for Iter<I> where I::Iter: FusedIterator {}

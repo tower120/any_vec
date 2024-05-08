@@ -1,57 +1,63 @@
 mod utils;
 
-use std::time::{Duration, Instant};
-use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::AnyVec;
 use crate::utils::bench_custom;
+use any_vec::AnyVec;
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::time::{Duration, Instant};
 
 const SIZE: usize = 10000;
 
 type Element = String;
 static VALUE: Element = String::new();
 
-trait Impl{
-    fn index(i:usize) -> usize;
+trait Impl {
+    fn index(i: usize) -> usize;
 
     fn vec_remove() -> Duration {
         let mut vec = Vec::new();
-        for _ in 0..SIZE{
+        for _ in 0..SIZE {
             vec.push(VALUE.clone());
         }
 
         let start = Instant::now();
-            for i in (0..SIZE).rev(){
-                vec.remove(Self::index(i));
-            }
+        for i in (0..SIZE).rev() {
+            vec.remove(Self::index(i));
+        }
         start.elapsed()
     }
 
     fn any_vec_remove() -> Duration {
         let mut any_vec: AnyVec = AnyVec::new::<Element>();
-        for _ in 0..SIZE{
-            any_vec.downcast_mut::<Element>().unwrap()
+        for _ in 0..SIZE {
+            any_vec
+                .downcast_mut::<Element>()
+                .unwrap()
                 .push(VALUE.clone());
         }
 
         let start = Instant::now();
-            for i in (0..SIZE).rev(){
-                any_vec.remove(Self::index(i));
-            }
+        for i in (0..SIZE).rev() {
+            any_vec.remove(Self::index(i));
+        }
         start.elapsed()
     }
 
     fn any_vec_typed_remove() -> Duration {
         let mut any_vec: AnyVec = AnyVec::new::<Element>();
-        for _ in 0..SIZE{
-            any_vec.downcast_mut::<Element>().unwrap()
+        for _ in 0..SIZE {
+            any_vec
+                .downcast_mut::<Element>()
+                .unwrap()
                 .push(VALUE.clone());
         }
 
         let start = Instant::now();
-            for i in (0..SIZE).rev(){
-                any_vec.downcast_mut::<Element>().unwrap()
-                    .remove(Self::index(i));
-            }
+        for i in (0..SIZE).rev() {
+            any_vec
+                .downcast_mut::<Element>()
+                .unwrap()
+                .remove(Self::index(i));
+        }
         start.elapsed()
     }
 }
@@ -59,13 +65,17 @@ trait Impl{
 struct Front;
 impl Impl for Front {
     #[inline]
-    fn index(_: usize) -> usize { 0 }
+    fn index(_: usize) -> usize {
+        0
+    }
 }
 
 struct Back;
 impl Impl for Back {
     #[inline]
-    fn index(i: usize) -> usize { i }
+    fn index(i: usize) -> usize {
+        i
+    }
 }
 
 pub fn bench_remove(c: &mut Criterion) {

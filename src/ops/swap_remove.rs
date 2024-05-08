@@ -1,34 +1,39 @@
+use crate::any_value::Unknown;
+use crate::any_vec_ptr::utils::{element_mut_ptr_at, element_ptr_at};
+use crate::any_vec_ptr::IAnyVecRawPtr;
+use crate::any_vec_raw::AnyVecRaw;
+use crate::copy_bytes_nonoverlapping;
+use crate::ops::temp::Operation;
 use std::marker::PhantomData;
 use std::ptr;
-use crate::copy_bytes_nonoverlapping;
-use crate::any_value::Unknown;
-use crate::any_vec_ptr::IAnyVecRawPtr;
-use crate::any_vec_ptr::utils::{element_mut_ptr_at, element_ptr_at};
-use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::temp::Operation;
 
-pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr>{
+pub struct SwapRemove<'a, AnyVecPtr: IAnyVecRawPtr> {
     any_vec_ptr: AnyVecPtr,
     element: *mut u8,
     last_index: usize,
     phantom: PhantomData<&'a mut AnyVecRaw<AnyVecPtr::M>>,
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> SwapRemove<'a, AnyVecPtr> {
     #[inline]
-    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr, index: usize) -> Self{
-        let element = unsafe{ element_mut_ptr_at(any_vec_ptr, index) };
+    pub(crate) fn new(mut any_vec_ptr: AnyVecPtr, index: usize) -> Self {
+        let element = unsafe { element_mut_ptr_at(any_vec_ptr, index) };
 
         // 1. mem::forget and element drop panic "safety".
-        let any_vec_raw = unsafe{ any_vec_ptr.any_vec_raw_mut() };
+        let any_vec_raw = unsafe { any_vec_ptr.any_vec_raw_mut() };
         let last_index = any_vec_raw.len - 1;
         any_vec_raw.len = index;
 
-        Self{ any_vec_ptr, element, last_index, phantom: PhantomData }
+        Self {
+            any_vec_ptr,
+            element,
+            last_index,
+            phantom: PhantomData,
+        }
     }
 }
 
-impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
+impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr> {
     type AnyVecPtr = AnyVecPtr;
 
     #[inline]
@@ -43,29 +48,29 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr> Operation for SwapRemove<'a, AnyVecPtr>{
 
     #[inline]
     fn consume(&mut self) {
-    unsafe{
-        // 2. overwrite with last element
-        let last_element = element_ptr_at(self.any_vec_ptr, self.last_index);
-        let any_vec_raw = self.any_vec_ptr.any_vec_raw_mut();
+        unsafe {
+            // 2. overwrite with last element
+            let last_element = element_ptr_at(self.any_vec_ptr, self.last_index);
+            let any_vec_raw = self.any_vec_ptr.any_vec_raw_mut();
 
-        if self.element as *const u8 != last_element {
-            if !Unknown::is::<AnyVecPtr::Element>() {
-                ptr::copy_nonoverlapping(
-                    last_element as *const AnyVecPtr::Element,
-                    self.element as *mut AnyVecPtr::Element,
-                    1
-                );
-            } else {
-                copy_bytes_nonoverlapping(
-                    last_element,
-                    self.element,
-                    any_vec_raw.element_layout().size()
-                );
+            if self.element as *const u8 != last_element {
+                if !Unknown::is::<AnyVecPtr::Element>() {
+                    ptr::copy_nonoverlapping(
+                        last_element as *const AnyVecPtr::Element,
+                        self.element as *mut AnyVecPtr::Element,
+                        1,
+                    );
+                } else {
+                    copy_bytes_nonoverlapping(
+                        last_element,
+                        self.element,
+                        any_vec_raw.element_layout().size(),
+                    );
+                }
             }
-        }
 
-        // 3. shrink len `self.any_vec.len -= 1`
-        any_vec_raw.len = self.last_index;
-    }
+            // 3. shrink len `self.any_vec.len -= 1`
+            any_vec_raw.len = self.last_index;
+        }
     }
 }

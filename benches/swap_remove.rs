@@ -1,9 +1,9 @@
 mod utils;
 
-use std::time::{Duration, Instant};
-use criterion::{criterion_group, criterion_main, Criterion};
-use any_vec::AnyVec;
 use crate::utils::bench_custom;
+use any_vec::AnyVec;
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::time::{Duration, Instant};
 
 const SIZE: usize = 10000;
 
@@ -12,43 +12,46 @@ static VALUE: Element = String::new();
 
 fn vec_swap_remove() -> Duration {
     let mut vec = Vec::new();
-    for _ in 0..SIZE{
+    for _ in 0..SIZE {
         vec.push(VALUE.clone());
     }
 
     let start = Instant::now();
-        for _ in 0..SIZE{
-            vec.swap_remove(0);
-        }
+    for _ in 0..SIZE {
+        vec.swap_remove(0);
+    }
     start.elapsed()
 }
 
 fn any_vec_swap_remove() -> Duration {
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
+    for _ in 0..SIZE {
+        any_vec
+            .downcast_mut::<Element>()
+            .unwrap()
             .push(VALUE.clone());
     }
 
     let start = Instant::now();
-        for _ in 0..SIZE{
-            any_vec.swap_remove(0);
-        }
+    for _ in 0..SIZE {
+        any_vec.swap_remove(0);
+    }
     start.elapsed()
 }
 
 fn any_vec_typed_swap_remove() -> Duration {
     let mut any_vec: AnyVec = AnyVec::new::<Element>();
-    for _ in 0..SIZE{
-        any_vec.downcast_mut::<Element>().unwrap()
+    for _ in 0..SIZE {
+        any_vec
+            .downcast_mut::<Element>()
+            .unwrap()
             .push(VALUE.clone());
     }
 
     let start = Instant::now();
-        for _ in 0..SIZE{
-            any_vec.downcast_mut::<Element>().unwrap()
-                .swap_remove(0);
-        }
+    for _ in 0..SIZE {
+        any_vec.downcast_mut::<Element>().unwrap().swap_remove(0);
+    }
     start.elapsed()
 }
 

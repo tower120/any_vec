@@ -1,12 +1,12 @@
+mod empty;
 mod heap;
 mod stack;
 mod stack_n;
-mod empty;
 
+pub use empty::Empty;
 pub use heap::Heap;
 pub use stack::Stack;
 pub use stack_n::StackN;
-pub use empty::Empty;
 
 pub(crate) type Default = Heap;
 
@@ -29,7 +29,7 @@ pub trait MemBuilder: Clone {
 /// This allows to use [`AnyVec::with_capacity`] with it.
 ///
 /// [`AnyVec::with_capacity`]: crate::AnyVec::with_capacity
-pub trait MemBuilderSizeable: MemBuilder{
+pub trait MemBuilderSizeable: MemBuilder {
     fn build_with_size(&mut self, element_layout: Layout, capacity: usize) -> Self::Mem;
 }
 
@@ -42,7 +42,7 @@ pub trait MemBuilderSizeable: MemBuilder{
 /// to be resizable._
 ///
 /// [`AnyVec`]: crate::AnyVec
-pub trait Mem{
+pub trait Mem {
     fn as_ptr(&self) -> *const u8;
 
     fn as_mut_ptr(&mut self) -> *mut u8;
@@ -67,7 +67,7 @@ pub trait Mem{
     /// # Panics
     ///
     /// Implementation may panic, if fail to allocate/reallocate memory.
-    fn expand(&mut self, additional: usize){
+    fn expand(&mut self, additional: usize) {
         let _ = additional;
         panic!("Can't change capacity!");
 
@@ -80,14 +80,14 @@ pub trait Mem{
 /// Resizable [`Mem`].
 ///
 /// Implemented by [`Heap::Mem`].
-pub trait MemResizable: Mem{
+pub trait MemResizable: Mem {
     /// Expand `Mem` size for **exactly** `additional` more elements.
     /// Implementation encouraged to be as precise as possible with new memory size.
     ///
     /// # Panics
     ///
     /// Implementation may panic, if fail to allocate/reallocate memory.
-    fn expand_exact(&mut self, additional: usize){
+    fn expand_exact(&mut self, additional: usize) {
         self.resize(self.size() + additional);
     }
 
@@ -102,7 +102,7 @@ pub trait MemResizable: Mem{
 /// [`Mem`] destructurable into raw parts.
 ///
 /// Implemented by [`Heap::Mem`], [`Empty::Mem`].
-pub trait MemRawParts: Mem{
+pub trait MemRawParts: Mem {
     type Handle;
 
     fn into_raw_parts(self) -> (Self::Handle, Layout, usize);
@@ -110,7 +110,7 @@ pub trait MemRawParts: Mem{
 }
 
 #[inline]
-const fn dangling(layout: &Layout) -> NonNull<u8>{
+const fn dangling(layout: &Layout) -> NonNull<u8> {
     #[cfg(miri)]
     {
         layout.dangling()

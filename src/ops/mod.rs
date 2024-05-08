@@ -4,16 +4,16 @@
 //!
 //! [AnyVec]: crate::AnyVec
 
-mod temp;
-mod iter;
-pub(crate) mod swap_remove;
-pub(crate) mod remove;
 pub(crate) mod drain;
-pub(crate) mod splice;
+mod iter;
 pub(crate) mod pop;
+pub(crate) mod remove;
+pub(crate) mod splice;
+pub(crate) mod swap_remove;
+mod temp;
 
-pub use temp::TempValue;
 pub use iter::Iter;
+pub use temp::TempValue;
 
 use crate::any_vec_ptr::AnyVecPtr;
 

@@ -1,10 +1,13 @@
+use crate::any_value::Unknown;
+use crate::any_value::{
+    AnyValue, AnyValueMut, AnyValueSizeless, AnyValueSizelessMut, AnyValueTypeless,
+    AnyValueTypelessMut,
+};
 use std::any::TypeId;
 use std::ptr::NonNull;
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
-use crate::any_value::Unknown;
 
 /// [AnyValueSizeless] non-owning byte ptr wrapper, that knows nothing about it's type.
-/// 
+///
 /// Source should be forgotten, before pushing to [AnyVec].
 /// Contained value **WILL NOT** be dropped on wrapper drop.
 ///
@@ -30,13 +33,13 @@ use crate::any_value::Unknown;
 ///
 /// [AnyVec]: crate::AnyVec
 pub struct AnyValueSizelessRaw {
-    ptr: NonNull<u8>
+    ptr: NonNull<u8>,
 }
 
 impl AnyValueSizelessRaw {
     #[inline]
-    pub unsafe fn new(ptr: NonNull<u8>) -> Self{
-        Self{ptr}
+    pub unsafe fn new(ptr: NonNull<u8>) -> Self {
+        Self { ptr }
     }
 }
 impl AnyValueSizeless for AnyValueSizelessRaw {
@@ -55,7 +58,7 @@ impl AnyValueSizelessMut for AnyValueSizelessRaw {
 }
 
 /// [AnyValueTypeless] byte ptr wrapper, that know it's type size.
-/// 
+///
 /// Source should be forgotten, before pushing to [AnyVec].
 /// Contained value **WILL NOT** be dropped on wrapper drop.
 ///
@@ -88,8 +91,8 @@ pub struct AnyValueTypelessRaw {
 
 impl AnyValueTypelessRaw {
     #[inline]
-    pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self{
-        Self{ptr, size}
+    pub unsafe fn new(ptr: NonNull<u8>, size: usize) -> Self {
+        Self { ptr, size }
     }
 }
 
@@ -115,9 +118,8 @@ impl AnyValueTypeless for AnyValueTypelessRaw {
 }
 impl AnyValueTypelessMut for AnyValueTypelessRaw {}
 
-
 /// [AnyValue] byte ptr wrapper, that know it's type.
-/// 
+///
 /// Source should be forgotten, before pushing to [AnyVec].
 /// Contained value **WILL NOT** be dropped on wrapper drop.
 ///
@@ -146,15 +148,15 @@ impl AnyValueTypelessMut for AnyValueTypelessRaw {}
 /// [AnyVec]: crate::AnyVec
 pub struct AnyValueRaw {
     raw_unsafe: AnyValueTypelessRaw,
-    typeid: TypeId
+    typeid: TypeId,
 }
 
 impl AnyValueRaw {
     #[inline]
-    pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self{
-        Self{
+    pub unsafe fn new(ptr: NonNull<u8>, size: usize, typeid: TypeId) -> Self {
+        Self {
             raw_unsafe: AnyValueTypelessRaw::new(ptr, size),
-            typeid
+            typeid,
         }
     }
 }
@@ -167,7 +169,7 @@ impl AnyValueSizeless for AnyValueRaw {
         self.raw_unsafe.ptr.as_ptr()
     }
 }
-impl AnyValueSizelessMut   for AnyValueRaw {
+impl AnyValueSizelessMut for AnyValueRaw {
     #[inline]
     fn as_bytes_mut_ptr(&mut self) -> *mut u8 {
         self.raw_unsafe.ptr.as_ptr()

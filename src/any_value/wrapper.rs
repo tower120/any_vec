@@ -1,20 +1,23 @@
+use crate::any_value::{
+    AnyValue, AnyValueMut, AnyValueSizeless, AnyValueSizelessMut, AnyValueTypeless,
+    AnyValueTypelessMut,
+};
 use std::any::TypeId;
 use std::mem::size_of;
-use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 
 /// Helper struct to convert concrete type to [`AnyValueMut`].
-/// 
+///
 /// Unlike [AnyValueRaw] this one owns underlying value. So, its not
 /// special in any way.
-/// 
+///
 /// [AnyValueRaw]: super::AnyValueRaw
-pub struct AnyValueWrapper<T: 'static>{
-    value: T
+pub struct AnyValueWrapper<T: 'static> {
+    value: T,
 }
 impl<T: 'static> AnyValueWrapper<T> {
     #[inline]
-    pub fn new(value: T) -> Self{
-        Self{ value }
+    pub fn new(value: T) -> Self {
+        Self { value }
     }
 }
 

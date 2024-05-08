@@ -1,13 +1,13 @@
-use std::any::TypeId;
-use itertools::{assert_equal};
 use any_vec::any_value::{AnyValue, AnyValueCloneable, LazyClone};
-use any_vec::AnyVec;
 use any_vec::element::ElementReference;
 use any_vec::mem::{MemBuilder, Stack};
 use any_vec::traits::{Cloneable, Trait};
+use any_vec::AnyVec;
+use itertools::assert_equal;
+use std::any::TypeId;
 
 #[test]
-fn lazy_clone_test(){
+fn lazy_clone_test() {
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
@@ -28,16 +28,16 @@ fn lazy_clone_test(){
 
     assert_equal(
         any_vec.downcast_ref::<String>().unwrap().as_slice(),
-        &[String::from("0"), String::from("2")]
+        &[String::from("0"), String::from("2")],
     );
     assert_equal(
         any_vec_other.downcast_ref::<String>().unwrap().as_slice(),
-        &[String::from("1"), String::from("1")]
+        &[String::from("1"), String::from("1")],
     );
 }
 
 #[test]
-fn any_vec_get_test(){
+fn any_vec_get_test() {
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     assert_eq!(any_vec.element_typeid(), TypeId::of::<String>());
     {
@@ -64,18 +64,30 @@ fn any_vec_get_test(){
 
     // Mutability test
     {
-        let e = any_vec.downcast_mut::<String>().unwrap().as_mut_slice().get_mut(1).unwrap();
+        let e = any_vec
+            .downcast_mut::<String>()
+            .unwrap()
+            .as_mut_slice()
+            .get_mut(1)
+            .unwrap();
         *e += "A";
 
-        let str = any_vec.get_mut(1).unwrap().downcast_mut::<String>().unwrap();
+        let str = any_vec
+            .get_mut(1)
+            .unwrap()
+            .downcast_mut::<String>()
+            .unwrap();
         *str += "B";
 
-        assert_eq!(any_vec.get(1).unwrap().downcast_ref::<String>().unwrap(), &String::from("1AB"));
+        assert_eq!(
+            any_vec.get(1).unwrap().downcast_ref::<String>().unwrap(),
+            &String::from("1AB")
+        );
     }
 }
 
 #[test]
-fn any_vec_iter_test(){
+fn any_vec_iter_test() {
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
@@ -85,26 +97,30 @@ fn any_vec_iter_test(){
     }
 
     assert_equal(
-        any_vec.iter().map(|e|e.downcast_ref::<String>().unwrap()),
-        any_vec.downcast_ref::<String>().unwrap().as_slice()
+        any_vec.iter().map(|e| e.downcast_ref::<String>().unwrap()),
+        any_vec.downcast_ref::<String>().unwrap().as_slice(),
     );
 
     let mut any_vec2 = any_vec.clone_empty();
-    for e in any_vec.iter(){
+    for e in any_vec.iter() {
         any_vec2.push(e.lazy_clone());
     }
 
     assert_equal(
         any_vec.downcast_ref::<String>().unwrap().as_slice(),
-        any_vec2.downcast_ref::<String>().unwrap().as_slice()
+        any_vec2.downcast_ref::<String>().unwrap().as_slice(),
     );
 
-    for mut e in any_vec2.iter_mut(){
+    for mut e in any_vec2.iter_mut() {
         *e.downcast_mut::<String>().unwrap() = String::from("100");
     }
     assert_equal(
         any_vec2.downcast_ref::<String>().unwrap().as_slice(),
-        &[String::from("100"), String::from("100"), String::from("100")]
+        &[
+            String::from("100"),
+            String::from("100"),
+            String::from("100"),
+        ],
     );
 
     // test ElementRef cloneability
@@ -125,7 +141,7 @@ fn any_vec_iter_test(){
 }
 
 #[test]
-fn any_vec_iter_clone_test(){
+fn any_vec_iter_clone_test() {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     {
         let mut vec = any_vec.downcast_mut::<usize>().unwrap();
@@ -134,16 +150,20 @@ fn any_vec_iter_clone_test(){
         vec.push(100);
     }
 
-    fn into_usize<'a, T: ?Sized + Trait, M: MemBuilder + 'a>(e: impl ElementReference<'a, T, M>) -> &'a usize
-    {
+    fn into_usize<'a, T: ?Sized + Trait, M: MemBuilder + 'a>(
+        e: impl ElementReference<'a, T, M>,
+    ) -> &'a usize {
         e.downcast_ref::<usize>().unwrap()
     }
     assert_eq!(any_vec.iter().clone().map(into_usize).sum::<usize>(), 111);
-    assert_eq!(any_vec.iter_mut().clone().map(into_usize).sum::<usize>(), 111);
+    assert_eq!(
+        any_vec.iter_mut().clone().map(into_usize).sum::<usize>(),
+        111
+    );
 }
 
 #[test]
-fn any_vec_push_to_self_test(){
+fn any_vec_push_to_self_test() {
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
@@ -167,13 +187,13 @@ fn any_vec_push_to_self_test(){
             String::from("1"),
             String::from("2"),
             String::from("1"),
-            String::from("1")
-        ]
+            String::from("1"),
+        ],
     );
 }
 
 #[test]
-fn any_vec_double_ended_iterator_test(){
+fn any_vec_double_ended_iterator_test() {
     let mut any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
     {
         let mut vec = any_vec.downcast_mut::<String>().unwrap();
@@ -183,11 +203,10 @@ fn any_vec_double_ended_iterator_test(){
     }
 
     assert_equal(
-        any_vec.iter().rev().map(|e|e.downcast_ref::<String>().unwrap()),
-        [
-            String::from("2"),
-            String::from("1"),
-            String::from("0"),
-        ].iter()
+        any_vec
+            .iter()
+            .rev()
+            .map(|e| e.downcast_ref::<String>().unwrap()),
+        [String::from("2"), String::from("1"), String::from("0")].iter(),
     );
 }

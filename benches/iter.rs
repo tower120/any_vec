@@ -1,50 +1,50 @@
 mod utils;
 
-use std::time::{Duration, Instant};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use any_vec::AnyVec;
 use crate::utils::bench_custom;
+use any_vec::AnyVec;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::time::{Duration, Instant};
 
 const SIZE: usize = 10000;
 
 fn vec_iter() -> Duration {
     let mut vec = Vec::new();
-    for i in 0..SIZE{
+    for i in 0..SIZE {
         vec.push(i);
     }
 
     let start = Instant::now();
-        let sum: usize = vec.iter().sum();
-        black_box(sum);
+    let sum: usize = vec.iter().sum();
+    black_box(sum);
     start.elapsed()
 }
 
 fn any_vec_typed_iter() -> Duration {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut any_vec_typed = any_vec.downcast_mut::<usize>().unwrap();
-    for i in 0..SIZE{
+    for i in 0..SIZE {
         any_vec_typed.push(i);
     }
 
     let start = Instant::now();
-        let sum: usize = any_vec_typed.iter().sum();
-        black_box(sum);
+    let sum: usize = any_vec_typed.iter().sum();
+    black_box(sum);
     start.elapsed()
 }
 
 fn any_vec_iter() -> Duration {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
-    for i in 0..SIZE{
-        any_vec.downcast_mut::<usize>().unwrap()
-            .push(i);
+    for i in 0..SIZE {
+        any_vec.downcast_mut::<usize>().unwrap().push(i);
     }
 
     let start = Instant::now();
-        let sum: usize = any_vec.iter()
-            //.map(|e|e.downcast_ref().unwrap())
-            .map(|e|unsafe{e.downcast_ref_unchecked()})
-            .sum();
-        black_box(sum);
+    let sum: usize = any_vec
+        .iter()
+        //.map(|e|e.downcast_ref().unwrap())
+        .map(|e| unsafe { e.downcast_ref_unchecked() })
+        .sum();
+    black_box(sum);
     start.elapsed()
 }
 

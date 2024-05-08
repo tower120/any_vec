@@ -1,6 +1,6 @@
+use crate::mem::{Mem, MemBuilder};
 use std::alloc::Layout;
 use std::mem::MaybeUninit;
-use crate::mem::{Mem, MemBuilder};
 
 /// Fixed `SIZE` capacity on-stack memory.
 ///
@@ -12,33 +12,32 @@ use crate::mem::{Mem, MemBuilder};
 /// [`StackN`]: super::StackN
 #[derive(Default, Clone, Copy)]
 pub struct Stack<const SIZE: usize>;
-impl<const SIZE: usize> MemBuilder for Stack<SIZE>{
+impl<const SIZE: usize> MemBuilder for Stack<SIZE> {
     type Mem = StackMem<SIZE>;
 
     #[inline]
     fn build(&mut self, element_layout: Layout) -> StackMem<SIZE> {
-        let size =
-            if element_layout.size() == 0{
-                usize::MAX
-            } else{
-                SIZE / element_layout.size()
-            };
+        let size = if element_layout.size() == 0 {
+            usize::MAX
+        } else {
+            SIZE / element_layout.size()
+        };
 
-        StackMem{
+        StackMem {
             mem: MaybeUninit::uninit(),
             element_layout,
-            size
+            size,
         }
     }
 }
 
-pub struct StackMem<const SIZE: usize>{
+pub struct StackMem<const SIZE: usize> {
     mem: MaybeUninit<[u8; SIZE]>,
     element_layout: Layout,
-    size: usize
+    size: usize,
 }
 
-impl<const SIZE: usize> Mem for StackMem<SIZE>{
+impl<const SIZE: usize> Mem for StackMem<SIZE> {
     #[inline]
     fn as_ptr(&self) -> *const u8 {
         self.mem.as_ptr() as *const u8

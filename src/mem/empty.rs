@@ -1,5 +1,5 @@
-use std::alloc::Layout;
 use crate::mem::{dangling, Mem, MemBuilder, MemRawParts};
+use std::alloc::Layout;
 
 /// Zero-size memory.
 ///
@@ -8,7 +8,7 @@ use crate::mem::{dangling, Mem, MemBuilder, MemRawParts};
 /// [`RawParts`]: crate::RawParts
 #[derive(Default, Clone, Copy)]
 pub struct Empty;
-impl MemBuilder for Empty{
+impl MemBuilder for Empty {
     /// Implements [`MemRawParts`].
     type Mem = EmptyMem;
 
@@ -18,11 +18,11 @@ impl MemBuilder for Empty{
     }
 }
 
-pub struct EmptyMem{
-    element_layout: Layout
+pub struct EmptyMem {
+    element_layout: Layout,
 }
 
-impl Mem for EmptyMem{
+impl Mem for EmptyMem {
     #[inline]
     fn as_ptr(&self) -> *const u8 {
         dangling(&self.element_layout).as_ptr()
@@ -44,7 +44,7 @@ impl Mem for EmptyMem{
     }
 }
 
-impl MemRawParts for EmptyMem{
+impl MemRawParts for EmptyMem {
     type Handle = ();
 
     #[inline]
@@ -56,8 +56,6 @@ impl MemRawParts for EmptyMem{
     #[inline]
     unsafe fn from_raw_parts(_: Self::Handle, element_layout: Layout, size: usize) -> Self {
         debug_assert!(size == 0);
-        Self{
-            element_layout
-        }
+        Self { element_layout }
     }
 }

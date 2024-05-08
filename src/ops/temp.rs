@@ -1,10 +1,13 @@
+use crate::any_value::{
+    copy_bytes, AnyValue, AnyValueCloneable, AnyValueMut, AnyValueSizeless, AnyValueSizelessMut,
+    AnyValueTypeless, AnyValueTypelessMut, Unknown,
+};
+use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
+use crate::any_vec_raw::AnyVecRaw;
+use crate::traits::Cloneable;
+use crate::AnyVec;
 use std::any::TypeId;
 use std::{mem, ptr};
-use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, Unknown, AnyValueSizeless, copy_bytes, AnyValueSizelessMut};
-use crate::any_vec_raw::AnyVecRaw;
-use crate::any_vec_ptr::{IAnyVecPtr, IAnyVecRawPtr};
-use crate::AnyVec;
-use crate::traits::Cloneable;
 
 pub trait Operation {
     type AnyVecPtr: IAnyVecRawPtr;
@@ -24,25 +27,25 @@ pub trait Operation {
 ///
 /// May do some postponed actions on consumption/destruction.
 ///
-pub struct TempValue<Op: Operation>{
+pub struct TempValue<Op: Operation> {
     op: Op,
 }
-impl<Op: Operation> TempValue<Op>{
+impl<Op: Operation> TempValue<Op> {
     #[inline]
     pub(crate) fn new(op: Op) -> Self {
-        Self{op}
+        Self { op }
     }
 
     #[inline]
-    fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M>{
-        unsafe{ self.op.any_vec_ptr().any_vec_raw() }
+    fn any_vec_raw(&self) -> &AnyVecRaw<<Op::AnyVecPtr as IAnyVecRawPtr>::M> {
+        unsafe { self.op.any_vec_ptr().any_vec_raw() }
     }
 
     #[inline]
-    fn bytes_len(&self) -> usize{
+    fn bytes_len(&self) -> usize {
         if Unknown::is::<<Op::AnyVecPtr as IAnyVecRawPtr>::Element>() {
             self.any_vec_raw().element_layout().size()
-        } else{
+        } else {
             mem::size_of::<<Op::AnyVecPtr as IAnyVecRawPtr>::Element>()
         }
     }
@@ -57,7 +60,11 @@ impl<Op: Operation> AnyValueSizeless for TempValue<Op> {
     }
 
     #[inline]
-    unsafe fn move_into<KnownType:'static /*= Unknown*/>(mut self, out: *mut u8, bytes_size: usize) {
+    unsafe fn move_into<KnownType: 'static /*= Unknown*/>(
+        mut self,
+        out: *mut u8,
+        bytes_size: usize,
+    ) {
         copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         self.op.consume();
         mem::forget(self);
@@ -70,17 +77,17 @@ impl<Op: Operation> AnyValueSizelessMut for TempValue<Op> {
         self.op.bytes() as *mut u8
     }
 }
-impl<Op: Operation> AnyValueTypeless for TempValue<Op>{
+impl<Op: Operation> AnyValueTypeless for TempValue<Op> {
     #[inline]
     fn size(&self) -> usize {
         self.bytes_len()
     }
 }
-impl<Op: Operation> AnyValue for TempValue<Op>{
+impl<Op: Operation> AnyValue for TempValue<Op> {
     #[inline]
     fn value_typeid(&self) -> TypeId {
         let typeid = TypeId::of::<Self::Type>();
-        if typeid == TypeId::of::<Unknown>(){
+        if typeid == TypeId::of::<Unknown>() {
             self.any_vec_raw().type_id
         } else {
             typeid
@@ -94,7 +101,7 @@ impl<Op: Operation> AnyValueMut for TempValue<Op> {}
 impl<Op: Operation> AnyValueCloneable for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Cloneable
+    <Op::AnyVecPtr as IAnyVecPtr>::Traits: Cloneable,
 {
     #[inline]
     unsafe fn clone_into(&self, out: *mut u8) {
@@ -103,16 +110,16 @@ where
     }
 }
 
-impl<Op: Operation> Drop for TempValue<Op>{
+impl<Op: Operation> Drop for TempValue<Op> {
     #[inline]
     fn drop(&mut self) {
-        unsafe{
+        unsafe {
             let drop_fn = self.any_vec_raw().drop_fn;
             let element = self.op.bytes() as *mut u8;
 
             // compile-time check
             if Unknown::is::<<Self as AnyValueSizeless>::Type>() {
-                if let Some(drop_fn) = drop_fn{
+                if let Some(drop_fn) = drop_fn {
                     (drop_fn)(element, 1);
                 }
             } else {
@@ -126,17 +133,13 @@ impl<Op: Operation> Drop for TempValue<Op>{
 unsafe impl<Op: Operation> Send for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    AnyVec<
-        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
-        <Op::AnyVecPtr as IAnyVecRawPtr>::M
-    >: Send
-{}
+    AnyVec<<Op::AnyVecPtr as IAnyVecPtr>::Traits, <Op::AnyVecPtr as IAnyVecRawPtr>::M>: Send,
+{
+}
 
 unsafe impl<Op: Operation> Sync for TempValue<Op>
 where
     Op::AnyVecPtr: IAnyVecPtr,
-    AnyVec<
-        <Op::AnyVecPtr as IAnyVecPtr>::Traits,
-        <Op::AnyVecPtr as IAnyVecRawPtr>::M
-    >: Sync
-{}
+    AnyVec<<Op::AnyVecPtr as IAnyVecPtr>::Traits, <Op::AnyVecPtr as IAnyVecRawPtr>::M>: Sync,
+{
+}

@@ -1,10 +1,10 @@
-use std::mem::size_of_val;
-use itertools::assert_equal;
-use any_vec::{AnyVec, SatisfyTraits};
 use any_vec::traits::*;
+use any_vec::{AnyVec, SatisfyTraits};
+use itertools::assert_equal;
+use std::mem::size_of_val;
 
 #[test]
-pub fn test_default(){
+pub fn test_default() {
     let _any_vec: AnyVec = AnyVec::new::<String>();
     // should not compile
     //fn t(_: impl Sync){}
@@ -12,16 +12,17 @@ pub fn test_default(){
 }
 
 #[test]
-pub fn test_sync(){
+pub fn test_sync() {
     let any_vec: AnyVec<dyn Cloneable + Sync + Send> = AnyVec::new::<String>();
-    fn t(_: impl Sync){}
+    fn t(_: impl Sync) {}
     t(any_vec);
 }
 
 #[test]
-pub fn test_clone(){
+pub fn test_clone() {
     fn do_test<Traits: ?Sized + Cloneable + Trait>()
-        where String: SatisfyTraits<Traits>
+    where
+        String: SatisfyTraits<Traits>,
     {
         let mut any_vec: AnyVec<Traits> = AnyVec::new::<String>();
         {
@@ -34,7 +35,7 @@ pub fn test_clone(){
         let any_vec2 = any_vec.clone();
         assert_equal(
             any_vec.downcast_ref::<String>().unwrap().as_slice(),
-            any_vec2.downcast_ref::<String>().unwrap().as_slice()
+            any_vec2.downcast_ref::<String>().unwrap().as_slice(),
         );
     }
 
@@ -45,9 +46,9 @@ pub fn test_clone(){
 }
 
 #[test]
-pub fn type_check_test(){
-    fn fn_send(_: &impl Send){}
-    fn fn_sync(_: &impl Sync){}
+pub fn type_check_test() {
+    fn fn_send(_: &impl Send) {}
+    fn fn_sync(_: &impl Sync) {}
 
     {
         let any_vec: AnyVec<dyn Cloneable> = AnyVec::new::<String>();
@@ -82,7 +83,7 @@ pub fn type_check_fail_test(){
 }*/
 
 #[test]
-fn any_vec_cloneable_zst_test(){
+fn any_vec_cloneable_zst_test() {
     let v1: AnyVec<dyn Cloneable> = AnyVec::new::<usize>();
     let v2: AnyVec<dyn Sync> = AnyVec::new::<usize>();
 

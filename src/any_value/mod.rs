@@ -1,6 +1,6 @@
 //! AnyValue is concept of type-erased object, that
 //! can be moved around without type knowledge.
-//! 
+//!
 //! With default trait implementation, all "consume" operations
 //! boils down to [move_into]. By redefining [move_into] and [Drop][^1] behavior -
 //! you can have some additional logic on AnyValue consumption.
@@ -9,45 +9,45 @@
 //! [AnyValueSizeless] -> [AnyValueTypeless] -> [AnyValue]
 //!
 //! # Usage
-//! 
+//!
 //! Some [AnyVec] operations will accept and return [AnyValue].
 //! This allows to move data between [AnyVec]s in
 //! fast, safe, type erased way.
 //!
 //! [^1]: AnyValue could have blanket implementation for Drop as well,
 //!       but that is unstable Rust now.
-//! 
+//!
 //! [AnyVec]: crate::AnyVec
 //! [move_into]: AnyValueSizeless::move_into
 
-mod wrapper;
-mod raw;
 mod lazy_clone;
+mod raw;
+mod wrapper;
 
 pub use lazy_clone::LazyClone;
+pub use raw::{AnyValueRaw, AnyValueSizelessRaw, AnyValueTypelessRaw};
 pub use wrapper::AnyValueWrapper;
-pub use raw::{AnyValueRaw, AnyValueTypelessRaw, AnyValueSizelessRaw};
 
-use std::any::TypeId;
-use std::{mem, ptr};
-use std::mem::{MaybeUninit, size_of};
 use crate::{copy_bytes_nonoverlapping, swap_bytes_nonoverlapping};
+use std::any::TypeId;
+use std::mem::{size_of, MaybeUninit};
+use std::{mem, ptr};
 
 /// Marker for unknown type.
 pub struct Unknown;
 impl Unknown {
     #[inline]
-    pub fn is<T:'static>() -> bool {
+    pub fn is<T: 'static>() -> bool {
         TypeId::of::<T>() == TypeId::of::<Unknown>()
     }
 }
 
 /// Prelude for traits.
-pub mod traits{
+pub mod traits {
+    pub use super::AnyValueCloneable;
+    pub use super::{AnyValue, AnyValueMut};
     pub use super::{AnyValueSizeless, AnyValueSizelessMut};
     pub use super::{AnyValueTypeless, AnyValueTypelessMut};
-    pub use super::{AnyValue, AnyValueMut};
-    pub use super::AnyValueCloneable;
 }
 
 /// [AnyValue] that doesn't know its size or type, and can provide only object ptr.
@@ -56,19 +56,20 @@ pub trait AnyValueSizeless {
     ///
     /// N.B. This should be in `AnyValueTyped`. It is here due to ergonomic reasons,
     /// since Rust does not have impl specialization.
-    type Type: 'static /*= Unknown*/;
+    type Type: 'static;
 
     /// Aligned address.
     fn as_bytes_ptr(&self) -> *const u8;
 
     #[inline]
-    unsafe fn downcast_ref_unchecked<T>(&self) -> &T{
+    unsafe fn downcast_ref_unchecked<T>(&self) -> &T {
         &*(self.as_bytes_ptr() as *const T)
     }
 
     #[inline]
     unsafe fn downcast_unchecked<T: 'static>(self) -> T
-        where Self: Sized
+    where
+        Self: Sized,
     {
         let mut tmp = MaybeUninit::<T>::uninit();
         self.move_into::<T>(tmp.as_mut_ptr() as *mut u8, size_of::<T>());
@@ -86,12 +87,13 @@ pub trait AnyValueSizeless {
     /// `KnownType` must be correct object type or [Unknown].
     ///
     /// # Helpers
-    /// 
+    ///
     /// Due to Rust limitations in generic department, you may found
     /// useful helpers [move_out] and [move_out_w_size].
     #[inline]
-    unsafe fn move_into<KnownType:'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
-        where Self: Sized
+    unsafe fn move_into<KnownType: 'static /*= Self::Type*/>(self, out: *mut u8, bytes_size: usize)
+    where
+        Self: Sized,
     {
         copy_bytes::<KnownType>(self.as_bytes_ptr(), out, bytes_size);
         mem::forget(self);
@@ -101,7 +103,7 @@ pub trait AnyValueSizeless {
 /// Wrapper for AnyValueTypeless around [move_into].
 ///
 /// You may need this because of Rust's generics limitations.
-/// 
+///
 /// [move_into]: AnyValueSizeless::move_into
 #[inline]
 pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
@@ -116,7 +118,7 @@ pub unsafe fn move_out<T: AnyValueTypeless>(this: T, out: *mut u8) {
 /// N.B. For moving out values of [Unknown] type, of the same size, in tight loops -
 /// this may perform faster then [move_out], since compiler will be
 /// able to optimize better, knowing that all values have the same size.
-/// 
+///
 /// [move_into]: AnyValueSizeless::move_into
 #[inline]
 pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_size: usize) {
@@ -127,11 +129,8 @@ pub unsafe fn move_out_w_size<T: AnyValueSizeless>(this: T, out: *mut u8, bytes_
 pub trait AnyValueTypeless: AnyValueSizeless {
     /// Aligned.
     #[inline]
-    fn as_bytes(&self) -> &[u8]{
-        unsafe{std::slice::from_raw_parts(
-            self.as_bytes_ptr(),
-            self.size()
-        )}
+    fn as_bytes(&self) -> &[u8] {
+        unsafe { std::slice::from_raw_parts(self.as_bytes_ptr(), self.size()) }
     }
 
     /// Aligned.
@@ -139,28 +138,29 @@ pub trait AnyValueTypeless: AnyValueSizeless {
 }
 
 /// Type erased value interface.
-/// 
+///
 /// Know it's type and size, possibly compile-time.
 pub trait AnyValue: AnyValueTypeless {
     fn value_typeid(&self) -> TypeId;
 
     #[inline]
-    fn downcast_ref<T: 'static>(&self) -> Option<&T>{
-        if self.value_typeid() != TypeId::of::<T>(){
+    fn downcast_ref<T: 'static>(&self) -> Option<&T> {
+        if self.value_typeid() != TypeId::of::<T>() {
             None
         } else {
-            Some(unsafe{ self.downcast_ref_unchecked::<T>() })
+            Some(unsafe { self.downcast_ref_unchecked::<T>() })
         }
     }
 
     #[inline]
     fn downcast<T: 'static>(self) -> Option<T>
-        where Self: Sized
+    where
+        Self: Sized,
     {
-        if self.value_typeid() != TypeId::of::<T>(){
+        if self.value_typeid() != TypeId::of::<T>() {
             None
         } else {
-            Some(unsafe{ self.downcast_unchecked::<T>() })
+            Some(unsafe { self.downcast_unchecked::<T>() })
         }
     }
 }
@@ -168,18 +168,14 @@ pub trait AnyValue: AnyValueTypeless {
 /// Helper function, which utilize type knowledge.
 #[inline]
 pub(crate) unsafe fn copy_bytes<KnownType: 'static>(
-    input: *const u8, out: *mut u8, bytes_size: usize
+    input: *const u8,
+    out: *mut u8,
+    bytes_size: usize,
 ) {
     if !Unknown::is::<KnownType>() {
-        ptr::copy_nonoverlapping(
-            input as *const KnownType,
-            out as *mut KnownType,
-            1);
+        ptr::copy_nonoverlapping(input as *const KnownType, out as *mut KnownType, 1);
     } else {
-        copy_bytes_nonoverlapping(
-            input,
-            out,
-            bytes_size);
+        copy_bytes_nonoverlapping(input, out, bytes_size);
     }
 }
 
@@ -190,7 +186,7 @@ pub trait AnyValueSizelessMut: AnyValueSizeless {
     fn as_bytes_mut_ptr(&mut self) -> *mut u8;
 
     #[inline]
-    unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T{
+    unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T {
         &mut *(self.as_bytes_mut_ptr() as *mut T)
     }
 }
@@ -198,32 +194,29 @@ pub trait AnyValueSizelessMut: AnyValueSizeless {
 /// Mutable [AnyValueTypeless].
 pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
     #[inline]
-    fn as_bytes_mut(&mut self) -> &mut [u8]{
-        unsafe{std::slice::from_raw_parts_mut(
-            self.as_bytes_mut_ptr(),
-            self.size()
-        )}
+    fn as_bytes_mut(&mut self) -> &mut [u8] {
+        unsafe { std::slice::from_raw_parts_mut(self.as_bytes_mut_ptr(), self.size()) }
     }
 
     #[inline]
-    unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other){
+    unsafe fn swap_unchecked<Other: AnyValueMut>(&mut self, other: &mut Other) {
         // compile-time check
         if !Unknown::is::<Self::Type>() {
             mem::swap(
                 self.downcast_mut_unchecked::<Self::Type>(),
-                other.downcast_mut_unchecked::<Self::Type>()
+                other.downcast_mut_unchecked::<Self::Type>(),
             );
         } else if !Unknown::is::<Other::Type>() {
             mem::swap(
                 self.downcast_mut_unchecked::<Other::Type>(),
-                other.downcast_mut_unchecked::<Other::Type>()
+                other.downcast_mut_unchecked::<Other::Type>(),
             );
         } else {
             let bytes = self.as_bytes_mut();
             swap_bytes_nonoverlapping(
                 bytes.as_mut_ptr(),
                 other.as_bytes_mut().as_mut_ptr(),
-                bytes.len()
+                bytes.len(),
             );
         }
     }
@@ -232,11 +225,11 @@ pub trait AnyValueTypelessMut: AnyValueTypeless + AnyValueSizelessMut {
 /// Mutable [AnyValue].
 pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
     #[inline]
-    fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T>{
-        if self.value_typeid() != TypeId::of::<T>(){
+    fn downcast_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        if self.value_typeid() != TypeId::of::<T>() {
             None
         } else {
-            Some(unsafe{ self.downcast_mut_unchecked::<T>() })
+            Some(unsafe { self.downcast_mut_unchecked::<T>() })
         }
     }
 
@@ -246,9 +239,9 @@ pub trait AnyValueMut: AnyValueTypelessMut + AnyValue {
     ///
     /// Panics, if type mismatch.
     #[inline]
-    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other){
+    fn swap<Other: AnyValueMut>(&mut self, other: &mut Other) {
         assert_eq!(self.value_typeid(), other.value_typeid());
-        unsafe{
+        unsafe {
             self.swap_unchecked(other);
         }
     }
@@ -260,7 +253,8 @@ pub trait AnyValueCloneable: AnyValueSizeless {
 
     #[inline]
     fn lazy_clone(&self) -> LazyClone<Self>
-        where Self: Sized
+    where
+        Self: Sized,
     {
         LazyClone::new(self)
     }
