@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, dev ]
   pull_request:
@@ -11,65 +12,47 @@ env:
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - name: Build
-      run: RUSTFLAGS="--deny warnings" cargo build
-
-  build-all-features:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - name: Build with all features
-      run: RUSTFLAGS="--deny warnings" cargo build --all-features
+    - uses: actions/checkout@v4
+    - run: RUSTFLAGS="--deny warnings" cargo build
+    - run: RUSTFLAGS="--deny warnings" cargo build --all-features
 
   tests:
+    name: Run careful tests    
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - name: Run tests
-      run: RUSTFLAGS="--deny warnings" cargo test --all-features
+    - uses: dtolnay/rust-toolchain@nightly
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-careful
+    - uses: actions/checkout@v4
+    - run: RUSTFLAGS="--deny warnings" cargo +nightly careful test
+    - run: RUSTFLAGS="--deny warnings" cargo +nightly careful test --all-features
 
   miri:
+    name: Miri tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@nightly
       with:
-          toolchain: nightly
-          components: miri
-    - name: Miri tests
-      run: RUSTFLAGS="--deny warnings" cargo +nightly miri test
+        toolchain: nightly
+        components: miri
+    - uses: actions/checkout@v4
+    - run: RUSTFLAGS="--deny warnings" cargo +nightly miri test
+    - run: RUSTFLAGS="--deny warnings" cargo +nightly miri test --all-features
 
   benches:
+    name: Build benchmarks
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - name: Build benches
-      run: RUSTFLAGS="--deny warnings" cargo build --benches
+    - uses: actions/checkout@v4
+    - run: RUSTFLAGS="--deny warnings" cargo build --benches
 
   doc:
+    name: Build doc
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    #- uses: ATiltedTree/setup-rust@v1
-    #  with:
-    #    rust-version: stable
-    - name: Build doc
-      run: RUSTDOCFLAGS="--deny warnings" cargo doc --lib
+    - uses: actions/checkout@v4
+    - run: RUSTDOCFLAGS="--deny warnings" cargo doc --lib

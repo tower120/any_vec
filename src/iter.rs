@@ -134,34 +134,42 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
 {}
 
 
-// According to https://github.com/rust-lang/rust/issues/93367#issuecomment-1154832012
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Send
+#[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
+unsafe impl<'a, Traits, M, IterItem> Send
 for
     Iter<'a, AnyVecPtr<Traits, M>, IterItem>
 where
+    Traits: ?Sized + Trait, 
+    M: MemBuilder,
+    IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>,
     AnyVec<Traits, M>: Send
 {}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, T, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Send
+#[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
+unsafe impl<'a, T, M, IterItem> Send
 for
     Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where
+    M: MemBuilder, 
+    IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>,
     AnyVecTyped<'a, T, M>: Send
 {}
 
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, Traits: ?Sized + Trait, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>> Sync
+unsafe impl<'a, Traits, M, IterItem> Sync
 for
     Iter<'a, AnyVecPtr<Traits, M>, IterItem>
 where
+    Traits: ?Sized + Trait, 
+    M: MemBuilder, 
+    IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>,    
     AnyVec<Traits, M>: Sync
 {}
-#[allow(suspicious_auto_trait_impls)]
-unsafe impl<'a, T: Sync, M: MemBuilder, IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>> Sync
+unsafe impl<'a, T, M, IterItem> Sync
 for
     Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where
+    T: Sync,
+    M: MemBuilder, 
+    IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>,
     AnyVecTyped<'a, T, M>: Sync
 {}
 
@@ -221,8 +229,6 @@ impl<'a, Traits: ?Sized + Trait, M: MemBuilder> Clone for ElementMutIterItem<'a,
     }
 }
 
-
-//pub type Iter<'a, Traits>    = IterBase<'a, Traits, ElementIterItem<'a, Traits>>;
 
 /// Reference [`AnyVec`] iterator. Return [`ElementRef`] items.
 ///
