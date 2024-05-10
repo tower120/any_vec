@@ -2,7 +2,7 @@
 name = "any_vec"
 authors = ["Andrey Diduh <tower120@gmail.com>"]
 license = "MIT OR Apache-2.0"
-version = "0.13.0"
+version = "0.14.0"
 edition = "2021"
 description = "Type erased vector. Most operations can be done without type knowledge. Mostly zero overhead."
 repository = "https://github.com/tower120/any_vec"

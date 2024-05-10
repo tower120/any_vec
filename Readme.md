@@ -5,7 +5,9 @@
 
 Type erased vector. All elements have the same type.
 
-Designed to be type-erased as far as possible - most of the operations does not know about concrete type.
+Designed to be type-erased as far as possible - most operations do not know a concrete type.
+For example, you can move or copy/clone items from one type-erased vector to another, without ever knowing
+their type. Or you can erase, swap, move, copy elements inside type-erased vector, etc...
 
 Only type-erased destruct and clone operations have additional overhead of indirect call.
 
