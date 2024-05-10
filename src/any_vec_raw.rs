@@ -1,7 +1,7 @@
-use std::{cmp, mem, ptr};
-use std::alloc::Layout;
-use std::any::TypeId;
-use std::mem::size_of;
+use core::{cmp, mem, ptr};
+use core::alloc::Layout;
+use core::any::TypeId;
+use core::mem::size_of;
 use crate::any_value::{AnyValue, Unknown, AnyValueSizeless};
 use crate::assert_types_equal;
 use crate::clone_type::CloneFn;

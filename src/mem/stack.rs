@@ -1,5 +1,5 @@
-use std::alloc::Layout;
-use std::mem::MaybeUninit;
+use core::alloc::Layout;
+use core::mem::MaybeUninit;
 use crate::mem::{Mem, MemBuilder};
 
 /// Fixed `SIZE` capacity on-stack memory.

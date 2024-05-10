@@ -1,7 +1,7 @@
 //! Type dispatched analog of `enum{*AnyVecRaw, *AnyVec<Traits>}`.
 
-use std::marker::PhantomData;
-use std::ptr::NonNull;
+use core::marker::PhantomData;
+use core::ptr::NonNull;
 use crate::any_value::Unknown;
 use crate::any_vec_raw::AnyVecRaw;
 use crate::AnyVec;
@@ -121,10 +121,10 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> IAnyVecPtr for AnyVecPtr<Traits, M> 
 ///
 /// All unsafe, because dereferencing pointer is unsafe.
 pub(crate) mod utils{
-    use std::{mem, ptr};
-    use std::any::TypeId;
-    use std::mem::size_of;
-    use std::ptr::NonNull;
+    use core::{mem, ptr};
+    use core::any::TypeId;
+    use core::mem::size_of;
+    use core::ptr::NonNull;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
     use crate::AnyVecTyped;

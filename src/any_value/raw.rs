@@ -1,5 +1,5 @@
-use std::any::TypeId;
-use std::ptr::NonNull;
+use core::any::TypeId;
+use core::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 use crate::any_value::Unknown;
 

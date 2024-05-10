@@ -1,4 +1,4 @@
-use std::alloc::Layout;
+use core::alloc::Layout;
 use crate::mem::{dangling, Mem, MemBuilder, MemRawParts};
 
 /// Zero-size memory.

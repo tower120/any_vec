@@ -95,6 +95,10 @@ fn self_push_first_element<T: Trait + Cloneable>(any_vec: &mut AnyVec<T>){
 
  `MemBuilder` interface, being stateful, allow to make `Mem`, which can work with complex custom allocators.
 
+## no_std + no_alloc
+
+This is `no_std` library, which can work without `alloc` too.  
+
 ### Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version differences.

@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 use crate::copy_nonoverlapping_value;
 use crate::any_vec_ptr::IAnyVecRawPtr;
 use crate::any_vec_ptr::utils::{element_mut_ptr_at, element_ptr_at};

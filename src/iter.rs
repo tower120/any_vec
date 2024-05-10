@@ -1,7 +1,7 @@
-use std::iter::{FusedIterator};
-use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
-use std::ptr::NonNull;
+use core::iter::{FusedIterator};
+use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
+use core::ptr::NonNull;
 use crate::any_vec_ptr::{AnyVecPtr, AnyVecRawPtr, IAnyVecRawPtr};
 use crate::any_vec_ptr::utils::element_ptr_at;
 use crate::any_vec_raw::AnyVecRaw;

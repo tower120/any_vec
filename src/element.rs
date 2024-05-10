@@ -1,8 +1,8 @@
-use std::any::TypeId;
-use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
-use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
+use core::any::TypeId;
+use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
+use core::ops::{Deref, DerefMut};
+use core::ptr::NonNull;
 use crate::any_value::{AnyValue, AnyValueCloneable, AnyValueMut, AnyValueTypelessMut, AnyValueTypeless, AnyValueSizeless, AnyValueSizelessMut};
 use crate::any_vec_raw::AnyVecRaw;
 use crate::any_vec_ptr::{AnyVecPtr, IAnyVecPtr, IAnyVecRawPtr};

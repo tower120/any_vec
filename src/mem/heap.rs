@@ -1,7 +1,9 @@
-use std::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
-use std::cmp;
-use std::mem::ManuallyDrop;
-use std::ptr::NonNull;
+extern crate alloc;
+
+use alloc::alloc::{alloc, dealloc, handle_alloc_error, Layout, realloc};
+use core::cmp;
+use core::mem::ManuallyDrop;
+use core::ptr::NonNull;
 use crate::mem::{dangling, Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 
 /// Heap allocated memory.

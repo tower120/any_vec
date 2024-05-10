@@ -1,7 +1,9 @@
+#![no_std]
 #![cfg_attr(miri, feature(alloc_layout_extra) )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Type erased vector [`AnyVec`]. Allow to store elements of the same type.
-//! Have same performance and *operations* as [`std::vec::Vec`].
+//! Have same performance and *operations* as `std::vec::Vec`.
 //!
 //! You can downcast type erased [`AnyVec`] to concrete [`AnyVecTyped`] with `downcast`-family.
 //! Or use [`AnyVec`] type erased operations, which works with [`any_value`].
@@ -115,7 +117,7 @@
 //!
 //! [`MemBuilder`]: mem::MemBuilder
 //! [`Mem`]: mem::Mem
-//! [`Allocator`]: std::alloc::Allocator
+//! [`Allocator`]: core::alloc::Allocator
 //! [`clone_empty_in`]: AnyVec::clone_empty_in
 //!
 //! # AnyValue
@@ -135,6 +137,16 @@
 //! [AnyValue]: any_value::AnyValue
 //! [AnyValueMut]: any_value::AnyValueMut
 //! [AnyValueCloneable]: any_value::AnyValueCloneable
+//! 
+//! # No `alloc`
+//! 
+//! This library is `no_std` and can work without `alloc`.
+//! For this - disable default `alloc` feature. [mem::Heap] will become unavailable
+//! after that, and you'll have to specify [MemBuilder] for [AnyVec]. You can use
+//! [mem::Stack], or specify your own [Mem].
+//! 
+//! [MemBuilder]: mem::MemBuilder
+//! [Mem]: mem::Mem
 
 mod any_vec;
 mod clone_type;
@@ -143,7 +155,7 @@ mod any_vec_raw;
 mod any_vec_typed;
 mod iter;
 
-use std::any::TypeId;
+use core::any::TypeId;
 pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterMut, IterRef};
@@ -153,8 +165,8 @@ pub mod any_value;
 pub mod ops;
 pub mod element;
 
-use std::ptr;
-use std::ops::{Bound, Range, RangeBounds};
+use core::ptr;
+use core::ops::{Bound, Range, RangeBounds};
 use crate::any_value::Unknown;
 
 /// This is faster then ptr::copy,
