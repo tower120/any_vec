@@ -209,6 +209,38 @@ impl<M: MemBuilder> AnyVecRaw<M> {
 
         self.len += 1;
     }
+    
+    /// # Safety
+    ///
+    /// Type is not checked.
+    pub unsafe fn append_unchecked<T: 'static, OtherM: MemBuilder>(
+        &mut self, other: &mut AnyVecRaw<OtherM>
+    ) {
+        self.reserve(other.len);
+        
+        // copy
+        unsafe { 
+            if !Unknown::is::<T>(){
+                ptr::copy_nonoverlapping(
+                    other.mem.as_ptr().cast::<T>(),
+                    self.mem.as_mut_ptr().cast::<T>().add(self.len), 
+                    other.len
+                );
+            } else {
+                let element_size = self.element_layout().size();
+                ptr::copy_nonoverlapping(
+                    other.mem.as_ptr(), 
+                    self.mem.as_mut_ptr().add(self.len*element_size), 
+                    other.len*element_size
+                );
+            }
+        }
+        
+        // update len(s)
+        self.len += other.len;
+        other.len = 0;        
+        
+    }
 
     #[inline]
     pub fn clear(&mut self){

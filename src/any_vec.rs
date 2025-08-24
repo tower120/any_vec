@@ -7,8 +7,8 @@ use core::ops::{Deref, DerefMut, Range, RangeBounds};
 use core::ptr::NonNull;
 use core::{fmt, ptr, slice};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use crate::{AnyVecTyped, into_range, mem, ops};
-use crate::any_value::{AnyValue, AnyValueSizeless};
+use crate::{AnyVecTyped, into_range, mem, ops, assert_types_equal};
+use crate::any_value::{AnyValue, AnyValueSizeless, Unknown};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
 use crate::ops::{Drain, Splice, drain, splice};
@@ -675,6 +675,24 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
             AnyVecPtr::from(self),
             index
         ))
+    }
+    
+    /// Moves all the elements of `other` into `self`, leaving `other` empty.
+    /// 
+    /// # Panics
+    /// 
+    /// * Panics if types mismatch.
+    /// * Panics if out of memory.
+    pub fn append<OtherTraits, OtherM>(
+        &mut self, other: &mut AnyVec<OtherTraits, OtherM>
+    ) where
+        OtherTraits: ?Sized + Trait, 
+        OtherM: MemBuilder
+    {
+        assert_types_equal(other.element_typeid(), self.element_typeid());
+        unsafe{
+            self.raw.append_unchecked::<Unknown, _>(&mut other.raw);
+        }
     }
 
     /// Removes the specified range from the vector in bulk, returning all removed
