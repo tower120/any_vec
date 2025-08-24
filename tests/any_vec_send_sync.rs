@@ -1,6 +1,6 @@
 use std::iter;
 use impls::impls;
-use any_vec::{AnyVec, AnyVecMut, IterMut, IterRef, mem};
+use any_vec::{AnyVec, IterMut, IterRef, mem, AnyVecTyped};
 use any_vec::any_value::AnyValueWrapper;
 use any_vec::mem::MemBuilder;
 use any_vec::ops::Drain;
@@ -31,9 +31,9 @@ fn any_vec_heap_send_sync_test() {
         }
 
         {
-            let vec: AnyVecMut<String, M> = any_vec.downcast_mut::<String>().unwrap();
-            assert!(!impls!(AnyVecMut<String, M>: Send));
-            assert!(!impls!(AnyVecMut<String, M>: Sync));
+            let vec: &mut AnyVecTyped<String, M> = any_vec.downcast_mut::<String>().unwrap();
+            assert!(!impls!(&mut AnyVecTyped<String, M>: Send));
+            assert!(!impls!(&mut AnyVecTyped<String, M>: Sync));
             drop(vec);
         }
 
@@ -63,7 +63,7 @@ fn any_vec_heap_send_sync_test() {
         is_sync(&any_vec.iter_mut());
         is_send(&any_vec.iter_mut());
         {
-            let mut vec = any_vec.downcast_mut::<String>().unwrap();
+            let vec = any_vec.downcast_mut::<String>().unwrap();
             is_sync(&vec);
             is_send(&vec);
             is_sync(&vec.iter());

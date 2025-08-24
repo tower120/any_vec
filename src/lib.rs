@@ -156,7 +156,7 @@ mod any_vec_typed;
 mod iter;
 
 use core::any::TypeId;
-pub use crate::any_vec::{AnyVec, AnyVecMut, AnyVecRef, RawParts, SatisfyTraits, traits};
+pub use crate::any_vec::{AnyVec, RawParts, SatisfyTraits, traits};
 pub use any_vec_typed::AnyVecTyped;
 pub use iter::{ElementIterator, Iter, IterMut, IterRef};
 

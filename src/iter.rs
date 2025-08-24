@@ -134,7 +134,7 @@ impl<'a, AnyVecPtr: IAnyVecRawPtr, IterItem: IteratorItem<'a, AnyVecPtr>> FusedI
 {}
 
 
-#[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
+//#[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
 unsafe impl<'a, Traits, M, IterItem> Send
 for
     Iter<'a, AnyVecPtr<Traits, M>, IterItem>
@@ -144,14 +144,14 @@ where
     IterItem: IteratorItem<'a, AnyVecPtr<Traits, M>>,
     AnyVec<Traits, M>: Send
 {}
-#[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
+// #[allow(renamed_and_removed_lints, suspicious_auto_trait_impls)]
 unsafe impl<'a, T, M, IterItem> Send
 for
     Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where
-    M: MemBuilder, 
+    M: MemBuilder,
     IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>,
-    AnyVecTyped<'a, T, M>: Send
+    AnyVecTyped<T, M>: Send
 {}
 
 unsafe impl<'a, Traits, M, IterItem> Sync
@@ -168,9 +168,9 @@ for
     Iter<'a, AnyVecRawPtr<T, M>, IterItem>
 where
     T: Sync,
-    M: MemBuilder, 
+    M: MemBuilder,
     IterItem: IteratorItem<'a, AnyVecRawPtr<T, M>>,
-    AnyVecTyped<'a, T, M>: Sync
+    AnyVecTyped<T, M>: Sync
 {}
 
 

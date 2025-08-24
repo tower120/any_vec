@@ -25,7 +25,7 @@ impl Drop for S{
 #[test]
 fn drop_test() {
     let mut any_vec: AnyVec = AnyVec::new::<S>();
-    let mut vec = any_vec.downcast_mut::<S>().unwrap();
+    let vec = any_vec.downcast_mut::<S>().unwrap();
     vec.push(S{i:1});
     vec.push(S{i:2});
     vec.push(S{i:3});
@@ -397,7 +397,7 @@ fn mem_stack_test(){
 fn any_vec_into_iter_test() {
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     {
-        let mut vec = any_vec.downcast_mut::<usize>().unwrap();
+        let vec = any_vec.downcast_mut::<usize>().unwrap();
         vec.push(1);
         vec.push(10);
         vec.push(100);

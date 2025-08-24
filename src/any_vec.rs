@@ -3,11 +3,11 @@ use core::any::TypeId;
 use core::fmt::{Debug, Formatter};
 use core::marker::PhantomData;
 use core::mem::{ManuallyDrop, MaybeUninit};
-use core::ops::{Deref, DerefMut, Range, RangeBounds};
+use core::ops::{Range, RangeBounds};
 use core::ptr::NonNull;
-use core::{fmt, ptr, slice};
+use core::{fmt, ptr};
 use core::slice::{from_raw_parts, from_raw_parts_mut};
-use crate::{AnyVecTyped, into_range, mem, ops, assert_types_equal};
+use crate::{into_range, mem, ops, assert_types_equal};
 use crate::any_value::{AnyValue, AnyValueSizeless, Unknown};
 use crate::any_vec_raw::{AnyVecRaw, DropFn};
 use crate::ops::{TempValue, Remove, SwapRemove, remove, swap_remove, Pop, pop};
@@ -16,6 +16,7 @@ use crate::any_vec::traits::{None};
 use crate::clone_type::{CloneFn, CloneFnTrait, CloneType};
 use crate::element::{ElementPointer, ElementMut, ElementRef};
 use crate::any_vec_ptr::AnyVecPtr;
+use crate::any_vec_typed::AnyVecTyped;
 use crate::iter::{Iter, IterMut, IterRef};
 use crate::mem::{Mem, MemBuilder, MemBuilderSizeable, MemRawParts, MemResizable};
 use crate::traits::{Cloneable, Trait};
@@ -149,7 +150,7 @@ pub struct AnyVec<Traits: ?Sized + Trait = dyn None, M: MemBuilder = mem::Defaul
 {
     pub(crate) raw: AnyVecRaw<M>,
     clone_fn: <Traits as CloneType>::Type,  // ZST if Traits: !Cloneable
-    phantom: PhantomData<Traits>
+    phantom: PhantomData<Traits>,
 }
 
 impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
@@ -285,10 +286,11 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
                 ),
                 len: raw_parts.len,
                 type_id: raw_parts.element_typeid,
-                drop_fn: raw_parts.element_drop
+                drop_fn: raw_parts.element_drop,
+                any_vec_typed: AnyVecTyped(PhantomData),
             },
             clone_fn: <Traits as CloneType>::new(raw_parts.element_clone),
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 
@@ -423,7 +425,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// Returns [`AnyVecRef`] - typed view to const AnyVec,
     /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_ref<T: 'static>(&self) -> Option<AnyVecRef<'_, T, M>> {
+    pub fn downcast_ref<T: 'static>(&self) -> Option<&AnyVecTyped<T, M>> {
         if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_ref_unchecked()) }
         } else {
@@ -438,14 +440,14 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// The container elements must be of type `T`.
     /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> AnyVecRef<'_, T, M> {
-        AnyVecRef(AnyVecTyped::new(NonNull::from(&self.raw)))
+    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> &AnyVecTyped<T, M> {
+        core::mem::transmute(&self.raw.any_vec_typed)
     }
 
     /// Returns [`AnyVecMut`] - typed view to mut AnyVec,
     /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_mut<T: 'static>(&mut self) -> Option<AnyVecMut<'_, T, M>> {
+    pub fn downcast_mut<T: 'static>(&mut self) -> Option<&mut AnyVecTyped<T, M>> {
         if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_mut_unchecked()) }
         } else {
@@ -460,8 +462,8 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// The container elements must be of type `T`.
     /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> AnyVecMut<'_, T, M> {
-        AnyVecMut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
+    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> &mut AnyVecTyped<T, M> {
+        core::mem::transmute(&mut self.raw.any_vec_typed)
     }
 
     #[inline]
@@ -857,77 +859,5 @@ impl<'a, Traits: ?Sized + Trait, M: MemBuilder> IntoIterator for &'a mut AnyVec<
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
-    }
-}
-
-/// Typed view to &[`AnyVec`].
-///
-/// You can get it from [`AnyVec::downcast_ref`].
-///
-/// [`AnyVec`]: crate::AnyVec
-/// [`AnyVec::downcast_ref`]: crate::AnyVec::downcast_ref
-pub struct AnyVecRef<'a, T: 'static, M: MemBuilder + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: MemBuilder + 'a> Clone for AnyVecRef<'a, T, M>{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-impl<'a, T: 'static, M: MemBuilder + 'a> Deref for AnyVecRef<'a, T, M>{
-    type Target = AnyVecTyped<'a, T, M>;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecRef<'a, T, M>{
-    type Item = &'a T;
-    type IntoIter = slice::Iter<'a, T>;
-
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
-}
-impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecRef<'a, T, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-/// Typed view to &mut [`AnyVec`].
-///
-/// You can get it from [`AnyVec::downcast_mut`].
-///
-/// [`AnyVec`]: crate::AnyVec
-/// [`AnyVec::downcast_mut`]: crate::AnyVec::downcast_mut
-pub struct AnyVecMut<'a, T: 'static, M: MemBuilder + 'a>(pub(crate) AnyVecTyped<'a, T, M>);
-impl<'a, T: 'static, M: MemBuilder + 'a> Deref for AnyVecMut<'a, T, M>{
-    type Target = AnyVecTyped<'a, T, M>;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<'a, T: 'static, M: MemBuilder + 'a> DerefMut for AnyVecMut<'a, T, M>{
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecMut<'a, T, M>{
-    type Item = &'a mut T;
-    type IntoIter = slice::IterMut<'a, T>;
-
-    #[inline]
-    fn into_iter(mut self) -> Self::IntoIter {
-        self.iter_mut()
-    }
-}
-impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecMut<'a, T, M>{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
     }
 }

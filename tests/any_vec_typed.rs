@@ -170,7 +170,7 @@ fn any_vec_into_iter_test() {
     vec.push(100);
 
     let mut sum = 0;
-    for e in vec{
+    for e in vec {
         sum += *e;
     }
     assert_eq!(sum, 111);

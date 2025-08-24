@@ -1,69 +1,66 @@
-use core::fmt::{Debug, Formatter};
 use core::marker::PhantomData;
+use core::{fmt, mem, slice};
+use core::fmt::{Debug, Formatter};
 use core::mem::MaybeUninit;
 use core::ops::{Range, RangeBounds};
-use core::ptr::NonNull;
-use core::{fmt, slice};
-use crate::any_value::{AnyValueSizeless, AnyValueWrapper};
-use crate::any_vec_raw::AnyVecRaw;
-use crate::ops::{Iter, pop, remove, swap_remove, TempValue};
+use core::ptr::{addr_of, NonNull};
+use crate::any_value::{AnyValueSizeless, AnyValueWrapper, Unknown};
 use crate::any_vec_ptr::AnyVecRawPtr;
-use crate::into_range;
-use crate::iter::ElementIterator;
-use crate::mem::{MemBuilder, Mem, MemResizable};
+use crate::any_vec_raw::AnyVecRaw;
+use crate::{into_range, ElementIterator};
+use crate::mem::{Mem, MemBuilder, MemResizable};
+use crate::ops::{pop, remove, swap_remove, Iter, TempValue};
 use crate::ops::drain::Drain;
 use crate::ops::splice::Splice;
 
 /// Concrete type [`AnyVec`] representation.
-///
-/// Obtained by dereferencing [`AnyVecRef<T>`] or [`AnyVecMut<T>`].
+/// 
+/// Can only be obtained as `&`/`&mut` with [`downcast_ref`]/[`downcast_mut`]. 
 ///
 /// Operations with concrete type are somewhat faster, due to
 /// the fact, that compiler are able to optimize harder with full
 /// type knowledge.
 ///
 /// [`AnyVec`]: crate::AnyVec
-/// [`AnyVec::downcast_`]: crate::AnyVec::downcast_ref
-/// [`AnyVecRef<T>`]: crate::AnyVecRef
-/// [`AnyVecMut<T>`]: crate::AnyVecMut
-pub struct AnyVecTyped<'a, T: 'static, M: MemBuilder + 'a>{
-    // NonNull - to have one struct for both & and &mut
-    any_vec: NonNull<AnyVecRaw<M>>,
-    phantom: PhantomData<&'a mut T>
-}
+/// [`downcast_ref`]: crate::AnyVec::downcast_ref
+/// [`downcast_mut`]: crate::AnyVec::downcast_mut 
+#[repr(transparent)]
+pub struct AnyVecTyped<T: 'static, M: MemBuilder>(pub(crate) PhantomData<(T, M)>);
 
-unsafe impl<'a, T: 'static + Send, M: MemBuilder + Send> Send for AnyVecTyped<'a, T, M>
+unsafe impl<T: 'static + Send, M: MemBuilder + Send> Send for AnyVecTyped<T, M>
     where M::Mem: Send
 {}
-unsafe impl<'a, T: 'static + Sync, M: MemBuilder + Sync> Sync for AnyVecTyped<'a, T, M>
+unsafe impl<T: 'static + Sync, M: MemBuilder + Sync> Sync for AnyVecTyped<T, M>
     where M::Mem: Sync
 {}
 
-impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
-    /// # Safety
-    ///
-    /// Unsafe, because type not checked
+impl<T: 'static, M: MemBuilder> AnyVecTyped<T, M>{
     #[inline]
-    pub(crate) unsafe fn new(any_vec: NonNull<AnyVecRaw<M>>) -> Self {
-        Self{any_vec, phantom: PhantomData}
+    fn this(&self) -> &AnyVecRaw<M> {
+         unsafe{
+            // let offset = mem::offset_of!(AnyVecRaw<M>, any_vec_typed);
+            //let t: &AnyVecTyped<Unknown, M> = mem::transmute(self);
+             
+            let self_ptr = self as *const _ as *const u8;
+            let ptr = self_ptr.sub(mem::offset_of!(AnyVecRaw<M>, any_vec_typed));
+             
+             NonNull::new_unchecked(ptr as *mut _).as_ref()
+             // ptr.cast::<AnyVecRaw<M>>().as_ref().unwrap()
+             // &*(ptr as *const AnyVecRaw<M>)
+            //&*ptr.cast()
+        }
     }
-
-    /// AnyVecTyped should not be Clone, because it can be both & and &mut.
+    
     #[inline]
-    pub(crate) fn clone(&self) -> Self {
-        Self{any_vec: self.any_vec, phantom: PhantomData}
+    fn this_mut(&mut self) -> &mut AnyVecRaw<M> {
+         unsafe{
+            let offset = mem::offset_of!(AnyVecRaw<M>, any_vec_typed);
+            let self_ptr = self as *mut Self as *mut u8;
+            let ptr = self_ptr.offset(-(offset as isize));
+            &mut *ptr.cast()
+        }
     }
-
-    #[inline]
-    fn this(&self) -> &'a AnyVecRaw<M> {
-        unsafe{ self.any_vec.as_ref() }
-    }
-
-    #[inline]
-    fn this_mut(&mut self) -> &'a mut AnyVecRaw<M> {
-        unsafe{ self.any_vec.as_mut() }
-    }
-
+    
     #[inline]
     pub fn reserve(&mut self, additional: usize)
         where M::Mem: MemResizable
@@ -91,7 +88,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     {
         self.this_mut().shrink_to(min_capacity)
     }
-
+    
     #[inline]
     pub unsafe fn set_len(&mut self, new_len: usize) {
         self.this_mut().set_len(new_len);
@@ -110,7 +107,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
             self.this_mut().push_unchecked(AnyValueWrapper::new(value));
         }
     }
-
+    
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
         if self.is_empty(){
@@ -118,7 +115,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         } else {
             let value = unsafe{
                 TempValue::new(pop::Pop::new(
-                    AnyVecRawPtr::<T, M>::from(self.any_vec)
+                    AnyVecRawPtr::<T, M>::from(self.this_mut())
                 )).downcast_unchecked::<T>()
             };
             Some(value)
@@ -130,7 +127,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         self.this().index_check(index);
         unsafe{
             TempValue::new(remove::Remove::new(
-                AnyVecRawPtr::<T, M>::from(self.any_vec),
+                AnyVecRawPtr::<T, M>::from(self.this_mut()),
                 index
             )).downcast_unchecked::<T>()
         }
@@ -141,12 +138,12 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         self.this().index_check(index);
         unsafe{
             TempValue::new(swap_remove::SwapRemove::new(
-                AnyVecRawPtr::<T, M>::from(self.any_vec),
+                AnyVecRawPtr::<T, M>::from(self.this_mut()),
                 index
             )).downcast_unchecked::<T>()
         }
     }
-
+    
     /// Moves all the elements of `other` into `self`, leaving `other` empty.
     /// 
     /// # Panics
@@ -162,20 +159,20 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
 
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>)
-        -> impl ElementIterator<Item = T> + 'a
+        -> impl ElementIterator<Item = T> + '_
     {
         let Range{start, end} = into_range(self.len(), range);
         Iter(Drain::new(
-            AnyVecRawPtr::<T, M>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.this_mut()),
             start,
             end
         )).map(|e| unsafe{
             e.downcast_unchecked::<T>()
         })
-    }
-
+    }  
+    
     #[inline]
-    pub fn splice<I>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
+    pub fn splice<'a, I>(&'a mut self, range: impl RangeBounds<usize>, replace_with: I)
         -> impl ElementIterator<Item = T> + 'a
     where
         I: IntoIterator<Item = T>,
@@ -186,60 +183,60 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
             .map(|e| AnyValueWrapper::new(e));
 
         Iter(Splice::new(
-            AnyVecRawPtr::<T, M>::from(self.any_vec),
+            AnyVecRawPtr::<T, M>::from(self.this_mut()),
             start,
             end,
             replace_with
         )).map(|e| unsafe{
             e.downcast_unchecked::<T>()
         })
-    }
-
+    }    
+    
     #[inline]
     pub fn clear(&mut self){
         self.this_mut().clear();
-    }
-
+    }    
+    
     #[inline]
-    pub fn iter(&self) -> slice::Iter<'a, T> {
+    pub fn iter(&self) -> slice::Iter<'_, T> {
         self.as_slice().iter()
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> slice::IterMut<'a, T> {
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
         self.as_mut_slice().iter_mut()
     }
-
+    
     #[inline]
-    pub fn at(&self, index: usize) -> &'a T{
+    pub fn at(&self, index: usize) -> &T{
         self.get(index).unwrap()
     }
 
     #[inline]
-    pub fn get(&self, index: usize) -> Option<&'a T> {
+    pub fn get(&self, index: usize) -> Option<&T> {
         self.as_slice().get(index)
     }
 
     #[inline]
-    pub unsafe fn get_unchecked(&self, index: usize) -> &'a T {
+    pub unsafe fn get_unchecked(&self, index: usize) -> &T {
         self.as_slice().get_unchecked(index)
     }
 
     #[inline]
-    pub fn at_mut(&mut self, index: usize) -> &'a mut T{
+    pub fn at_mut(&mut self, index: usize) -> &mut T{
         self.get_mut(index).unwrap()
     }
 
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Option<&'a mut T>{
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T>{
         self.as_mut_slice().get_mut(index)
     }
 
     #[inline]
-    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &'a mut T {
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> &mut T {
         self.as_mut_slice().get_unchecked_mut(index)
-    }
-
+    }    
+    
     #[inline]
     pub fn as_ptr(&self) -> *const T {
         self.this().mem.as_ptr().cast::<T>()
@@ -249,9 +246,10 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     pub fn as_mut_ptr(&mut self) -> *mut T {
         self.this_mut().mem.as_mut_ptr().cast::<T>()
     }
-
+    
+    
     #[inline]
-    pub fn as_slice(&self) -> &'a [T] {
+    pub fn as_slice(&self) -> &[T] {
         unsafe{
             slice::from_raw_parts(
                 self.as_ptr(),
@@ -261,7 +259,7 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
-    pub fn as_mut_slice(&mut self) -> &'a mut[T] {
+    pub fn as_mut_slice(&mut self) -> &mut[T] {
         unsafe{
             slice::from_raw_parts_mut(
                 self.as_mut_ptr(),
@@ -271,15 +269,15 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     }
 
     #[inline]
-    pub fn spare_capacity_mut(&mut self) -> &'a mut[MaybeUninit<T>] {
+    pub fn spare_capacity_mut(&mut self) -> &mut[MaybeUninit<T>] {
         unsafe {
             slice::from_raw_parts_mut(
                 self.as_mut_ptr().add(self.len()) as *mut MaybeUninit<T>,
                 self.capacity() - self.len(),
             )
         }
-    }
-
+    }    
+    
     #[inline]
     pub fn len(&self) -> usize {
         self.this().len
@@ -296,27 +294,28 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
     }
 }
 
-impl<'a, T: 'static + Debug, M: MemBuilder> Debug for AnyVecTyped<'a, T, M>{
+impl<T: 'static + Debug, M: MemBuilder> Debug for AnyVecTyped<T, M>{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         (*self.as_slice()).fmt(f)
     }
 }
 
-// Do not implement Index, since we can't do the same for AnyVec
-/*
-impl<'a, T: 'static, I: SliceIndex<[T]>> Index<I> for AnyVecTyped<'a, T> {
-    type Output = I::Output;
+impl<'a, T: 'static, M: MemBuilder> IntoIterator for &'a AnyVecTyped<T, M>{
+    type Item = &'a T;
+    type IntoIter = slice::Iter<'a, T>;
 
     #[inline]
-    fn index(&self, index: I) -> &'a Self::Output {
-        self.as_slice().index(index)
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
-impl<'a, T: 'static, I: SliceIndex<[T]>> IndexMut<I> for AnyVecTyped<'a, T> {
+impl<'a, T: 'static, M: MemBuilder> IntoIterator for &'a mut AnyVecTyped<T, M>{
+    type Item = &'a mut T;
+    type IntoIter = slice::IterMut<'a, T>;
+
     #[inline]
-    fn index_mut(&mut self, index: I) -> &'a mut Self::Output {
-        self.as_mut_slice().index_mut(index)
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }
- */

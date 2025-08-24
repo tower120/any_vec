@@ -32,6 +32,18 @@ impl<Type, M: MemBuilder> From<NonNull<AnyVecRaw<M>>> for AnyVecRawPtr<Type, M>{
         Self{ptr, phantom: PhantomData}
     }
 }
+impl<Type, M: MemBuilder> From<&AnyVecRaw<M>> for AnyVecRawPtr<Type, M>{
+    #[inline]
+    fn from(reference: &AnyVecRaw<M>) -> Self {
+        Self{ptr: NonNull::from(reference), phantom: PhantomData}
+    }
+}
+impl<Type, M: MemBuilder> From<&mut AnyVecRaw<M>> for AnyVecRawPtr<Type, M>{
+    #[inline]
+    fn from(reference: &mut AnyVecRaw<M>) -> Self {
+        Self{ptr: NonNull::from(reference), phantom: PhantomData}
+    }
+}
 impl<Type, M: MemBuilder> Copy for AnyVecRawPtr<Type, M> {}
 impl<Type, M: MemBuilder> Clone for AnyVecRawPtr<Type, M> {
     #[inline]
@@ -124,10 +136,9 @@ pub(crate) mod utils{
     use core::{mem, ptr};
     use core::any::TypeId;
     use core::mem::size_of;
-    use core::ptr::NonNull;
     use crate::any_value::Unknown;
     use crate::any_vec_ptr::IAnyVecRawPtr;
-    use crate::AnyVecTyped;
+    use crate::mem::Mem;
 
     #[inline]
     pub unsafe fn element_typeid<AnyVecPtr: IAnyVecRawPtr>(any_vec_ptr: AnyVecPtr) -> TypeId
@@ -160,10 +171,9 @@ pub(crate) mod utils{
         if Unknown::is::<AnyVecPtr::Element>(){
             any_vec_raw.get_unchecked(index)
         } else {
-            // AnyVecTyped::get_unchecked cause MIRI error
-            AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
-                .as_ptr().add(index)
-                as *const _ as *const u8
+            any_vec_raw.mem.as_ptr().cast::<AnyVecPtr::Element>()
+                .add(index)
+                .cast()
         }
     }
 
@@ -175,10 +185,9 @@ pub(crate) mod utils{
         if Unknown::is::<AnyVecPtr::Element>(){
             any_vec_raw.get_unchecked_mut(index)
         } else {
-            // AnyVecTyped::get_unchecked_mut cause MIRI error
-            AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
-                .as_mut_ptr().add(index)
-                as *mut _ as *mut u8
+            any_vec_raw.mem.as_mut_ptr().cast::<AnyVecPtr::Element>()
+                .add(index)
+                .cast()
         }
     }
 

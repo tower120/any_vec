@@ -1,8 +1,10 @@
 use core::{cmp, mem, ptr};
 use core::alloc::Layout;
 use core::any::TypeId;
+use core::marker::PhantomData;
 use core::mem::size_of;
 use crate::any_value::{AnyValue, Unknown, AnyValueSizeless};
+use crate::any_vec_typed::AnyVecTyped;
 use crate::assert_types_equal;
 use crate::clone_type::CloneFn;
 use crate::mem::{Mem, MemBuilder, MemResizable};
@@ -14,7 +16,8 @@ pub struct AnyVecRaw<M: MemBuilder> {
     pub(crate) mem: M::Mem,
     pub(crate) len: usize,  // in elements
     pub(crate) type_id: TypeId,        // purely for safety checks
-    pub(crate) drop_fn: Option<DropFn>
+    pub(crate) drop_fn: Option<DropFn>,
+    pub(crate) any_vec_typed: AnyVecTyped<Unknown, M>
 }
 
 impl<M: MemBuilder> AnyVecRaw<M> {
@@ -37,7 +40,8 @@ impl<M: MemBuilder> AnyVecRaw<M> {
                             }
                         }
                     })
-                }
+                },
+            any_vec_typed: AnyVecTyped(PhantomData),
         }
     }
 
@@ -55,6 +59,7 @@ impl<M: MemBuilder> AnyVecRaw<M> {
             len: 0,
             type_id: self.type_id,
             drop_fn: self.drop_fn,
+            any_vec_typed: AnyVecTyped(PhantomData),
         }
     }
 
