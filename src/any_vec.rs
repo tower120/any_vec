@@ -423,7 +423,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// Returns [`AnyVecRef`] - typed view to const AnyVec,
     /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_ref<T: 'static>(&self) -> Option<AnyVecRef<T, M>> {
+    pub fn downcast_ref<T: 'static>(&self) -> Option<AnyVecRef<'_, T, M>> {
         if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_ref_unchecked()) }
         } else {
@@ -438,14 +438,14 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// The container elements must be of type `T`.
     /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> AnyVecRef<T, M> {
+    pub unsafe fn downcast_ref_unchecked<T: 'static>(&self) -> AnyVecRef<'_, T, M> {
         AnyVecRef(AnyVecTyped::new(NonNull::from(&self.raw)))
     }
 
     /// Returns [`AnyVecMut`] - typed view to mut AnyVec,
     /// if container holds elements of type T, or None if it isn’t.
     #[inline]
-    pub fn downcast_mut<T: 'static>(&mut self) -> Option<AnyVecMut<T, M>> {
+    pub fn downcast_mut<T: 'static>(&mut self) -> Option<AnyVecMut<'_, T, M>> {
         if self.element_typeid() == TypeId::of::<T>() {
             unsafe{ Some(self.downcast_mut_unchecked()) }
         } else {
@@ -460,7 +460,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// The container elements must be of type `T`.
     /// Calling this method with the incorrect type is undefined behavior.
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> AnyVecMut<T, M> {
+    pub unsafe fn downcast_mut_unchecked<T: 'static>(&mut self) -> AnyVecMut<'_, T, M> {
         AnyVecMut(AnyVecTyped::new(NonNull::from(&mut self.raw)))
     }
 
@@ -489,12 +489,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub fn iter(&self) -> IterRef<Traits, M>{
+    pub fn iter(&self) -> IterRef<'_, Traits, M>{
         Iter::new(AnyVecPtr::from(self), 0, self.len())
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut<Traits, M>{
+    pub fn iter_mut(&mut self) -> IterMut<'_, Traits, M>{
         let len = self.len();
         Iter::new(AnyVecPtr::from(self), 0, len)
     }
@@ -505,12 +505,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// * Panics if index is out of bounds.
     #[inline]
-    pub fn at(&self, index: usize) -> ElementRef<Traits, M>{
+    pub fn at(&self, index: usize) -> ElementRef<'_, Traits, M>{
         self.get(index).unwrap()
     }
 
     #[inline]
-    pub fn get(&self, index: usize) -> Option<ElementRef<Traits, M>>{
+    pub fn get(&self, index: usize) -> Option<ElementRef<'_, Traits, M>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked(index) })
         } else {
@@ -519,7 +519,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<Traits, M>{
+    pub unsafe fn get_unchecked(&self, index: usize) -> ElementRef<'_, Traits, M>{
         let element_ptr = self.raw.get_unchecked(index) as *mut u8;
         ElementRef(
             ManuallyDrop::new(ElementPointer::new(
@@ -535,12 +535,12 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     /// * Panics if index is out of bounds.
     #[inline]
-    pub fn at_mut(&mut self, index: usize) -> ElementMut<Traits, M>{
+    pub fn at_mut(&mut self, index: usize) -> ElementMut<'_, Traits, M>{
         self.get_mut(index).unwrap()
     }
 
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<Traits, M>>{
+    pub fn get_mut(&mut self, index: usize) -> Option<ElementMut<'_, Traits, M>>{
         if index < self.len(){
             Some(unsafe{ self.get_unchecked_mut(index) })
         } else {
@@ -549,7 +549,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     }
 
     #[inline]
-    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<Traits, M> {
+    pub unsafe fn get_unchecked_mut(&mut self, index: usize) -> ElementMut<'_, Traits, M> {
         let element_ptr = self.raw.get_unchecked_mut(index);
         ElementMut(
             ManuallyDrop::new(ElementPointer::new(
@@ -625,7 +625,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
-    pub fn pop(&mut self) -> Option<Pop<Traits, M>> {
+    pub fn pop(&mut self) -> Option<Pop<'_, Traits, M>> {
         if self.is_empty(){
             None
         } else {
@@ -648,7 +648,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
-    pub fn remove(&mut self, index: usize) -> Remove<Traits, M> {
+    pub fn remove(&mut self, index: usize) -> Remove<'_, Traits, M> {
         self.raw.index_check(index);
         TempValue::new(remove::Remove::new(
             AnyVecPtr::from(self),
@@ -669,7 +669,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
-    pub fn swap_remove(&mut self, index: usize) -> SwapRemove<Traits, M> {
+    pub fn swap_remove(&mut self, index: usize) -> SwapRemove<'_, Traits, M> {
         self.raw.index_check(index);
         TempValue::new(swap_remove::SwapRemove::new(
             AnyVecPtr::from(self),
@@ -715,7 +715,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     /// [`mem::forget`]: core::mem::forget
     ///
     #[inline]
-    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<Traits, M> {
+    pub fn drain(&mut self, range: impl RangeBounds<usize>) -> Drain<'_, Traits, M> {
         let Range{start, end} = into_range(self.len(), range);
         ops::Iter(drain::Drain::new(
             AnyVecPtr::from(self),
@@ -747,7 +747,7 @@ impl<Traits: ?Sized + Trait, M: MemBuilder> AnyVec<Traits, M>
     ///
     #[inline]
     pub fn splice<I: IntoIterator>(&mut self, range: impl RangeBounds<usize>, replace_with: I)
-        -> Splice<Traits, M, I::IntoIter>
+        -> Splice<'_, Traits, M, I::IntoIter>
     where
         I::IntoIter: ExactSizeIterator,
         I::Item: AnyValue
