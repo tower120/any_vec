@@ -343,6 +343,25 @@ fn reserve_exact_test(){
 }
 
 #[test]
+fn extend_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.extend([
+        AnyValueWrapper::new(String::from("0")),
+        AnyValueWrapper::new(String::from("1")),
+        AnyValueWrapper::new(String::from("2")),
+    ]);
+    
+    assert_equal(
+        any_vec.iter().map(|v|v.downcast_ref::<String>().unwrap()), 
+        &[
+            String::from("0"),
+            String::from("1"),
+            String::from("2"),
+        ]
+    );
+}
+
+#[test]
 fn shrink_to_fit_test(){
     let mut any_vec: AnyVec = AnyVec::new::<String>();
     assert_eq!(any_vec.capacity(), 0);

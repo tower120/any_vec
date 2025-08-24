@@ -831,6 +831,25 @@ impl<Traits: ?Sized + Cloneable + Trait, M: MemBuilder> Clone for AnyVec<Traits,
     }
 }
 
+impl<Traits, M, A> Extend<A> for AnyVec<Traits, M>
+where
+    Traits: ?Sized + Trait, 
+    M: MemBuilder,
+    A: AnyValue,
+{
+    /// # Panics
+    ///
+    /// * Panics if type mismatch.
+    /// * Panics if out of memory.
+    fn extend<T: IntoIterator<Item=A>>(&mut self, iter: T) {
+        let iter = iter.into_iter();
+        self.raw.reserve(iter.size_hint().0);
+        for v in iter {
+            self.push(v);
+        }
+    }
+}
+
 impl<Traits: ?Sized + Trait, M: MemBuilder> Debug for AnyVec<Traits, M>{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("AnyVec")
@@ -929,5 +948,11 @@ impl<'a, T: 'static, M: MemBuilder + 'a> IntoIterator for AnyVecMut<'a, T, M>{
 impl<'a, T: 'static + Debug, M: MemBuilder + 'a> Debug for AnyVecMut<'a, T, M>{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+impl<'a, T: 'static, M: MemBuilder + 'a> Extend<T> for AnyVecMut<'a, T, M>{
+    #[inline]
+    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+        self.0.extend(iter)
     }
 }

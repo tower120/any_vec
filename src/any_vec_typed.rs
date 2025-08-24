@@ -302,6 +302,18 @@ impl<'a, T: 'static + Debug, M: MemBuilder> Debug for AnyVecTyped<'a, T, M>{
     }
 }
 
+impl<'a, T: 'static, M: MemBuilder> Extend<T> for AnyVecTyped<'a, T, M>{
+    fn extend<I: IntoIterator<Item=T>>(&mut self, iter: I) {
+        let iter = iter.into_iter();
+        self.this_mut().reserve(iter.size_hint().0);
+        // We can't prove that iterator will return actual len in size_hint(),
+        // so we have to push items as usual. 
+        for v in iter {
+            self.push(v);
+        }        
+    }
+}
+
 // Do not implement Index, since we can't do the same for AnyVec
 /*
 impl<'a, T: 'static, I: SliceIndex<[T]>> Index<I> for AnyVecTyped<'a, T> {
