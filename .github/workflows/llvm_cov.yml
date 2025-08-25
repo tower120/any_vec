@@ -2,7 +2,7 @@ name: llvm-cov
 
 on: 
   workflow_dispatch:
-  #push:
+  push:
     
 jobs: 
   coverage:
