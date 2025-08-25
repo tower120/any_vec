@@ -147,6 +147,19 @@ impl<'a, T: 'static, M: MemBuilder + 'a> AnyVecTyped<'a, T, M>{
         }
     }
 
+    /// Moves all the elements of `other` into `self`, leaving `other` empty.
+    /// 
+    /// # Panics
+    /// 
+    /// * Panics if out of memory.
+    pub fn append<OtherM: MemBuilder>(
+        &mut self, other: &mut AnyVecTyped<T, OtherM>
+    ) {
+        unsafe{
+            self.this_mut().append_unchecked::<T, _>(other.this_mut());
+        }
+    }    
+
     #[inline]
     pub fn drain(&mut self, range: impl RangeBounds<usize>)
         -> impl ElementIterator<Item = T> + 'a

@@ -211,7 +211,7 @@ pub trait AnyValueCloneable: AnyValueSizeless {
     unsafe fn clone_into(&self, out: *mut u8);
 
     #[inline]
-    fn lazy_clone(&self) -> LazyClone<Self>
+    fn lazy_clone(&self) -> LazyClone<'_, Self>
         where Self: Sized
     {
         LazyClone::new(self)

@@ -272,6 +272,33 @@ fn any_vec_splice_test() {
 }
 
 #[test]
+fn append_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    any_vec.push(AnyValueWrapper::new(String::from("0")));
+    any_vec.push(AnyValueWrapper::new(String::from("1")));
+    any_vec.push(AnyValueWrapper::new(String::from("2")));
+    any_vec.push(AnyValueWrapper::new(String::from("3")));
+    any_vec.push(AnyValueWrapper::new(String::from("4")));
+    
+    let mut any_vec2: AnyVec = AnyVec::new::<String>();
+    any_vec2.push(AnyValueWrapper::new(String::from("100")));
+    any_vec2.push(AnyValueWrapper::new(String::from("200")));
+    
+    any_vec.append(&mut any_vec2);
+    
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3"),
+        String::from("4"),
+        String::from("100"),
+        String::from("200"),
+    ]);    
+    assert!(any_vec2.is_empty());
+}
+
+#[test]
 fn any_vec_insert_front(){
     let mut any_vec: AnyVec = AnyVec::new::<usize>();
     let mut vec = any_vec.downcast_mut::<usize>().unwrap();

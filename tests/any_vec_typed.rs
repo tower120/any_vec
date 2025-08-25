@@ -196,6 +196,35 @@ fn any_vec_debug() {
     assert_eq!(format!("{vec:?}"), format!("{control_vec:?}"));
 }
 
+#[test]
+fn append_test() {
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+    vec.push(String::from("0"));
+    vec.push(String::from("1"));
+    vec.push(String::from("2"));
+    vec.push(String::from("3"));
+    vec.push(String::from("4"));
+    
+    let mut any_vec2: AnyVec = AnyVec::new::<String>();
+    let mut vec2 = any_vec2.downcast_mut::<String>().unwrap();
+    vec2.push(String::from("100"));
+    vec2.push(String::from("200"));
+    
+    vec.append(&mut vec2);
+    
+    assert_equal(any_vec.downcast_ref::<String>().unwrap().as_slice(), &[
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+        String::from("3"),
+        String::from("4"),
+        String::from("100"),
+        String::from("200"),
+    ]);    
+    assert!(any_vec2.is_empty());
+}
+
 /*
 #[test]
 fn any_vec_index_test() {
