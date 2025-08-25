@@ -2,6 +2,7 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0_OR_MIT-blue?style=flat-square)](#license)
 [![Docs](https://docs.rs/any_vec/badge.svg)](https://docs.rs/any_vec)
 [![CI](https://github.com/tower120/any_vec/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tower120/any_vec/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/tower120/any_vec/graph/badge.svg?token=Y5U1OTXS6Y)](https://codecov.io/gh/tower120/any_vec)
 
 Type erased vector. All elements have the same type.
 
