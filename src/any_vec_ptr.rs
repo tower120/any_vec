@@ -160,7 +160,6 @@ pub(crate) mod utils{
         if Unknown::is::<AnyVecPtr::Element>(){
             any_vec_raw.get_unchecked(index)
         } else {
-            // AnyVecTyped::get_unchecked cause MIRI error
             AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
                 .as_ptr().add(index)
                 as *const _ as *const u8
@@ -175,7 +174,6 @@ pub(crate) mod utils{
         if Unknown::is::<AnyVecPtr::Element>(){
             any_vec_raw.get_unchecked_mut(index)
         } else {
-            // AnyVecTyped::get_unchecked_mut cause MIRI error
             AnyVecTyped::<AnyVecPtr::Element, _>::new(NonNull::from(any_vec_raw))
                 .as_mut_ptr().add(index)
                 as *mut _ as *mut u8
