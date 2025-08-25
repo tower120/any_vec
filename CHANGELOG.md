@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+### Added
+- `AnyVec` implements `Extend` now.
+- `AnyVecTyped` implements `Extend` now.
+- `AnyVec::append()` added.
+- `AnyVecTyped::append()` added.
+
 ## 0.14.0
 ### Added
 - Now library `no_std` friendly.

@@ -225,6 +225,27 @@ fn append_test() {
     assert!(any_vec2.is_empty());
 }
 
+#[test]
+fn extend_test(){
+    let mut any_vec: AnyVec = AnyVec::new::<String>();
+    let mut vec = any_vec.downcast_mut::<String>().unwrap();
+    vec.extend([
+        String::from("0"),
+        String::from("1"),
+        String::from("2"),
+    ]);
+    
+    assert_equal(
+        vec, 
+        &[
+            String::from("0"),
+            String::from("1"),
+            String::from("2"),
+        ]
+    );
+}
+
+
 /*
 #[test]
 fn any_vec_index_test() {

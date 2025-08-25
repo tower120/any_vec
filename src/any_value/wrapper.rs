@@ -8,6 +8,7 @@ use crate::any_value::{AnyValue, AnyValueMut, AnyValueTypelessMut, AnyValueTypel
 /// special in any way.
 /// 
 /// [AnyValueRaw]: super::AnyValueRaw
+#[derive(Debug)]
 pub struct AnyValueWrapper<T: 'static>{
     value: T
 }
@@ -17,7 +18,6 @@ impl<T: 'static> AnyValueWrapper<T> {
         Self{ value }
     }
 }
-
 impl<T: 'static> AnyValueSizeless for AnyValueWrapper<T> {
     type Type = T;
 
