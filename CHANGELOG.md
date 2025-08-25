@@ -6,6 +6,7 @@
 - `AnyVecTyped` implements `Extend` now.
 - `AnyVec::append()` added.
 - `AnyVecTyped::append()` added.
+- Code coverage analytics added.
 
 ## 0.14.0
 ### Added
